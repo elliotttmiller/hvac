@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from './InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../../../services/geminiService';
-import { analyzeWithRayBackend } from '../../../services/rayService';
 import { DetectedObject, ValidationIssue } from '../../../types';
 import { ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react';
 
@@ -132,62 +131,45 @@ const BlueprintWorkspace: React.FC = () => {
     setAnalysisRaw("Initializing analysis pipeline...");
 
     try {
-        if (backendType === 'RAY') {
-            if (!imageDims) throw new Error("Image dimensions not loaded");
-            setAnalysisRaw("Sending to Ray Serve (YOLOv11 + ISA-5.1 Engine)...");
-            const result = await analyzeWithRayBackend(imageFile);
-            
-            const boxes = convertRayEntitiesToBoxes(result.entities, imageDims.width, imageDims.height);
-            setDetectedBoxes(boxes);
-            
-            const counts: Record<string, number> = {};
-            result.entities.forEach(e => {
-                const key = e.description || e.label;
-                counts[key] = (counts[key] || 0) + 1;
-            });
-            setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
-            setAnalysisRaw(`Processed ${result.metadata.raw_count} raw symbols into ${result.metadata.entity_count} semantic entities.`);
-            
-        } else {
-            setAnalysisRaw("Uploading to Gemini 3.0 Pro Vision...");
-            const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
-            
-            const textResult = await analyzeBlueprintImage(base64Data);
-            try {
-                const parsed = JSON.parse(textResult);
-                setExecutiveSummary(parsed.executive_summary || "Analysis completed.");
-                setValidationIssues(parsed.design_validation || []);
-                
-                if (parsed.entities) {
-                    const boxes = parsed.entities.map((e: any, idx: number) => ({
-                        id: e.id || `gem-${idx}`,
-                        label: e.tag || e.label,
-                        confidence: e.confidence || 0.9,
-                        x: (e.bbox_2d[1] / 1000) * 100,
-                        y: (e.bbox_2d[0] / 1000) * 100,
-                        width: ((e.bbox_2d[3] - e.bbox_2d[1]) / 1000) * 100,
-                        height: ((e.bbox_2d[2] - e.bbox_2d[0]) / 1000) * 100,
-                        type: e.instrument_type === 'Computer' ? 'text' : 'component',
-                        meta: {
-                            tag: e.tag,
-                            description: e.functional_desc,
-                            reasoning: e.reasoning
-                        }
-                    }));
-                    setDetectedBoxes(boxes);
-                    const counts: Record<string, number> = {};
-                    parsed.entities.forEach((e: any) => {
-                         const key = e.functional_desc || e.label;
-                         counts[key] = (counts[key] || 0) + 1;
-                    });
-                    setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
-                }
-                setAnalysisRaw(JSON.stringify(parsed, null, 2));
-            } catch (e) {
-                console.error("Parsing failed", e);
-                setAnalysisRaw(textResult);
-            }
-        }
+    // Gemini-only flow
+    setAnalysisRaw("Uploading to Gemini Vision...");
+    const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
+
+    const textResult = await analyzeBlueprintImage(base64Data);
+    try {
+      const parsed = JSON.parse(textResult);
+      setExecutiveSummary(parsed.executive_summary || "Analysis completed.");
+      setValidationIssues(parsed.design_validation || []);
+
+      if (parsed.entities) {
+        const boxes = parsed.entities.map((e: any, idx: number) => ({
+          id: e.id || `gem-${idx}`,
+          label: e.tag || e.label,
+          confidence: e.confidence || 0.9,
+          x: (e.bbox_2d?.[1] ?? 0) / 10,
+          y: (e.bbox_2d?.[0] ?? 0) / 10,
+          width: (((e.bbox_2d?.[3] ?? 0) - (e.bbox_2d?.[1] ?? 0)) / 1000) * 100,
+          height: (((e.bbox_2d?.[2] ?? 0) - (e.bbox_2d?.[0] ?? 0)) / 1000) * 100,
+          type: e.instrument_type === 'Computer' ? 'text' : 'component',
+          meta: {
+            tag: e.tag,
+            description: e.functional_desc,
+            reasoning: e.reasoning
+          }
+        }));
+        setDetectedBoxes(boxes);
+        const counts: Record<string, number> = {};
+        parsed.entities.forEach((e: any) => {
+           const key = e.functional_desc || e.label;
+           counts[key] = (counts[key] || 0) + 1;
+        });
+        setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
+      }
+      setAnalysisRaw(JSON.stringify(parsed, null, 2));
+    } catch (e) {
+      console.error("Parsing failed", e);
+      setAnalysisRaw(textResult);
+    }
     } catch (error) {
         console.error(error);
         setAnalysisRaw(`Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`);

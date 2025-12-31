@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileSearch, CheckCircle, AlertOctagon, Layers, Type, Scan, Eye, Server, X } from 'lucide-react';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../services/geminiService';
-import { analyzeWithRayBackend } from '../services/rayService';
 import { DetectedObject } from '../types';
 
 const BlueprintAnalyzer: React.FC = () => {
@@ -74,45 +73,55 @@ const BlueprintAnalyzer: React.FC = () => {
     setAnalysis("Initializing analysis pipeline...");
 
     try {
-        if (backendType === 'RAY') {
-            if (!imageDims) throw new Error("Image dimensions not loaded");
-            
-            setAnalysis("Sending to Ray Serve (YOLOv11 + ISA-5.1 Engine)...");
-            const result = await analyzeWithRayBackend(imageFile);
-            
-            // Transform Ray results for visualization
-            const boxes = convertRayEntitiesToBoxes(result.entities, imageDims.width, imageDims.height);
-            setDetectedBoxes(boxes);
-            
-            // Create simplified inventory
-            const counts: Record<string, number> = {};
-            result.entities.forEach(e => {
-                const key = e.description || e.label;
-                counts[key] = (counts[key] || 0) + 1;
-            });
-            
-            setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
-            setAnalysis(`Processed ${result.metadata.raw_count} raw symbols into ${result.metadata.entity_count} semantic entities using ISA-5.1 composition logic.`);
-            
-        } else {
-            // Fallback to Gemini VLM simulation
-            setAnalysis("Uploading to Gemini 2.5 Vision...");
-            const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
-            const textResult = await analyzeBlueprintImage(base64Data);
+        // Gemini-only flow: upload image, parse JSON result, and populate UI state
+        setAnalysis("Uploading to Gemini Vision...");
+        const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
+        const textResult = await analyzeBlueprintImage(base64Data);
+
+        // Try to parse structured JSON from the Gemini service; fall back to raw text
+        try {
+            const parsed = JSON.parse(textResult);
+
+            // Executive summary / analysis text
+            setAnalysis(parsed.executive_summary || JSON.stringify(parsed, null, 2));
+
+            // Inventory
+            if (parsed.entities) {
+                const counts: Record<string, number> = {};
+                parsed.entities.forEach((e: any) => {
+                    const key = e.functional_desc || e.label || e.description || 'unknown';
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+                setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
+
+                // Map entities to detectedBoxes for visualization
+                const boxes = parsed.entities.map((e: any, idx: number) => ({
+                    id: e.id || `gem-${idx}`,
+                    label: e.tag || e.label || e.functional_desc || '',
+                    confidence: e.confidence || 0.9,
+                    x: (e.bbox_2d?.[1] ?? 0) / 10,
+                    y: (e.bbox_2d?.[0] ?? 0) / 10,
+                    width: (((e.bbox_2d?.[3] ?? 0) - (e.bbox_2d?.[1] ?? 0)) / 1000) * 100,
+                    height: (((e.bbox_2d?.[2] ?? 0) - (e.bbox_2d?.[0] ?? 0)) / 1000) * 100,
+                    rotation: e.rotation || 0,
+                    type: e.instrument_type === 'Computer' ? 'text' : 'component',
+                    meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
+                }));
+                setDetectedBoxes(boxes as any[]);
+            } else {
+                setDetectedBoxes([]);
+            }
+        } catch (e) {
+            // Not JSON - keep raw text and try legacy inventory extractor
             setAnalysis(textResult);
-            
             const jsonStr = await generateInventoryFromAnalysis(textResult);
             try {
                 const inv = JSON.parse(jsonStr);
                 setInventory(inv);
-            } catch (e) {
-                console.error("Failed to parse inventory JSON", e);
+            } catch (err) {
+                console.error("Failed to parse inventory JSON", err);
             }
-            // Mock boxes for Gemini demo
-            setDetectedBoxes([
-                 { id: '1', label: 'AHU-1', confidence: 0.98, x: 20, y: 30, width: 15, height: 10, rotation: 0, type: 'component' },
-                 { id: '2', label: 'Analysis-Cloud', confidence: 0.9, x: 50, y: 50, width: 20, height: 20, rotation: 0, type: 'text' }
-            ]);
+            setDetectedBoxes([]);
         }
 
     } catch (error) {
