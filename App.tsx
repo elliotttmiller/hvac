@@ -8,6 +8,24 @@ import { ViewState } from './types';
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
 
+  React.useEffect(() => {
+    // Update browser tab title based on current view
+    const base = 'HVAC AI Platform';
+    switch (currentView) {
+      case ViewState.DASHBOARD:
+        document.title = `${base} — Dashboard`;
+        break;
+      case ViewState.ANALYZER:
+        document.title = `${base} — Blueprint Analyzer`;
+        break;
+      case ViewState.COPILOT:
+        document.title = `${base} — Copilot`;
+        break;
+      default:
+        document.title = base;
+    }
+  }, [currentView]);
+
   const renderView = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
