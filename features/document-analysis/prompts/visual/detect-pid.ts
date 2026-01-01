@@ -29,7 +29,7 @@ ${generateISAContext()}
 **STEP 1: TEXT EXTRACTION (Primary Signal)**
 - Scan the ENTIRE diagram for ALL alphanumeric text strings
 - Extract every visible tag, label, and identifier
-- **Correct rotation errors:** Text may be oriented at 0°, 90°, 180°, or 270°
+- **Correct rotation errors:** Text may be rotated at 0°, 90°, 180°, or 270°
 - Common patterns: "PDI-1401", "TT-1402", "PI-1402", "FIC-201", etc.
 - Record the pixel location of each text string
 

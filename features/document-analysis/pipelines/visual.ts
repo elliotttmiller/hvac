@@ -140,7 +140,8 @@ Return ONLY "PID" or "HVAC" as a single word.
 
     const cleaned = response.trim().toUpperCase();
     
-    if (cleaned.includes('PID') || cleaned.includes('P&ID') || cleaned.includes('INSTRUMENTATION')) {
+    // Check for P&ID indicators (all uppercase for case-insensitive matching)
+    if (cleaned.includes('PID') || cleaned.includes('INSTRUMENTATION')) {
       return 'PID';
     }
     
