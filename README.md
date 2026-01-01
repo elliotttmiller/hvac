@@ -1,7 +1,3 @@
-<div align="center">
-
-</div>
-
 # HVAC AI Platform - Architecture 2.0
 
 **Production-grade AI platform with universal provider support** featuring document analysis, component detection, and intelligent transcription for HVAC engineering.
@@ -217,8 +213,9 @@ See `.env.example` for complete list of configuration options.
 
 Comprehensive documentation is available in the `/docs` directory:
 
-- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)**: Architecture 2.0 implementation details
-- **[hvac-module-README.md](./hvac-module-README.md)**: Module-specific documentation
+- **[README.md](./docs/README.md)**: Detailed feature documentation and API reference
+- **[IMPLEMENTATION_SUMMARY.md](./docs/IMPLEMENTATION_SUMMARY.md)**: Architecture 2.0 implementation details
+- **[hvac-module-README.md](./docs/hvac-module-README.md)**: Module-specific documentation
 
 Additional resources:
 - View your app in AI Studio: https://ai.studio/apps/drive/1iwdzyxoZmWVlOkA7mlw1ohnk6aaN8PGA
