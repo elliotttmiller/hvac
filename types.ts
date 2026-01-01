@@ -71,7 +71,7 @@ export interface ChatMessage {
 }
 
 export enum GeminiModel {
-  FLASH = 'gemini-3-flash-preview',
-  PRO = 'gemini-3-pro-preview',
-  VISION = 'gemini-2.5-flash-image'
+  FLASH = 'gemini-2.5-flash',
+  PRO = 'gemini-2.5-pro',
+  VISION = 'gemini-2.5-flash'
 }
