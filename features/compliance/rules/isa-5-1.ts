@@ -1,16 +1,22 @@
+// File: hvac/features/compliance/rules/isa-5-1.ts
+
 /**
  * ISA-5.1 - Instrumentation Symbols and Identification
- * Pure TypeScript implementation for tag parsing and validation
+ * Pure TypeScript implementation for tag parsing and validation.
  * 
- * Reference: ISA-5.1-2009 (R2019) - Instrumentation Symbols and Identification
+ * ROLE: Deterministic Validator (The "Law")
+ * INPUT: Raw text tags extracted by Gemini (e.g., "10-TIC-101A")
+ * OUTPUT: Structured data & Validation Errors
+ * 
+ * Reference: ISA-5.1-2009 (R2019)
  */
 
 export interface ParsedTag {
   original: string;
-  area?: string; // Area/Unit designation
-  function: string; // Function (T=Temperature, P=Pressure, F=Flow, etc.)
-  loop: string; // Loop/Sequence number
-  suffix?: string; // Modifier (A, B, C, etc.)
+  area?: string;       // Area/Unit designation
+  function: string;    // Function (T=Temp, P=Pressure)
+  loop: string;        // Loop/Sequence number
+  suffix?: string;     // Modifier (A, B, C)
   isValid: boolean;
   errors: string[];
 }
@@ -25,11 +31,9 @@ export interface TagValidationResult {
 
 /**
  * ISA-5.1 Function Letters
- * First letter indicates measured or initiating variable
- * Subsequent letters indicate readout/passive function or output/active function
+ * First letter = Measured Variable
  */
 const FUNCTION_LETTERS: Record<string, string> = {
-  // Measured/Initiating Variables
   'A': 'Analysis (Composition)',
   'B': 'Burner Flame',
   'C': 'User Choice',
@@ -58,7 +62,7 @@ const FUNCTION_LETTERS: Record<string, string> = {
 };
 
 /**
- * Readout/Passive Function Letters (subsequent letters)
+ * Readout/Passive Function Letters (Subsequent letters)
  */
 const MODIFIER_LETTERS: Record<string, string> = {
   'A': 'Alarm',
@@ -88,27 +92,20 @@ const MODIFIER_LETTERS: Record<string, string> = {
 
 /**
  * Parse ISA-5.1 tag
- * 
- * Standard format: [AREA]-[FUNCTION][MODIFIER(S)]-[LOOP][SUFFIX]
- * Examples:
- *   - T-101A (Temperature transmitter, loop 101, suffix A)
- *   - 1-TIC-201 (Area 1, Temperature Indicating Controller, loop 201)
- *   - PIT-501B (Pressure Indicating Transmitter, loop 501, suffix B)
- * 
- * @param tag - Tag string to parse
- * @returns Parsed tag structure
+ * Standard format: [AREA-]FUNCTION[MODIFIERS]-LOOP[SUFFIX]
  */
 export function parseTag(tag: string): ParsedTag {
   const errors: string[] = [];
-  const original = tag.trim().toUpperCase();
+  // Normalize: Remove spaces, uppercase
+  const original = tag.trim().toUpperCase().replace(/\s+/g, '-');
   
-  // ISA tag pattern: [AREA-]FUNCTION[MODIFIERS]-LOOP[SUFFIX]
-  // Example: 1-TIC-201A
+  // Regex: Optional Area -> Function -> Loop -> Optional Suffix
+  // Supports: 10-TIC-101A, TIC-101, 101-A
   const pattern = /^(?:([A-Z0-9]+)-)?([A-Z])([A-Z]*)-(\d+)([A-Z])?$/;
   const match = original.match(pattern);
   
   if (!match) {
-    errors.push('Tag does not match ISA-5.1 format: [AREA-]FUNCTION[MODIFIERS]-LOOP[SUFFIX]');
+    errors.push('Tag format invalid. Expected: [AREA-]FUNCTION-LOOP[SUFFIX]');
     return {
       original,
       function: '',
@@ -121,29 +118,25 @@ export function parseTag(tag: string): ParsedTag {
   const [, area, firstLetter, modifiers, loop, suffix] = match;
   const functionLetters = firstLetter + modifiers;
   
-  // Validate first letter (measured variable)
+  // 1. Validate First Letter
   if (!FUNCTION_LETTERS[firstLetter]) {
-    errors.push(`Invalid first letter '${firstLetter}': not a recognized measured variable`);
+    errors.push(`Invalid Variable '${firstLetter}': Not a recognized ISA-5.1 variable`);
   }
   
-  // Validate modifier letters
+  // 2. Validate Modifiers
   for (const letter of modifiers) {
     if (!MODIFIER_LETTERS[letter]) {
-      errors.push(`Invalid modifier letter '${letter}': not a recognized function`);
+      errors.push(`Invalid Modifier '${letter}': Not a recognized ISA-5.1 function`);
     }
   }
   
-  // Check for common issues
+  // 3. Logic Checks (The "Conscience")
   if (functionLetters.includes('C') && !functionLetters.includes('V')) {
-    errors.push(
-      'Control function (C) without Valve/Damper (V): Control point may lack final control element'
-    );
+    errors.push('Logic Error: Controller (C) detected without matching Valve/Damper (V).');
   }
   
   if (functionLetters.includes('S') && !functionLetters.includes('H') && !functionLetters.includes('L')) {
-    errors.push(
-      'Switch (S) without High (H) or Low (L): Alarm/switch point may lack setpoint designation'
-    );
+    errors.push('Logic Error: Switch (S) detected without Setpoint (H/L).');
   }
   
   return {
@@ -158,38 +151,32 @@ export function parseTag(tag: string): ParsedTag {
 }
 
 /**
- * Validate ISA-5.1 tag
- * 
- * @param tag - Tag string to validate
- * @returns Validation result with issues and recommendations
+ * Validate Tag with Recommendations
  */
 export function validateTag(tag: string): TagValidationResult {
   const parsed = parseTag(tag);
   const issues: string[] = [...parsed.errors];
   const recommendations: string[] = [];
   
-  // Additional validation checks
   if (parsed.isValid) {
-    // Check for best practices
+    // Best Practice: T -> TIC
     if (parsed.function.length === 1) {
       recommendations.push(
-        'Consider adding modifier letters to clarify function (e.g., T -> TIC for Temperature Indicating Controller)'
+        `Ambiguous Function: '${parsed.function}'. Consider adding modifiers (e.g., 'I' for Indicate).`
       );
     }
     
-    // Check for common abbreviations
+    // Best Practice: Temp Sensors
     if (parsed.function === 'T' && !parsed.function.includes('I') && !parsed.function.includes('R')) {
       recommendations.push(
-        'Temperature sensor should typically include I (Indicate) or R (Record) function'
+        'Temperature Element usually requires Indication (I) or Transmission (T).'
       );
     }
     
-    // Check loop number format
+    // Best Practice: Loop Numbers
     const loopNum = parseInt(parsed.loop, 10);
-    if (loopNum < 100 || loopNum > 999) {
-      recommendations.push(
-        'ISA-5.1 convention: Use 3-digit loop numbers (100-999) for better organization'
-      );
+    if (loopNum < 100 && loopNum > 0) {
+      recommendations.push('Convention: Loop numbers typically start at 100.');
     }
   }
   
@@ -203,14 +190,14 @@ export function validateTag(tag: string): TagValidationResult {
 }
 
 /**
- * Validate multiple tags
+ * Batch Validation
  */
 export function validateMultipleTags(tags: string[]): TagValidationResult[] {
   return tags.map(tag => validateTag(tag));
 }
 
 /**
- * Check for duplicate tags
+ * Duplicate Detection
  */
 export function findDuplicateTags(tags: string[]): string[] {
   const normalized = tags.map(t => t.trim().toUpperCase());
@@ -228,12 +215,11 @@ export function findDuplicateTags(tags: string[]): string[] {
 }
 
 /**
- * Get function description for a tag
+ * Human Readable Description Generator
+ * e.g. "TIC" -> "Temperature + Indicate + Control"
  */
 export function getFunctionDescription(functionLetters: string): string {
-  if (functionLetters.length === 0) {
-    return 'Unknown function';
-  }
+  if (functionLetters.length === 0) return 'Unknown function';
   
   const descriptions: string[] = [];
   
@@ -252,42 +238,4 @@ export function getFunctionDescription(functionLetters: string): string {
   }
   
   return descriptions.join(' + ');
-}
-
-/**
- * Group tags by area
- */
-export function groupTagsByArea(tags: string[]): Record<string, string[]> {
-  const groups: Record<string, string[]> = {};
-  
-  for (const tag of tags) {
-    const parsed = parseTag(tag);
-    const area = parsed.area || 'NO_AREA';
-    
-    if (!groups[area]) {
-      groups[area] = [];
-    }
-    groups[area].push(tag);
-  }
-  
-  return groups;
-}
-
-/**
- * Group tags by function type
- */
-export function groupTagsByFunction(tags: string[]): Record<string, string[]> {
-  const groups: Record<string, string[]> = {};
-  
-  for (const tag of tags) {
-    const parsed = parseTag(tag);
-    const functionType = parsed.function[0] || 'UNKNOWN';
-    
-    if (!groups[functionType]) {
-      groups[functionType] = [];
-    }
-    groups[functionType].push(tag);
-  }
-  
-  return groups;
 }
