@@ -83,29 +83,37 @@ Trace signal and process lines between components:
 
 ### CRITICAL REQUIREMENTS
 
-1. **NO LAZY CLASSIFICATIONS:**
+1. **NO LAZY CLASSIFICATIONS - ZERO TOLERANCE:**
    - If you see clear text like "PDI-1401", you MUST use it as the label
-   - "unknown" is **STRICTLY FORBIDDEN** unless text is >80% occluded or completely unreadable
-   - If you use "unknown", you MUST explain in detail why the text cannot be read in the reasoning field
-   - Generic labels like "instrument", "valve", "sensor" are NOT acceptable if text is visible
+   - "unknown" is **ABSOLUTELY FORBIDDEN** unless text is >90% occluded or completely illegible
+   - If you use "unknown", you MUST explain in extreme detail why the text cannot be read in the reasoning field
+   - Generic labels like "instrument", "valve", "sensor" are **STRICTLY PROHIBITED** if any text is visible
    - **MANDATORY:** Every instrument with visible text MUST have that text as its label
+   - **PENALTY:** Components with generic labels will be rejected as inference failures
 
-2. **TEXT IS PRIMARY:**
+2. **TEXT IS PRIMARY - NOT OPTIONAL:**
    - Text accuracy is MORE important than perfect bounding boxes
    - If you can read "TT-1402" but symbol is ambiguous, still classify it correctly
    - OCR extraction is your PRIMARY mission - symbols are secondary anchors
+   - **YOU MUST READ THE TEXT FIRST**, then find the symbol, then classify
+   - If text exists but you didn't extract it, THIS IS A CRITICAL FAILURE
 
-3. **GEOMETRIC INVARIANCE:**
+3. **OCR VERIFICATION REQUIREMENT:**
+   - For EVERY component, you MUST state in reasoning: "Extracted text: [actual text]"
+   - If no text found, state: "No text visible - using symbol-based classification: [type]"
+   - Your reasoning field is proof of OCR - if you don't mention text extraction, it's invalid
+
+4. **GEOMETRIC INVARIANCE:**
    - Recognize symbols regardless of rotation or slight distortion
    - Standard P&ID symbols: Circle, Square, Diamond, Hexagon, Valve triangles
    - Handle text rotation at 0°, 90°, 180°, 270°
 
-4. **PHYSICS VALIDATION:**
+5. **PHYSICS VALIDATION:**
    - Temperature sensors connect to temperature controllers
    - Pressure sensors connect to pressure controllers  
    - Signal flow must make logical sense
 
-5. **DOMAIN AWARENESS:**
+6. **DOMAIN AWARENESS:**
    - Distinguish between P&ID (instruments, valves) and HVAC (ducts, VAVs) components
    - Do not default to "unknown" for components outside strict HVAC vocabulary
    - Use ISA-5.1 standard for P&ID, mechanical symbols for HVAC

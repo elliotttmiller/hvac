@@ -44,12 +44,12 @@ export type TilePosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-ri
  * 
  * @param imageData - Base64 encoded image data
  * @param mimeType - MIME type of the image (e.g., 'image/png')
- * @param overlapPercent - Overlap percentage (default: 10%)
+ * @param overlapPercent - Overlap percentage (default: 15% - optimized for edge detection)
  */
 export async function tileImage(
   imageData: string,
   mimeType: string = 'image/png',
-  overlapPercent: number = 10
+  overlapPercent: number = 15
 ): Promise<TileResult> {
   // Normalize base64 string (remove data URI prefix if present)
   const normalizedImageData = imageData.includes('base64,')

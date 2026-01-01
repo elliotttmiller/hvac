@@ -197,7 +197,7 @@ export const VISUAL_ANALYSIS_SCHEMA = {
           type: { type: Type.STRING },
           label: { 
             type: Type.STRING,
-            description: 'Component label or tag - REQUIRED for all instruments and tagged components. Use extracted text, not generic names.'
+            description: 'Component label or tag - ABSOLUTELY MANDATORY. MUST be extracted text from image (e.g., "PDI-1401", "VAV-105", "TT-1402"). NEVER use generic names like "unknown", "instrument", "valve". If text is unreadable, use "unreadable-OCR-failed-{reason}" format.'
           },
           bbox: {
             type: Type.ARRAY,
