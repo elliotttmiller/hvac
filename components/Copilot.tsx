@@ -14,6 +14,15 @@ const Copilot: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // State to toggle Copilot panel
+  // Simple pointer-based dragging state (avoids react-draggable/findDOMNode)
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragRef = useRef<{ dragging: boolean; startX: number; startY: number } | null>(null);
+  // initialize to bottom-right offset
+  useEffect(() => {
+    // start near bottom-right by default
+    setPos({ x: -96, y: -96 });
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,91 +81,131 @@ const Copilot: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#09090b] text-zinc-200">
-      
-      {/* Header */}
-      <div className="h-14 border-b border-border bg-zinc-900/20 flex items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-purple-400" size={16} />
-          <span className="font-semibold text-sm">Reasoning Engine</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          <span>Gemini 3.0 Pro Active</span>
-        </div>
-      </div>
+    <>
+      {/* Floating Button (custom pointer-drag to avoid legacy findDOMNode) */}
+      <button
+        ref={(el) => { /* keep ref available if needed */ }}
+        onClick={() => setIsOpen(!isOpen)}
+        onPointerDown={(e) => {
+          // Start dragging if user holds pointer for move; allow click to still toggle
+          dragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY };
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (!dragRef.current || !dragRef.current.dragging) return;
+          const dx = e.clientX - dragRef.current.startX;
+          const dy = e.clientY - dragRef.current.startY;
+          // update start to allow smooth dragging
+          dragRef.current.startX = e.clientX;
+          dragRef.current.startY = e.clientY;
+          setPos((p) => ({ x: p.x + dx, y: p.y + dy }));
+        }}
+        onPointerUp={(e) => {
+          if (dragRef.current) dragRef.current.dragging = false;
+          try { (e.target as Element).releasePointerCapture?.(e.pointerId); } catch {}
+        }}
+        style={{
+          position: 'fixed',
+          right: 24 + (pos.x < 0 ? 0 : 0),
+          bottom: 24 + (pos.y < 0 ? 0 : 0),
+          transform: `translate(${pos.x}px, ${pos.y}px)`,
+          zIndex: 60
+        }}
+        className="p-4 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
+      >
+        <Sparkles size={24} />
+      </button>
 
-      {/* Chat Stream */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8" ref={scrollRef}>
-        {messages.map((msg) => (
-          <div key={msg.id} className={`max-w-3xl mx-auto flex gap-6 ${msg.role === 'model' ? 'animate-in fade-in slide-in-from-bottom-2' : ''}`}>
-            <div className={`w-8 h-8 rounded border flex items-center justify-center shrink-0 ${
-              msg.role === 'user' 
-                ? 'bg-zinc-800 border-zinc-700 text-zinc-300' 
-                : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-            }`}>
-              {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
+      {/* Copilot Panel */}
+      {isOpen && (
+        <div className="fixed bottom-16 right-16 w-96 h-[80vh] bg-[#09090b] text-zinc-200 rounded-lg shadow-2xl flex flex-col">
+          {/* Header */}
+          <div className="h-14 border-b border-border bg-zinc-900/20 flex items-center justify-between px-6">
+            <div className="flex items-center gap-2">
+              <Sparkles className="text-purple-400" size={16} />
+              <span className="font-semibold text-sm">Reasoning Engine</span>
             </div>
-            
-            <div className="flex-1 space-y-2 pt-1">
-              <div className="text-sm font-medium text-zinc-400">
-                {msg.role === 'user' ? 'You' : 'AI Architect'}
-              </div>
-              <div className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap font-light">
-                {msg.text}
-              </div>
-            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-zinc-500 hover:text-zinc-300 focus:outline-none"
+            >
+              ✕
+            </button>
           </div>
-        ))}
 
-        {isThinking && (
-          <div className="max-w-3xl mx-auto flex gap-6">
-             <div className="w-8 h-8 rounded border bg-purple-500/10 border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-               <Bot size={14} />
-             </div>
-             <div className="flex-1 pt-2">
-                <div className="flex items-center gap-2 text-sm text-purple-400 animate-pulse">
+          {/* Chat Stream */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8" ref={scrollRef}>
+            {messages.map((msg) => (
+              <div key={msg.id} className={`max-w-3xl mx-auto flex gap-6 ${msg.role === 'model' ? 'animate-in fade-in slide-in-from-bottom-2' : ''}`}>
+                <div className={`w-8 h-8 rounded border flex items-center justify-center shrink-0 ${
+                  msg.role === 'user' 
+                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300' 
+                    : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                }`}>
+                  {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
+                </div>
+                
+                <div className="flex-1 space-y-2 pt-1">
+                  <div className="text-sm font-medium text-zinc-400">
+                    {msg.role === 'user' ? 'You' : 'AI Architect'}
+                  </div>
+                  <div className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap font-light">
+                    {msg.text}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isThinking && (
+              <div className="max-w-3xl mx-auto flex gap-6">
+                <div className="w-8 h-8 rounded border bg-purple-500/10 border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                  <Bot size={14} />
+                </div>
+                <div className="flex-1 pt-2">
+                  <div className="flex items-center gap-2 text-sm text-purple-400 animate-pulse">
                     <Loader2 size={14} className="animate-spin" />
                     <span>Analyzing constraints and physics...</span>
+                  </div>
                 </div>
-             </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Input Area */}
-      <div className="p-6">
-        <div className="max-w-3xl mx-auto relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur"></div>
-          <div className="relative bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
-              <textarea 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask about compliance or efficiency..."
-                className="w-full bg-transparent p-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none resize-none h-14 max-h-48"
-                rows={1}
-              />
-              <div className="flex justify-between items-center px-4 pb-3 pt-1">
-                 <div className="text-[10px] text-zinc-600 font-medium">
+          {/* Input Area */}
+          <div className="p-6">
+            <div className="max-w-3xl mx-auto relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur"></div>
+              <div className="relative bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
+                <textarea 
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask about compliance or efficiency..."
+                  className="w-full bg-transparent p-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none resize-none h-14 max-h-48"
+                  rows={1}
+                />
+                <div className="flex justify-between items-center px-4 pb-3 pt-1">
+                  <div className="text-[10px] text-zinc-600 font-medium">
                     <span className="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-zinc-500 mr-2">PRO</span>
                     32k Token Context Window
-                 </div>
-                 <button 
+                  </div>
+                  <button 
                     onClick={handleSend}
                     disabled={isThinking || !input.trim()}
                     className="p-1.5 bg-zinc-100 hover:bg-white text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                 >
+                  >
                     {isThinking ? <StopCircle size={16}/> : <Send size={16} />}
-                 </button>
+                  </button>
+                </div>
               </div>
+              <p className="text-[10px] text-zinc-600 mt-3 text-center">
+                AI responses should be validated by a certified Professional Engineer (PE).
+              </p>
+            </div>
           </div>
-          <p className="text-[10px] text-zinc-600 mt-3 text-center">
-             AI responses should be validated by a certified Professional Engineer (PE).
-          </p>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

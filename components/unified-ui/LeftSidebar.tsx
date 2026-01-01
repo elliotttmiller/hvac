@@ -54,9 +54,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, activeId, onSelect, on
   return (
     <div>
       <div 
-        className={`flex items-center gap-1.5 py-1 pr-2 rounded cursor-pointer transition-colors group ${
-            activeId === node.id ? 'bg-fuchsia-500/10 text-fuchsia-100' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
-        }`}
+    className={`flex items-center gap-1.5 py-1 pr-2 rounded cursor-pointer transition-colors group ${
+      activeId === node.id ? 'bg-cyan-500/10 text-cyan-100' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+    }`}
         style={{ paddingLeft: `${level * 12 + 12}px` }}
         onClick={async (e) => {
             e.stopPropagation();
@@ -111,28 +111,45 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, activeId, onSelect, on
 import { io } from 'socket.io-client';
 import PreviewModal from '../PreviewModal';
 
-const LeftSidebar: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProject, setActiveProject] = useState<string | null>(null);
+const LeftSidebar: React.FC<{
+  projects?: Project[];
+  activeProject?: string | null;
+  onSelectProject?: (id: string) => void;
+  onProjectsChange?: (list: Project[]) => void;
+  onOpenProject?: (id: string) => void;
+}> = ({ projects: propsProjects, activeProject: propsActiveProject, onSelectProject, onProjectsChange, onOpenProject }) => {
+  const [projects, setProjects] = useState<Project[]>(propsProjects ?? []);
+  const [activeProject, setActiveProject] = useState<string | null>(propsActiveProject ?? null);
   const [tree, setTree] = useState<FileNode[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const currentProject = projects.find(p => p.id === activeProject) || (projects[0] ?? null);
 
+  // Sync with controlled props if provided
   useEffect(() => {
-    // fetch projects
+    if (propsProjects) setProjects(propsProjects);
+  }, [propsProjects]);
+
+  useEffect(() => {
+    if (propsActiveProject !== undefined) setActiveProject(propsActiveProject);
+  }, [propsActiveProject]);
+
+  // If not controlled by props, fetch projects from API on mount
+  useEffect(() => {
+    if (propsProjects !== undefined) return; // controlled externally
     fetch('/api/projects')
       .then(r => r.json())
       .then(d => {
         setProjects(d.projects || []);
         if (d.projects && d.projects.length) setActiveProject(d.projects[0].id);
+        if (onProjectsChange) onProjectsChange(d.projects || []);
       })
       .catch(() => setProjects([]));
-  }, []);
+  }, [propsProjects, onProjectsChange]);
 
   useEffect(() => {
-    if (!activeProject) return;
+  if (!activeProject) return;
     // fetch top-level immediate children only
     fetch(`/api/projects/${activeProject}/tree?dir=${encodeURIComponent('.')}`)
       .then(r => r.json())
@@ -185,7 +202,7 @@ const LeftSidebar: React.FC = () => {
       {/* Project Selector (Dropdown style) */}
       <div className="p-3 border-b border-white/5 bg-[#18181b]">
          <div className="flex items-center gap-2 mb-2 px-1">
-             <Briefcase size={12} className="text-fuchsia-500" />
+             <Briefcase size={12} className="text-cyan-500" />
              <span className="text-xs font-semibold text-zinc-400">Active Workspace</span>
          </div>
          <div className="relative group">
@@ -205,11 +222,14 @@ const LeftSidebar: React.FC = () => {
         {projects.map(p => (
           <div 
             key={p.id}
-            onClick={() => setActiveProject(p.id)} 
-            className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-fuchsia-400' : 'text-zinc-300'}`}
+            onClick={() => {
+              setActiveProject(p.id);
+              if (onSelectProject) onSelectProject(p.id);
+            }} 
+            className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-cyan-400' : 'text-zinc-300'}`}
           >
             <span>{p.name}</span>
-            {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-500 my-auto"></div>}
+            {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 my-auto"></div>}
           </div>
         ))}
       </div>
@@ -219,13 +239,13 @@ const LeftSidebar: React.FC = () => {
       {/* Search */}
       <div className="px-3 py-2">
         <div className="relative group">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-zinc-400 transition-colors" size={12} />
-            <input 
+      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-zinc-400 transition-colors" size={12} />
+      <input 
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search files..." 
-                className="w-full bg-[#18181b] border border-white/5 rounded-md h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-fuchsia-500/30 transition-all placeholder:text-zinc-600"
+        className="w-full bg-[#18181b] border border-white/5 rounded-md h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/30 transition-all placeholder:text-zinc-600"
             />
         </div>
       </div>

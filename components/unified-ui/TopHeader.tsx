@@ -20,13 +20,13 @@ export default function TopHeader() {
 
         {/* Center: Branding (Architectural Pill) */}
         <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2.5 px-4 py-1.5 bg-zinc-900/50 border border-white/5 rounded-full shadow-[0_0_20px_-12px_rgba(255,255,255,0.2)] backdrop-blur-md group cursor-default hover:border-white/10 hover:bg-zinc-900/80 transition-all">
+            <div className="flex items-center gap-2.5 px-5 py-1.5 bg-zinc-900/50 border border-white/5 rounded-full shadow-[0_0_20px_-12px_rgba(255,255,255,0.2)] backdrop-blur-md group cursor-default hover:border-white/10 hover:bg-zinc-900/80 transition-all">
                 <div className="relative flex items-center justify-center">
                      <Wind size={16} className="text-cyan-500 relative z-10 transition-transform duration-700 group-hover:rotate-180" strokeWidth={2} />
                      <div className="absolute inset-0 bg-cyan-500/20 blur-[8px] rounded-full group-hover:bg-cyan-500/30 transition-all"></div>
                 </div>
-                <div className="flex items-baseline gap-0.5">
-                    <span className="text-sm font-bold text-white tracking-tight">HVAC</span>
+        <div className="flex items-baseline gap-0.5">
+          <span className="text-sm font-bold text-white tracking-normal leading-none">HVAC</span>
                     <span className="text-sm font-light text-zinc-500 group-hover:text-zinc-400 transition-colors">AI</span>
                 </div>
             </div>
@@ -38,13 +38,13 @@ export default function TopHeader() {
              {/* Icons */}
              <button className="relative w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-all group" title="Notifications">
                 <Bell size={16} strokeWidth={1.5} className="group-hover:scale-105 transition-transform" />
-                <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-fuchsia-500 rounded-full border border-[#09090b]"></div>
+                <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-cyan-500 rounded-full border border-[#09090b]"></div>
              </button>
 
              <div className="h-4 w-px bg-white/10 mx-1"></div>
 
              {/* Profile */}
-             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-fuchsia-500 to-cyan-500 p-[1px] cursor-pointer hover:shadow-lg hover:shadow-cyan-500/20 transition-all shrink-0">
+             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-cyan-700 p-[1px] cursor-pointer hover:shadow-lg hover:shadow-cyan-500/20 transition-all shrink-0">
                 <div className="w-full h-full rounded-[7px] bg-[#09090b] flex items-center justify-center overflow-hidden relative">
                     <span className="text-[10px] font-bold text-white z-10">JD</span>
                 </div>

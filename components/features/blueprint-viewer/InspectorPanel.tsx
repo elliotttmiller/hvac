@@ -85,7 +85,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Filter detected assets..." 
-                className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-fuchsia-500/50 transition-colors placeholder:text-zinc-600"
+                className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-zinc-600"
             />
         </div>
       </div>
@@ -99,17 +99,17 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               onClick={() => onSelectBox(box.id)}
               className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
                 selectedBoxId === box.id 
-                  ? 'bg-fuchsia-500/10 border border-fuchsia-500/30' 
+                  ? 'bg-cyan-500/10 border border-cyan-500/30' 
                   : 'hover:bg-white/5 border border-transparent'
               }`}
             >
                <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                  selectedBoxId === box.id ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                  selectedBoxId === box.id ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
                }`}>
                   <Box size={14} />
                </div>
                <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-semibold truncate ${selectedBoxId === box.id ? 'text-fuchsia-100' : 'text-zinc-300'}`}>
+                  <div className={`text-xs font-semibold truncate ${selectedBoxId === box.id ? 'text-cyan-100' : 'text-zinc-300'}`}>
                     {box.label}
                   </div>
                   <div className="text-[10px] text-zinc-500 truncate">
@@ -117,7 +117,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   </div>
                </div>
                {selectedBoxId === box.id && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
                )}
             </div>
           ))
@@ -194,7 +194,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
        <div className="space-y-4">
           <div>
               <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1.5">Client Reference</label>
-              <input type="text" placeholder="Acme Corp - Tower A" className="w-full bg-[#252526] border border-white/5 rounded px-3 py-2 text-xs text-zinc-200 focus:border-fuchsia-500/50 focus:outline-none" />
+              <input type="text" placeholder="Acme Corp - Tower A" className="w-full bg-[#252526] border border-white/5 rounded px-3 py-2 text-xs text-zinc-200 focus:border-cyan-500/50 focus:outline-none" />
           </div>
           <div>
               <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1.5">Project ID</label>
@@ -202,22 +202,22 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </div>
        </div>
 
-       <div className="bg-fuchsia-500/5 border border-fuchsia-500/20 rounded-xl p-4 space-y-3">
-          <div className="flex justify-between items-center pb-3 border-b border-fuchsia-500/10">
+   <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4 space-y-3">
+          <div className="flex justify-between items-center pb-3 border-b border-cyan-500/10">
               <span className="text-xs text-zinc-300">Material Cost</span>
               <span className="text-xs font-mono text-zinc-200">${totalProjectCost.toLocaleString()}</span>
           </div>
-          <div className="flex justify-between items-center pb-3 border-b border-fuchsia-500/10">
+        <div className="flex justify-between items-center pb-3 border-b border-cyan-500/10">
               <span className="text-xs text-zinc-300">Labor Estimate (25%)</span>
               <span className="text-xs font-mono text-zinc-200">${(totalProjectCost * 0.25).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center pt-1">
-              <span className="text-sm font-bold text-fuchsia-400">Total Quote</span>
+              <span className="text-sm font-bold text-cyan-400">Total Quote</span>
               <span className="text-sm font-bold font-mono text-white">${(totalProjectCost * 1.25).toLocaleString()}</span>
           </div>
        </div>
 
-       <button className="w-full bg-fuchsia-600 hover:bg-fuchsia-500 text-white py-2.5 rounded-lg text-xs font-bold shadow-lg shadow-fuchsia-900/20 flex items-center justify-center gap-2 transition-all">
+   <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2.5 rounded-lg text-xs font-bold shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2 transition-all">
           <Send size={14} />
           Generate Official PDF
        </button>
@@ -231,7 +231,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <div className="h-12 border-b border-white/5 flex items-center px-1">
          <button 
             onClick={() => setActiveTab('COMPONENTS')}
-            className={`flex-1 h-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-fuchsia-500 text-fuchsia-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <Layers size={12} /> Components
          </button>

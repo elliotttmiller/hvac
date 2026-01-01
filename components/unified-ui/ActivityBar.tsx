@@ -2,10 +2,11 @@ import React from 'react';
 import { ViewState } from '../../types';
 import { 
   LayoutGrid, 
-  Frame, 
+  Presentation,
   Sparkles, 
   Settings2, 
-  HelpCircle
+  HelpCircle,
+  Folder
 } from 'lucide-react';
 
 interface ActivityBarProps {
@@ -16,8 +17,8 @@ interface ActivityBarProps {
 const ActivityBar: React.FC<ActivityBarProps> = ({ currentView, onChangeView }) => {
   const navItems = [
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutGrid },
-    { id: ViewState.ANALYZER, label: 'Workspace', icon: Frame },
-    { id: ViewState.COPILOT, label: 'Copilot', icon: Sparkles },
+  { id: ViewState.ANALYZER, label: 'Workspace', icon: Presentation },
+    { id: ViewState.PROJECTS, label: 'Projects', icon: Folder },
   ];
 
   return (

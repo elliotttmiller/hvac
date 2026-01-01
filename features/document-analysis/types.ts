@@ -54,6 +54,8 @@ export interface VisualAnalysisResult {
     total_components: number;
     total_connections: number;
     image_dimensions?: { width: number; height: number };
+    error?: string; // Added to capture error messages
+    parse_error?: string; // Added to capture parsing errors
   };
 }
 

@@ -71,15 +71,15 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
         onClick={() => onSelectBox(null)} // Deselect on background click
       >
         {!imageUrl ? (
-          <div className="border border-dashed border-zinc-800 bg-[#1e1e1e] rounded-xl p-12 text-center max-w-sm hover:border-fuchsia-500/30 transition-all duration-300 group">
+          <div className="border border-dashed border-zinc-800 bg-[#1e1e1e] rounded-xl p-12 text-center max-w-sm hover:border-cyan-500/30 transition-all duration-300 group">
             <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Upload className="text-zinc-500 group-hover:text-fuchsia-400" size={20} />
+                <Upload className="text-zinc-500 group-hover:text-cyan-400" size={20} />
             </div>
             <h3 className="text-sm font-medium text-zinc-200 mb-1">Import Schematic</h3>
             <p className="text-zinc-500 mb-6 text-xs leading-relaxed">
                 Supports PDF, DWG, PNG. Max 50MB.
             </p>
-            <label className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-5 py-2 rounded-md cursor-pointer transition-all shadow-lg shadow-fuchsia-900/20 inline-flex items-center gap-2 text-xs font-medium">
+            <label className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-2 rounded-md cursor-pointer transition-all shadow-lg shadow-cyan-900/20 inline-flex items-center gap-2 text-xs font-medium">
               <FileSearch size={14} />
               <span>Browse Files</span>
               <input type="file" className="hidden" accept="image/*" onChange={onFileUpload} />
@@ -115,7 +115,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                               }}
                               className={`absolute flex items-start justify-start group cursor-pointer transition-all duration-300
                                 ${isSelected 
-                                    ? 'border-2 border-fuchsia-500 bg-fuchsia-500/20 z-10' 
+                                    ? 'border-2 border-cyan-500 bg-cyan-500/20 z-10' 
                                     : isText 
                                         ? 'border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/10' 
                                         : 'border border-cyan-400/30 hover:border-cyan-400 hover:bg-cyan-400/10'
@@ -133,10 +133,10 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                               {/* Selection Handles (Figma Style) - Only visible when selected */}
                               {isSelected && (
                                 <>
-                                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-fuchsia-500 shadow-sm"></div>
-                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-fuchsia-500 shadow-sm"></div>
-                                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-fuchsia-500 shadow-sm"></div>
-                                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-fuchsia-500 shadow-sm"></div>
+                                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
+                                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
+                                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
                                 </>
                               )}
 
@@ -153,7 +153,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                   {isProcessing && (
                         <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center z-50">
                           <div className="bg-[#1e1e1e] p-4 rounded-xl shadow-2xl border border-white/10 flex flex-col items-center">
-                                <div className="w-8 h-8 border-2 border-fuchsia-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3"></div>
                                 <span className="text-zinc-200 text-xs font-medium">Processing...</span>
                           </div>
                         </div>
@@ -177,7 +177,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={() => setShowOBB(!showOBB)} 
-                        className={`p-1.5 rounded hover:bg-white/10 transition-colors ${showOBB ? 'text-fuchsia-400' : 'text-zinc-500'}`}
+                        className={`p-1.5 rounded hover:bg-white/10 transition-colors ${showOBB ? 'text-cyan-400' : 'text-zinc-500'}`}
                         title="Show Objects"
                     >
                         <Scan size={16} />

@@ -232,10 +232,10 @@ const BlueprintWorkspace: React.FC = () => {
           {/* Resize Handle */}
           {isPanelOpen && (
             <div 
-                className="absolute top-0 left-0 bottom-0 w-1 cursor-col-resize hover:bg-fuchsia-500/50 transition-colors z-20 group"
+                className="absolute top-0 left-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/50 transition-colors z-20 group"
                 onMouseDown={startResizing}
             >
-                <div className="absolute top-1/2 left-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-fuchsia-400 rounded-full transition-colors"></div>
+                <div className="absolute top-1/2 left-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-cyan-400 rounded-full transition-colors"></div>
             </div>
           )}
 

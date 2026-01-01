@@ -1,7 +1,8 @@
 export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   ANALYZER = 'ANALYZER',
-  COPILOT = 'COPILOT'
+  COPILOT = 'COPILOT',
+  PROJECTS = 'PROJECTS'
 }
 
 export interface HvacEntity {

@@ -9,9 +9,15 @@ interface UnifiedLayoutProps {
   currentView: ViewState;
   onChangeView: (view: ViewState) => void;
   children: React.ReactNode;
+  // Project explorer wiring (optional - passed from App)
+  projects?: { id: string; name: string; root: string }[];
+  activeProject?: string | null;
+  onSelectProject?: (id: string) => void;
+  onProjectsChange?: (list: { id: string; name: string; root: string }[]) => void;
+  onOpenProject?: (id: string) => void;
 }
 
-const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView, children }) => {
+const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView, children, projects, activeProject, onSelectProject, onProjectsChange, onOpenProject }) => {
   // Only show the "Explorer" sidebar in Analyzer mode
   const showContextSidebar = currentView === ViewState.ANALYZER;
   
@@ -59,30 +65,36 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
   }, [isResizing]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#09090b] text-zinc-100 font-sans overflow-hidden selection:bg-fuchsia-500/30">
+  <div className="flex flex-col h-screen bg-[#09090b] text-zinc-100 font-sans overflow-hidden selection:bg-cyan-500/30">
       <TopHeader />
       <div className="flex-1 flex min-h-0 relative">
         <ActivityBar currentView={currentView} onChangeView={onChangeView} />
         
-        {/* Left Sidebar Container */}
-        {showContextSidebar && (
-           <div 
-             ref={sidebarRef}
-             className={`relative flex flex-col bg-[#1e1e1e] border-r border-white/5 transition-all duration-300 ease-in-out shrink-0 ${!isSidebarOpen && 'w-0 border-r-0 overflow-hidden'}`}
-             style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
-           >
-              {/* Content Wrapper to prevent layout thrashing during collapse */}
-              <div className="w-full h-full overflow-hidden" style={{ width: sidebarWidth }}>
-                 <LeftSidebar />
-              </div>
+      {/* Left Sidebar Container */}
+      {showContextSidebar && (
+        <div 
+         ref={sidebarRef}
+         className={`relative flex flex-col bg-[#1e1e1e] border-r border-white/5 transition-all duration-300 ease-in-out shrink-0 ${!isSidebarOpen && 'w-0 border-r-0 overflow-hidden'}`}
+         style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
+        >
+          {/* Content Wrapper to prevent layout thrashing during collapse */}
+          <div className="w-full h-full overflow-hidden" style={{ width: sidebarWidth }}>
+            <LeftSidebar
+              projects={projects}
+              activeProject={activeProject}
+              onSelectProject={onSelectProject}
+              onProjectsChange={onProjectsChange}
+              onOpenProject={onOpenProject}
+            />
+          </div>
 
               {/* Resize Handle */}
               {isSidebarOpen && (
                 <div 
-                    className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-fuchsia-500/50 transition-colors z-20 group"
+                    className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/50 transition-colors z-20 group"
                     onMouseDown={startResizing}
                 >
-                    <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-fuchsia-400 rounded-full transition-colors"></div>
+                    <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-cyan-400 rounded-full transition-colors"></div>
                 </div>
               )}
            </div>
