@@ -84,7 +84,8 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
     e.preventDefault();
     setDragActive(false);
     
-    const files = Array.from(e.dataTransfer.files);
+    // Ensure typing for dropped files
+    const files = Array.from(e.dataTransfer.files) as File[];
     if (files.length > 0) {
       handleFileSelect(files[0]);
     }

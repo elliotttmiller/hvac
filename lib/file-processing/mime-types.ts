@@ -45,8 +45,10 @@ export function validateFile(file: File): FileValidationResult {
   }
 
   // Check by extension as fallback
-  for (const [mime, exts] of Object.entries(SUPPORTED_MIME_TYPES)) {
-    if (exts.includes(extension)) {
+  // Object.entries loses literal typings; assert shape as [string, string[]][] for safe iteration
+  // Object.entries loses literal/readonly typings; coerce through unknown then to a readonly tuple array
+  for (const [mime, exts] of (Object.entries(SUPPORTED_MIME_TYPES) as unknown as [string, readonly string[]][])) {
+    if ((exts as readonly string[]).includes(extension)) {
       return {
         valid: true,
         mimeType: mime,
@@ -67,8 +69,8 @@ export function validateFile(file: File): FileValidationResult {
 export function getMimeTypeFromExtension(extension: string): string | null {
   const ext = extension.toLowerCase();
   
-  for (const [mime, exts] of Object.entries(SUPPORTED_MIME_TYPES)) {
-    if (exts.includes(ext)) {
+  for (const [mime, exts] of (Object.entries(SUPPORTED_MIME_TYPES) as unknown as [string, readonly string[]][])) {
+    if ((exts as readonly string[]).includes(ext)) {
       return mime;
     }
   }

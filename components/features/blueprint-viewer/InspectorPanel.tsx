@@ -12,6 +12,7 @@ import {
   Plus
 } from 'lucide-react';
 import { ValidationIssue, DetectedObject } from '../../../types';
+import { config } from '../../../app/config';
 
 interface InspectorPanelProps {
   analysis: string;
@@ -19,7 +20,6 @@ interface InspectorPanelProps {
   inventory: any[];
   detectedBoxes: DetectedObject[];
   validationIssues: ValidationIssue[];
-  backendType: 'RAY' | 'GEMINI';
   selectedBoxId: string | null;
   onSelectBox: (id: string | null) => void;
 }
@@ -27,14 +27,13 @@ interface InspectorPanelProps {
 type Tab = 'COMPONENTS' | 'PRICING' | 'QUOTE';
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ 
-  analysis, 
-  executiveSummary, 
-  inventory, 
-  detectedBoxes,
-  validationIssues, 
-  backendType,
-  selectedBoxId,
-  onSelectBox
+   analysis, 
+   executiveSummary, 
+   inventory, 
+   detectedBoxes,
+   validationIssues, 
+   selectedBoxId,
+   onSelectBox
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,7 +261,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <div className={`w-1.5 h-1.5 rounded-full ${inventory.length > 0 ? 'bg-emerald-500' : 'bg-zinc-600'}`}></div>
             <span>{inventory.length} Assets Detected</span>
          </div>
-         <span className="uppercase">{backendType} ENGINE</span>
+         <span className="uppercase">{String(config.ai.provider).toUpperCase()} ({config.ai.model})</span>
       </div>
     </div>
   );

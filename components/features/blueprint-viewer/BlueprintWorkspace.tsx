@@ -12,7 +12,8 @@ const BlueprintWorkspace: React.FC = () => {
   const [imageDims, setImageDims] = useState<{width: number, height: number} | null>(null);
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [backendType, setBackendType] = useState<'RAY' | 'GEMINI'>('RAY');
+  // We now default to the Gemini workflow (single default AI pipeline).
+  const [backendType, setBackendType] = useState<'RAY' | 'GEMINI'>('GEMINI');
   
   // Analysis Data
   const [analysisRaw, setAnalysisRaw] = useState<string>("");
@@ -212,7 +213,6 @@ const BlueprintWorkspace: React.FC = () => {
         onFileUpload={handleFileUpload}
         onClearImage={handleClearImage}
         onRunAnalysis={runAnalysis}
-        onSetBackendType={setBackendType}
       />
 
       {/* Floating Toggle for Right Panel */}
@@ -246,7 +246,6 @@ const BlueprintWorkspace: React.FC = () => {
                 inventory={inventory}
                 detectedBoxes={detectedBoxes}
                 validationIssues={validationIssues}
-                backendType={backendType}
                 selectedBoxId={selectedBoxId}
                 onSelectBox={setSelectedBoxId}
             />

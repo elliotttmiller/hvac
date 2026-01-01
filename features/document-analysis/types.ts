@@ -35,6 +35,7 @@ export interface DetectedComponent {
     parent_system?: string;
     mounting?: string;
     instrument_type?: string;
+    [key: string]: any; // Allow additional dynamic metadata (e.g., source_tile)
   };
 }
 

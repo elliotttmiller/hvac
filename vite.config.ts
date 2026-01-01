@@ -19,5 +19,21 @@ export default defineConfig(({ mode }) => {
           '@': path.resolve(__dirname, '.'),
         }
       }
+      ,
+      build: {
+        // Use manualChunks to separate vendor libraries and keep the main chunk smaller.
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                if (id.includes('react') || id.includes('react-dom')) return 'vendor.react';
+                if (id.includes('lucide-react') || id.includes('recharts')) return 'vendor.ui';
+                if (id.includes('@google/genai')) return 'vendor.ai';
+                return 'vendor';
+              }
+            }
+          }
+        }
+      }
     };
 });

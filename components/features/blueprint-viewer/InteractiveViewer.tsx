@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, FileSearch, Scan, Type, Layers, X, Eye, Server, Sparkles, Box, ZoomIn, ZoomOut, Move } from 'lucide-react';
-import { DetectedObject } from '../../../types';
+import { DetectedObject, GeminiModel } from '../../../types';
 
 interface InteractiveViewerProps {
   imageUrl: string | null;
@@ -12,7 +12,7 @@ interface InteractiveViewerProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
   onRunAnalysis: () => void;
-  onSetBackendType: (type: 'RAY' | 'GEMINI') => void;
+  // onSetBackendType removed: we now use a single/default AI workflow (Gemini)
 }
 
 const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
@@ -25,7 +25,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   onFileUpload,
   onClearImage,
   onRunAnalysis,
-  onSetBackendType
+  
 }) => {
   const [showOBB, setShowOBB] = useState(true);
   const [showOCR, setShowOCR] = useState(false);
@@ -43,40 +43,27 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
            }}>
       </div>
 
-      {/* Internal Toolbar (Canvas Controls) - Top Center */}
-      {imageUrl && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-             <div className="bg-[#1e1e1e] border border-white/10 rounded-lg p-1 flex items-center shadow-xl">
-                 <button 
-                    onClick={() => onSetBackendType('RAY')}
-                    className={`px-3 py-1 rounded text-[10px] font-semibold transition-all ${
-                        backendType === 'RAY' 
-                        ? 'bg-zinc-700 text-white shadow-sm' 
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                 >
-                    Ray
-                 </button>
-                 <button 
-                    onClick={() => onSetBackendType('GEMINI')}
-                    className={`px-3 py-1 rounded text-[10px] font-semibold transition-all ${
-                        backendType === 'GEMINI' 
-                        ? 'bg-fuchsia-600 text-white shadow-sm' 
-                        : 'text-zinc-500 hover:text-zinc-300'
-                    }`}
-                 >
-                    Gemini
-                 </button>
-             </div>
-             
-             <button 
-                onClick={onRunAnalysis}
-                className="bg-zinc-100 hover:bg-white text-black px-4 py-1.5 rounded-lg text-xs font-semibold shadow-xl transition-all flex items-center gap-2"
-             >
-                 <Eye size={12} /> Run
-             </button>
+    {/* Internal Toolbar (Canvas Controls) - Top Center */}
+    {imageUrl && (
+      <>
+       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+         <button 
+           onClick={onRunAnalysis}
+           className="bg-zinc-100 hover:bg-white text-black px-4 py-1.5 rounded-lg text-xs font-semibold shadow-xl transition-all flex items-center gap-2"
+         >
+            <Eye size={12} /> Run
+         </button>
+       </div>
+
+       {/* Subtle AI model identifier badge (read-only) */}
+       <div className="absolute top-4 right-4 z-20">
+        <div className="bg-black/60 text-zinc-200 text-xs px-3 py-1 rounded-full border border-white/10 flex items-center gap-2 backdrop-blur">
+          <Sparkles size={12} />
+          <span className="font-mono text-[11px]">{GeminiModel.PRO}</span>
         </div>
-      )}
+       </div>
+      </>
+    )}
 
       {/* Main Content */}
       <div 

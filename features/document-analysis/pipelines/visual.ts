@@ -168,7 +168,8 @@ function mergeTileResults(
   console.log(`After deduplication: ${deduplicatedComponents.length} components`);
   
   return {
-    components: deduplicatedComponents,
+    // mergeComponents returns a generic Component[]; cast to DetectedComponent[] to satisfy types
+    components: deduplicatedComponents as unknown as DetectedComponent[],
     connections: allConnections, // Will be refined in next step
     metadata: {
       total_components: deduplicatedComponents.length,

@@ -78,7 +78,14 @@ const FileIcon = ({ type }: { type?: string }) => {
   }
 };
 
-const TreeNode = ({ node, level, activeId, onSelect }: { node: FileNode, level: number, activeId: string | null, onSelect: (id: string) => void }) => {
+interface TreeNodeProps {
+  node: FileNode;
+  level: number;
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}
+
+const TreeNode: React.FC<TreeNodeProps> = ({ node, level, activeId, onSelect }) => {
   const [isOpen, setIsOpen] = useState(true); // Default open for demo
   const isFolder = node.type === 'folder';
   
