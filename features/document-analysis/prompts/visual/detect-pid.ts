@@ -87,9 +87,10 @@ Trace signal and process lines between components:
    - If you see clear text like "PDI-1401", you MUST use it as the label
    - "unknown" is **ABSOLUTELY FORBIDDEN** unless text is >90% occluded or completely illegible
    - If you use "unknown", you MUST explain in extreme detail why the text cannot be read in the reasoning field
-   - Generic labels like "instrument", "valve", "sensor" are **STRICTLY PROHIBITED** if any text is visible
+   - Generic labels like "instrument", "valve", "sensor", "component" are **STRICTLY PROHIBITED** if any text is visible
    - **MANDATORY:** Every instrument with visible text MUST have that text as its label
    - **PENALTY:** Components with generic labels will be rejected as inference failures
+   - **NULL/EMPTY LABELS ARE FORBIDDEN:** Every component MUST have a non-empty label field
 
 2. **TEXT IS PRIMARY - NOT OPTIONAL:**
    - Text accuracy is MORE important than perfect bounding boxes
@@ -113,10 +114,15 @@ Trace signal and process lines between components:
    - Pressure sensors connect to pressure controllers  
    - Signal flow must make logical sense
 
-6. **DOMAIN AWARENESS:**
+6. **DOMAIN AWARENESS - EXPANDED VOCABULARY:**
    - Distinguish between P&ID (instruments, valves) and HVAC (ducts, VAVs) components
    - Do not default to "unknown" for components outside strict HVAC vocabulary
    - Use ISA-5.1 standard for P&ID, mechanical symbols for HVAC
+   - **P&ID Component Types:** Instruments, Transmitters, Controllers, Indicators, Valves, Actuators, Logic Elements, Sensors, Analyzers, Flow Elements
+   - **HVAC Component Types:** VAV Boxes, AHUs, Dampers, Diffusers, Grilles, Coils, Fans, Filters, Humidifiers, Ducts
+   - **Valve Types:** Ball Valves, Gate Valves, Globe Valves, Check Valves, Butterfly Valves, Control Valves, Relief Valves, Solenoid Valves
+   - **Instrument Types:** Temperature, Pressure, Flow, Level, Analytical, Speed, Vibration, Position
+   - If a component matches any of these categories but has no visible text, use the specific category as label (e.g., "control-valve" not "unknown")
 
 ### OUTPUT FORMAT
 
