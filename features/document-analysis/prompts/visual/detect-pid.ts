@@ -85,21 +85,30 @@ Trace signal and process lines between components:
 
 1. **NO LAZY CLASSIFICATIONS:**
    - If you see clear text like "PDI-1401", you MUST use it as the label
-   - "unknown" is ONLY acceptable if text is >70% occluded or unreadable
-   - If you use "unknown", you MUST explain why in reasoning field
+   - "unknown" is **STRICTLY FORBIDDEN** unless text is >80% occluded or completely unreadable
+   - If you use "unknown", you MUST explain in detail why the text cannot be read in the reasoning field
+   - Generic labels like "instrument", "valve", "sensor" are NOT acceptable if text is visible
+   - **MANDATORY:** Every instrument with visible text MUST have that text as its label
 
 2. **TEXT IS PRIMARY:**
    - Text accuracy is MORE important than perfect bounding boxes
    - If you can read "TT-1402" but symbol is ambiguous, still classify it correctly
+   - OCR extraction is your PRIMARY mission - symbols are secondary anchors
 
 3. **GEOMETRIC INVARIANCE:**
    - Recognize symbols regardless of rotation or slight distortion
    - Standard P&ID symbols: Circle, Square, Diamond, Hexagon, Valve triangles
+   - Handle text rotation at 0°, 90°, 180°, 270°
 
 4. **PHYSICS VALIDATION:**
    - Temperature sensors connect to temperature controllers
    - Pressure sensors connect to pressure controllers  
    - Signal flow must make logical sense
+
+5. **DOMAIN AWARENESS:**
+   - Distinguish between P&ID (instruments, valves) and HVAC (ducts, VAVs) components
+   - Do not default to "unknown" for components outside strict HVAC vocabulary
+   - Use ISA-5.1 standard for P&ID, mechanical symbols for HVAC
 
 ### OUTPUT FORMAT
 

@@ -2,6 +2,8 @@
  * Canvas Overlay Component
  * Renders bounding boxes and annotations on top of images
  * Uses normalized 0-1 coordinates that scale to viewport
+ * 
+ * FIXED: Accounts for object-fit:contain letterboxing to eliminate drift
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -21,6 +23,7 @@ export interface CanvasOverlayProps {
 /**
  * Canvas Overlay Component
  * Handles normalized 0-1 coordinates and scales to current viewport size
+ * Accounts for object-fit:contain letterboxing/pillarboxing
  */
 export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   imageUrl,
@@ -36,24 +39,63 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState({ 
+    width: 0, 
+    height: 0, 
+    offsetX: 0, 
+    offsetY: 0,
+    actualWidth: 0,
+    actualHeight: 0 
+  });
   const [scale, setScale] = useState({ x: 1, y: 1 });
   
-  // Update scale when image loads
+  // Update scale when image loads - FIXED: Calculate exact rendered dimensions with object-fit:contain
   useEffect(() => {
     const img = imageRef.current;
-    if (!img) return;
+    const container = containerRef.current;
+    if (!img || !container) return;
     
     const handleLoad = () => {
       const naturalWidth = img.naturalWidth;
       const naturalHeight = img.naturalHeight;
-      const displayWidth = img.clientWidth;
-      const displayHeight = img.clientHeight;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
       
-      setImageDimensions({ width: displayWidth, height: displayHeight });
+      // Calculate aspect ratios
+      const imageAspect = naturalWidth / naturalHeight;
+      const containerAspect = containerWidth / containerHeight;
+      
+      let actualWidth: number;
+      let actualHeight: number;
+      let offsetX: number;
+      let offsetY: number;
+      
+      // Determine if image is letterboxed (horizontal bars) or pillarboxed (vertical bars)
+      if (imageAspect > containerAspect) {
+        // Image is wider - pillarboxing (vertical bars on sides)
+        actualWidth = containerWidth;
+        actualHeight = containerWidth / imageAspect;
+        offsetX = 0;
+        offsetY = (containerHeight - actualHeight) / 2;
+      } else {
+        // Image is taller - letterboxing (horizontal bars on top/bottom)
+        actualHeight = containerHeight;
+        actualWidth = containerHeight * imageAspect;
+        offsetX = (containerWidth - actualWidth) / 2;
+        offsetY = 0;
+      }
+      
+      setImageDimensions({ 
+        width: containerWidth, 
+        height: containerHeight,
+        offsetX,
+        offsetY,
+        actualWidth,
+        actualHeight
+      });
       setScale({
-        x: displayWidth,
-        y: displayHeight,
+        x: actualWidth,
+        y: actualHeight,
       });
     };
     
@@ -65,7 +107,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     }
   }, [imageUrl]);
   
-  // Draw overlays on canvas
+  // Draw overlays on canvas - FIXED: Apply offset for letterboxing
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imageRef.current;
@@ -75,9 +117,9 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Set canvas size to match image display size
-    canvas.width = imageDimensions.width;
-    canvas.height = imageDimensions.height;
+    // Set canvas size to match actual rendered image dimensions
+    canvas.width = imageDimensions.actualWidth;
+    canvas.height = imageDimensions.actualHeight;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -135,8 +177,8 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
         onClick={handleCanvasClick}
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
+          top: `${imageDimensions.offsetY}px`,
+          left: `${imageDimensions.offsetX}px`,
           cursor: onComponentClick ? 'pointer' : 'default',
         }}
       />
