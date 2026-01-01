@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from './InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../../../services/geminiService';
+import { analyzeDocument } from '../../../hvac/features/document-analysis/orchestrator';
 import { DetectedObject, ValidationIssue } from '../../../types';
 import { ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react';
 
@@ -131,45 +132,53 @@ const BlueprintWorkspace: React.FC = () => {
     setAnalysisRaw("Initializing analysis pipeline...");
 
     try {
-    // Gemini-only flow
-    setAnalysisRaw("Uploading to Gemini Vision...");
-    const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
+      // New Architecture 2.0 Pipeline
+      setAnalysisRaw("Step 1: Classifying document...");
+      const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
 
-    const textResult = await analyzeBlueprintImage(base64Data);
-    try {
-      const parsed = JSON.parse(textResult);
-      setExecutiveSummary(parsed.executive_summary || "Analysis completed.");
-      setValidationIssues(parsed.design_validation || []);
+      // Use new orchestrator
+      const result = await analyzeDocument(base64Data, {
+        fileName: imageFile.name,
+      });
 
-      if (parsed.entities) {
-        const boxes = parsed.entities.map((e: any, idx: number) => ({
-          id: e.id || `gem-${idx}`,
-          label: e.tag || e.label,
-          confidence: e.confidence || 0.9,
-          x: (e.bbox_2d?.[1] ?? 0) / 10,
-          y: (e.bbox_2d?.[0] ?? 0) / 10,
-          width: (((e.bbox_2d?.[3] ?? 0) - (e.bbox_2d?.[1] ?? 0)) / 1000) * 100,
-          height: (((e.bbox_2d?.[2] ?? 0) - (e.bbox_2d?.[0] ?? 0)) / 1000) * 100,
-          type: e.instrument_type === 'Computer' ? 'text' : 'component',
-          meta: {
-            tag: e.tag,
-            description: e.functional_desc,
-            reasoning: e.reasoning
-          }
-        }));
+      console.log('Analysis result:', result);
+      
+      // Update executive summary
+      setExecutiveSummary(result.executive_summary || `Document classified as: ${result.document_type}`);
+      
+      // Update validation issues
+      setValidationIssues(result.validation_issues || []);
+
+      // Process visual analysis results
+      if (result.visual && result.visual.components) {
+        const boxes = result.visual.components.map((comp) => {
+          // Convert normalized bbox (0-1) to percentage
+          const [x1, y1, x2, y2] = comp.bbox;
+          return {
+            id: comp.id,
+            label: comp.label || comp.type,
+            confidence: comp.confidence,
+            x: x1 * 100,
+            y: y1 * 100,
+            width: (x2 - x1) * 100,
+            height: (y2 - y1) * 100,
+            rotation: comp.rotation,
+            type: comp.type as 'component' | 'text' | 'symbol',
+            meta: comp.meta,
+          };
+        });
         setDetectedBoxes(boxes);
+
+        // Generate inventory
         const counts: Record<string, number> = {};
-        parsed.entities.forEach((e: any) => {
-           const key = e.functional_desc || e.label;
-           counts[key] = (counts[key] || 0) + 1;
+        result.visual.components.forEach((comp) => {
+          const key = comp.meta?.description || comp.type;
+          counts[key] = (counts[key] || 0) + 1;
         });
         setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
       }
-      setAnalysisRaw(JSON.stringify(parsed, null, 2));
-    } catch (e) {
-      console.error("Parsing failed", e);
-      setAnalysisRaw(textResult);
-    }
+
+      setAnalysisRaw(JSON.stringify(result, null, 2));
     } catch (error) {
         console.error(error);
         setAnalysisRaw(`Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`);

@@ -1,5 +1,5 @@
 {
   "name": "HVAC AI Platform",
-  "description": "Production-grade neuro-symbolic AI platform featuring YOLOv11-OBB detection, multi-modal OCR/Vision pipelines, and ASHRAE 62.1 compliance validation.",
+  "description": "Production-grade AI platform powered by Gemini 2.5 Flash featuring universal document analysis, component detection, and intelligent transcription for HVAC engineering.",
   "requestFramePermissions": []
 }
