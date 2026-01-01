@@ -173,19 +173,17 @@ def read_env_file(path: Path) -> Dict[str, str]:
                 k = k.strip()
                 v = v.strip()
                 
-                # Remove inline comments (only if not inside quotes)
-                # Simple heuristic: if the value is quoted, keep the # inside
-                if "#" in v:
-                    # Check if value appears to be quoted
-                    is_quoted = (v.startswith('"') and v.endswith('"')) or \
-                                (v.startswith("'") and v.endswith("'"))
-                    if not is_quoted:
-                        # Remove inline comment
-                        v = v.split("#")[0].strip()
+                # Remove inline comments with better quote handling
+                # Check if value is properly quoted (quotes at start AND end)
+                is_single_quoted = v.startswith("'") and v.endswith("'") and len(v) >= 2
+                is_double_quoted = v.startswith('"') and v.endswith('"') and len(v) >= 2
                 
-                # Remove surrounding quotes
-                if (v.startswith('"') and v.endswith('"')) or \
-                   (v.startswith("'") and v.endswith("'")):
+                if "#" in v and not (is_single_quoted or is_double_quoted):
+                    # Remove inline comment only if value is not quoted
+                    v = v.split("#")[0].strip()
+                
+                # Remove surrounding quotes if present
+                if is_single_quoted or is_double_quoted:
                     v = v[1:-1]
                 
                 env[k] = v
