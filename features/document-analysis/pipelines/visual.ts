@@ -481,8 +481,8 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);
         console.error(`[Visual Pipeline - Parse]   Reasoning: ${validated.meta?.reasoning || 'Not provided'}`);
         
-        // Mark as OCR failure if truly generic
-        if (isGenericLabel && !validated.label.includes('unreadable')) {
+        // Mark as OCR failure if not already marked as unreadable
+        if (!validated.label.includes('unreadable')) {
           validated.label = `unreadable-OCR-failed-${validated.type}`;
           validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
         }

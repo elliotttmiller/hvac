@@ -103,11 +103,6 @@ Trace signal and process lines between components:
    - If no text found, state: "No text visible - using symbol-based classification: [type]"
    - Your reasoning field is proof of OCR - if you don't mention text extraction, it's invalid
 
-3. **OCR VERIFICATION REQUIREMENT:**
-   - For EVERY component, you MUST state in reasoning: "Extracted text: [actual text]"
-   - If no text found, state: "No text visible - using symbol-based classification: [type]"
-   - Your reasoning field is proof of OCR - if you don't mention text extraction, it's invalid
-
 4. **GEOMETRIC INVARIANCE:**
    - Recognize symbols regardless of rotation or slight distortion
    - Standard P&ID symbols: Circle, Square, Diamond, Hexagon, Valve triangles
