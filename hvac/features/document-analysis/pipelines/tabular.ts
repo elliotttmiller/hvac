@@ -3,7 +3,7 @@
  * Extracts equipment data from schedule/tabular documents
  */
 
-import { getGeminiClient } from '../../../lib/ai/client';
+import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { TabularAnalysisResult } from '../types';
@@ -96,8 +96,8 @@ export async function analyzeTabular(imageData: string): Promise<TabularAnalysis
       }
     }
 
-    // Call Gemini for tabular analysis
-    const client = getGeminiClient();
+    // Call AI provider for tabular analysis
+    const client = getAIClient();
     const responseText = await client.generateVision({
       imageData,
       prompt: TABULAR_PROMPT,

@@ -1,9 +1,9 @@
 /**
  * Visual Pipeline - Blueprint Analysis
- * Detects HVAC components and connections using Gemini 2.5 Flash Vision
+ * Detects HVAC components and connections using configured AI provider
  */
 
-import { getGeminiClient } from '../../../lib/ai/client';
+import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA } from '../types';
@@ -27,8 +27,8 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
       }
     }
 
-    // Call Gemini for visual analysis
-    const client = getGeminiClient();
+    // Call AI provider for visual analysis
+    const client = getAIClient();
     const responseText = await client.generateVision({
       imageData,
       prompt: DETECT_PROMPT,

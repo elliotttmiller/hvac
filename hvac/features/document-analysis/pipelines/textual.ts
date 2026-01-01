@@ -3,7 +3,7 @@
  * Extracts structured text and tables from specification documents
  */
 
-import { getGeminiClient } from '../../../lib/ai/client';
+import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { TextualAnalysisResult, TEXTUAL_ANALYSIS_SCHEMA } from '../types';
@@ -27,8 +27,8 @@ export async function analyzeTextual(imageData: string): Promise<TextualAnalysis
       }
     }
 
-    // Call Gemini for textual analysis
-    const client = getGeminiClient();
+    // Call AI provider for textual analysis
+    const client = getAIClient();
     const responseText = await client.generateVision({
       imageData,
       prompt: EXTRACT_SPECS_PROMPT,

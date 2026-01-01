@@ -3,7 +3,7 @@
  * Step 1 of the analysis pipeline
  */
 
-import { getGeminiClient } from '../../../lib/ai/client';
+import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { ClassificationResult, CLASSIFICATION_SCHEMA } from '../types';
@@ -26,8 +26,8 @@ export async function classifyDocument(
       }
     }
 
-    // Call Gemini for classification
-    const client = getGeminiClient();
+    // Call AI provider for classification
+    const client = getAIClient();
     const responseText = await client.generateVision({
       imageData,
       prompt: CLASSIFY_PROMPT,
