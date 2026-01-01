@@ -472,7 +472,8 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         'equipment', 'device', 'element', 'item', 'object', 'symbol'
       ];
       
-      const labelLower = validated.label.toLowerCase();
+      // Safe label comparison with null checks
+      const labelLower = (validated.label || '').toLowerCase();
       const isGenericLabel = !comp.label || 
                             comp.label === '' ||
                             comp.label === validated.type ||
@@ -480,7 +481,7 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
                             labelLower === 'null' ||
                             labelLower === 'undefined';
       
-      if (isGenericLabel && !validated.label.includes('unreadable')) {
+      if (isGenericLabel && !labelLower.includes('unreadable')) {
         console.error(`[Visual Pipeline - Parse] ⚠️ CRITICAL: Component ${validated.id} has FORBIDDEN generic label: "${validated.label}"`);
         console.error(`[Visual Pipeline - Parse]   This violates OCR-First mandate. Component should have extracted text.`);
         console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);

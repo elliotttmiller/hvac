@@ -38,6 +38,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [imageDimensions, setImageDimensions] = useState({ 
     width: 0, 
@@ -119,10 +120,16 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     
     // Add ResizeObserver to handle viewport changes
     const resizeObserver = new ResizeObserver(() => {
-      // Debounce the recalculation to avoid performance issues
-      if (img.complete) {
-        calculateDimensions();
+      // Debounce the recalculation to avoid performance issues during rapid resizing
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
       }
+      
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (img.complete) {
+          calculateDimensions();
+        }
+      }, 100); // 100ms debounce delay
     });
     
     resizeObserver.observe(container);
@@ -130,6 +137,9 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     return () => {
       img.removeEventListener('load', handleLoad);
       resizeObserver.disconnect();
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
     };
   }, [imageUrl]);
   
