@@ -5,28 +5,39 @@
 
 export const REFINE_SYSTEM_INSTRUCTION = `
 ### IDENTITY
-You are a **Lead Engineering Auditor** responsible for Quality Assurance and Correction.
+You are a **Lead Engineering Auditor** responsible for Quality Assurance and Correction with expertise in OCR validation.
 
 ### MISSION
 Review initial AI-generated component detections against the full blueprint image.
-Identify and fix errors, false positives, and missing components.
+Identify and fix errors, false positives, missing components, and incorrect text extraction.
 
 ### AUDIT CHECKLIST
-1. **False Positives**: Text/annotations incorrectly detected as equipment
-2. **Missing Components**: Equipment visible but not detected
-3. **Incorrect Labels**: Wrong component type or misread tags
-4. **Broken Connections**: Incomplete or incorrect connectivity traces
-5. **Duplicate Detections**: Same component detected multiple times
+1. **Missing Text Labels**: Components with visible tags that were marked "unknown" or have generic labels
+2. **Incorrect OCR**: Misread tags due to rotation or occlusion
+3. **False Positives**: Text/annotations incorrectly detected as equipment
+4. **Missing Components**: Equipment visible but not detected
+5. **Incorrect Component Types**: Wrong classification or misidentified symbols
+6. **Broken Connections**: Incomplete or incorrect connectivity traces
+7. **Duplicate Detections**: Same component detected multiple times
+
+### CRITICAL PRIORITY: TEXT EXTRACTION
+- **PRIMARY FOCUS**: Verify ALL visible text labels have been extracted correctly
+- If a component has visible text but label is missing/wrong → CORRECT IT
+- Handle rotated text (0°, 90°, 180°, 270°) correctly
+- "unknown" labels are FORBIDDEN unless text is genuinely unreadable (>80% occluded)
+- Generic labels like "vav", "ahu" are NOT acceptable if specific tags like "VAV-101" are visible
 
 ### CORRECTION PROTOCOL
-- Remove false positives (text is NOT equipment)
-- Add genuinely missing components with proper bounding boxes
-- Fix incorrect component types
-- Repair broken or missing connections
-- Merge duplicate detections
+- **ADD** missing text labels to components with visible tags
+- **CORRECT** misread OCR (check for rotation issues)
+- **REMOVE** false positives (text annotations are NOT equipment)
+- **ADD** genuinely missing components with proper bounding boxes
+- **FIX** incorrect component types
+- **REPAIR** broken or missing connections
+- **MERGE** duplicate detections
 
 ### OUTPUT
-Return corrected JSON in the same format as the input.
+Return corrected JSON in the same format as the input. Focus on achieving 100% text extraction accuracy.
 `;
 
 /**
@@ -38,7 +49,7 @@ Return corrected JSON in the same format as the input.
 export function generateRefinePrompt(currentJson: any): string {
   return `
 **ROLE**: Lead Engineering Auditor
-**TASK**: Quality Assurance & Correction
+**TASK**: Quality Assurance & Correction with OCR-First Priority
 
 **CURRENT FINDINGS**:
 \`\`\`json
@@ -49,22 +60,31 @@ ${JSON.stringify(currentJson, null, 2)}
 1. Review the full blueprint image carefully
 2. Compare against the CURRENT FINDINGS JSON above
 3. Identify and list:
+   - **MISSING TEXT LABELS**: Components with visible tags but missing/generic labels (HIGHEST PRIORITY)
+   - **INCORRECT OCR**: Misread tags (check for rotation: 0°, 90°, 180°, 270°)
    - **MISSING COMPONENTS**: Equipment visible in the image but not in the JSON
    - **FALSE POSITIVES**: Items in JSON that are actually text/annotations, not equipment
-   - **INCORRECT LABELS**: Misread tags or wrong component types
+   - **INCORRECT TYPES**: Wrong component classification
    - **BROKEN CONNECTIONS**: Missing or incorrect connection traces
 
 **CRITICAL RULES**:
+- **OCR-FIRST**: Text extraction is your PRIMARY objective
+- If you see a label like "VAV-101" but the component has "label": "vav" → CORRECT IT to "VAV-101"
+- If you see a label but it's marked "unknown" → EXTRACT the text and update the label
+- Handle rotated text correctly - read at all angles
 - Text annotations (room labels, dimensions, notes) are NOT components
 - Every component must have a clear visual representation (symbol/equipment)
 - Connection lines must physically connect components (follow the actual lines)
 - Duct sizing labels (e.g., "24x12") are NOT equipment
 
+**OBJECTIVE**: Zero "unknown" or generic labels on components with readable text
+
 **OUTPUT**:
 Return the **CORRECTED** JSON with:
+- Text labels extracted and corrected (PRIMARY)
 - False positives removed
 - Missing components added
-- Labels corrected
+- Component types corrected
 - Connections repaired
 
 Use the same JSON format as the input. Maintain all valid detections.

@@ -51,6 +51,8 @@ function getPromptsForBlueprintType(blueprintType: BlueprintType): {
  */
 export async function analyzeVisual(imageData: string): Promise<VisualAnalysisResult> {
   try {
+    console.log('[Visual Pipeline] Starting analysis...');
+    
     // Check cache first
     const cache = getSemanticCache();
     const cacheKey = `visual:${imageData.substring(0, 100)}`;
@@ -58,27 +60,41 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     if (config.features.semanticCache) {
       const cached = await cache.get<VisualAnalysisResult>(cacheKey);
       if (cached) {
-        console.log('Visual analysis cache hit');
+        console.log('[Visual Pipeline] Cache hit - returning cached result');
         return cached;
       }
     }
 
     // Step 1: Detect blueprint type (P&ID vs HVAC)
-    console.log('Detecting blueprint type (P&ID vs HVAC)...');
+    console.log('[Visual Pipeline] Step 1: Detecting blueprint type (P&ID vs HVAC)...');
     const blueprintType = await detectBlueprintType(imageData);
-    console.log(`Blueprint type detected: ${blueprintType}`);
+    console.log(`[Visual Pipeline] Blueprint type detected: ${blueprintType}`);
 
     // Determine if we should use tiling based on image size
+    console.log('[Visual Pipeline] Step 2: Checking if tiling is needed...');
     const useTiling = await shouldUseTiling(imageData);
+    console.log(`[Visual Pipeline] Tiling decision: ${useTiling ? 'ENABLED' : 'DISABLED'}`);
     
     let result: VisualAnalysisResult;
     
     if (useTiling) {
-      console.log('Using SOTA tiling approach for high-resolution image');
+      console.log('[Visual Pipeline] Using SOTA tiling approach for high-resolution image');
       result = await analyzeWithTiling(imageData, blueprintType);
     } else {
-      console.log('Using standard single-pass analysis');
+      console.log('[Visual Pipeline] Using standard single-pass analysis');
       result = await analyzeStandard(imageData, blueprintType);
+    }
+
+    // Validate result
+    if (!result.components || result.components.length === 0) {
+      console.warn('[Visual Pipeline] WARNING: Zero components detected - possible silent failure');
+      console.warn('[Visual Pipeline] This could indicate:');
+      console.warn('  1. API authentication failure');
+      console.warn('  2. Overly aggressive confidence filtering');
+      console.warn('  3. Tiling coordinate transformation error');
+      console.warn('  4. Image quality or format issue');
+    } else {
+      console.log(`[Visual Pipeline] SUCCESS: Detected ${result.components.length} components and ${result.connections.length} connections`);
     }
 
     // Cache the result
@@ -88,15 +104,20 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
 
     return result;
   } catch (error) {
-    console.error('Visual analysis error:', error);
+    console.error('[Visual Pipeline] CRITICAL ERROR:', error);
+    console.error('[Visual Pipeline] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     
-    // Return empty result on error
+    // Return empty result on error (but log extensively)
     return {
       components: [],
       connections: [],
       metadata: {
         total_components: 0,
         total_connections: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
     };
   }
@@ -157,70 +178,99 @@ Return ONLY "PID" or "HVAC" as a single word.
  * Standard analysis without tiling (for smaller images)
  */
 async function analyzeStandard(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
+  console.log('[Visual Pipeline - Standard] Starting single-pass analysis...');
   const client = getAIClient();
   
   // Select prompts based on blueprint type
   const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
-  const responseText = await client.generateVision({
-    imageData,
-    prompt,
-    options: {
-      systemInstruction,
-      responseMimeType: 'application/json',
-      responseSchema: VISUAL_ANALYSIS_SCHEMA,
-      temperature: 0.2,
-    },
-  });
+  console.log(`[Visual Pipeline - Standard] Using ${blueprintType} prompts`);
+  
+  try {
+    const responseText = await client.generateVision({
+      imageData,
+      prompt,
+      options: {
+        systemInstruction,
+        responseMimeType: 'application/json',
+        responseSchema: VISUAL_ANALYSIS_SCHEMA,
+        temperature: 0.2,
+      },
+    });
 
-  return parseVisualResponse(responseText);
+    console.log('[Visual Pipeline - Standard] Received response from AI');
+    const result = parseVisualResponse(responseText);
+    console.log(`[Visual Pipeline - Standard] Parsed ${result.components.length} components`);
+    return result;
+  } catch (error) {
+    console.error('[Visual Pipeline - Standard] Error during analysis:', error);
+    throw error;
+  }
 }
 
 /**
  * SOTA Analysis with Visual Grid Tiling + Map-Reduce + Self-Correction
  */
 async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
+  console.log('[Visual Pipeline - Tiling] Starting tiled analysis...');
   const client = getAIClient();
   
   // Select prompts based on blueprint type
   const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
   // Step 1: Tile the image into 2x2 grid with 10% overlap
-  console.log('Step 1: Tiling image...');
+  console.log('[Visual Pipeline - Tiling] Step 1: Tiling image into grid...');
   const tileResult = await tileImage(imageData, 'image/png', 10);
-  console.log(`Created ${tileResult.tiles.length} tiles`);
+  console.log(`[Visual Pipeline - Tiling] Created ${tileResult.tiles.length} tiles (2x2 grid with 10% overlap)`);
   
   // Step 2: MAP - Process tiles in parallel
-  console.log('Step 2: Processing tiles in parallel (MAP phase)...');
+  console.log('[Visual Pipeline - Tiling] Step 2: Processing tiles in parallel (MAP phase)...');
   const tileAnalyses = await Promise.all(
-    tileResult.tiles.map(async (tile) => {
-      const responseText = await client.generateVision({
-        imageData: tile.data,
-        prompt,
-        options: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: VISUAL_ANALYSIS_SCHEMA,
-          temperature: 0.2,
-        },
-      });
-      
-      const tileResult = parseVisualResponse(responseText);
-      return { tile, result: tileResult };
+    tileResult.tiles.map(async (tile, index) => {
+      console.log(`[Visual Pipeline - Tiling] Processing tile ${index + 1}/${tileResult.tiles.length} (position: ${tile.position})`);
+      try {
+        const responseText = await client.generateVision({
+          imageData: tile.data,
+          prompt,
+          options: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: VISUAL_ANALYSIS_SCHEMA,
+            temperature: 0.2,
+          },
+        });
+        
+        const tileResult = parseVisualResponse(responseText);
+        console.log(`[Visual Pipeline - Tiling] Tile ${index + 1}: Found ${tileResult.components.length} components`);
+        return { tile, result: tileResult };
+      } catch (error) {
+        console.error(`[Visual Pipeline - Tiling] ERROR in tile ${index + 1}:`, error);
+        // Return empty result for failed tile instead of failing entire pipeline
+        return { 
+          tile, 
+          result: { 
+            components: [], 
+            connections: [], 
+            metadata: { total_components: 0, total_connections: 0 } 
+          } 
+        };
+      }
     })
   );
   
   // Step 3: REDUCE - Transform and merge results
-  console.log('Step 3: Merging tile results (REDUCE phase)...');
+  console.log('[Visual Pipeline - Tiling] Step 3: Merging tile results (REDUCE phase)...');
   const mergedResult = mergeTileResults(tileAnalyses, tileResult);
+  console.log(`[Visual Pipeline - Tiling] After merge: ${mergedResult.components.length} components, ${mergedResult.connections.length} connections`);
   
   // Step 4: REFINE - Self-correction pass with full image
-  console.log('Step 4: Self-correction refinement...');
+  console.log('[Visual Pipeline - Tiling] Step 4: Self-correction refinement with full image...');
   const refinedResult = await refineWithFullImage(
     mergedResult,
     tileResult.fullImage.data,
     blueprintType
   );
+  console.log(`[Visual Pipeline - Tiling] After refinement: ${refinedResult.components.length} components, ${refinedResult.connections.length} connections`);
   
   return refinedResult;
 }
@@ -233,14 +283,29 @@ function mergeTileResults(
   tileAnalyses: Array<{ tile: any; result: VisualAnalysisResult }>,
   tileData: TileResult
 ): VisualAnalysisResult {
+  console.log('[Visual Pipeline - Merge] Starting merge of tile results...');
   const allComponents: DetectedComponent[] = [];
   const allConnections: Connection[] = [];
   
   // Transform each tile's components to global coordinates
   for (const { tile, result } of tileAnalyses) {
+    console.log(`[Visual Pipeline - Merge] Processing tile at position ${tile.position}: ${result.components.length} components`);
+    
     for (const component of result.components) {
-      // Transform local bbox to global coordinates
+      // Transform local bbox (0-1 relative to tile) to global coordinates (0-1 relative to full image)
       const globalBbox = localToGlobal(component.bbox, tile.bbox);
+      
+      // Validate transformed coordinates
+      if (globalBbox.some(coord => coord < 0 || coord > 1)) {
+        console.warn(`[Visual Pipeline - Merge] WARNING: Invalid global coordinates for component ${component.id}:`, globalBbox);
+        console.warn(`[Visual Pipeline - Merge]   Local bbox: ${component.bbox}`);
+        console.warn(`[Visual Pipeline - Merge]   Tile bbox: ${JSON.stringify(tile.bbox)}`);
+        // Clamp to valid range
+        globalBbox[0] = Math.max(0, Math.min(1, globalBbox[0]));
+        globalBbox[1] = Math.max(0, Math.min(1, globalBbox[1]));
+        globalBbox[2] = Math.max(0, Math.min(1, globalBbox[2]));
+        globalBbox[3] = Math.max(0, Math.min(1, globalBbox[3]));
+      }
       
       allComponents.push({
         ...component,
@@ -257,9 +322,9 @@ function mergeTileResults(
   }
   
   // Deduplicate components using IoU-based NMS
-  console.log(`Before deduplication: ${allComponents.length} components`);
+  console.log(`[Visual Pipeline - Merge] Before deduplication: ${allComponents.length} components`);
   const deduplicatedComponents = mergeComponents(allComponents, 0.5);
-  console.log(`After deduplication: ${deduplicatedComponents.length} components`);
+  console.log(`[Visual Pipeline - Merge] After deduplication: ${deduplicatedComponents.length} components (removed ${allComponents.length - deduplicatedComponents.length} duplicates)`);
   
   return {
     // mergeComponents returns a generic Component[]; cast to DetectedComponent[] to satisfy types
@@ -368,18 +433,45 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
     const components = Array.isArray(parsed.components) ? parsed.components : [];
     const connections = Array.isArray(parsed.connections) ? parsed.connections : [];
 
+    console.log(`[Visual Pipeline - Parse] Parsing response: ${components.length} components, ${connections.length} connections`);
+
     // Ensure all components have required fields
-    const validatedComponents = components.map((comp: any) => ({
-      id: comp.id || generateId(),
-      type: comp.type || 'unknown',
-      label: comp.label,
-      bbox: Array.isArray(comp.bbox) && comp.bbox.length === 4 
+    const validatedComponents = components.map((comp: any) => {
+      // Validate bbox coordinates
+      let bbox = Array.isArray(comp.bbox) && comp.bbox.length === 4 
         ? comp.bbox 
-        : [0, 0, 0, 0],
-      confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
-      rotation: comp.rotation,
-      meta: comp.meta || {},
-    }));
+        : [0, 0, 0, 0];
+      
+      // Ensure bbox coordinates are in valid range [0, 1]
+      bbox = bbox.map((coord: number) => {
+        if (typeof coord !== 'number' || isNaN(coord)) {
+          console.warn(`[Visual Pipeline - Parse] Invalid coordinate value: ${coord}, using 0`);
+          return 0;
+        }
+        if (coord < 0 || coord > 1) {
+          console.warn(`[Visual Pipeline - Parse] Coordinate out of range [0,1]: ${coord}, clamping`);
+          return Math.max(0, Math.min(1, coord));
+        }
+        return coord;
+      });
+
+      const validated = {
+        id: comp.id || generateId(),
+        type: comp.type || 'unknown',
+        label: comp.label || comp.type || 'unlabeled',
+        bbox: bbox as [number, number, number, number],
+        confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
+        rotation: comp.rotation,
+        meta: comp.meta || {},
+      };
+
+      // Log warning if label is missing or generic
+      if (!comp.label || comp.label === 'unknown' || comp.label === validated.type) {
+        console.warn(`[Visual Pipeline - Parse] Component ${validated.id} has generic/missing label: "${validated.label}"`);
+      }
+
+      return validated;
+    });
 
     // Ensure all connections have required fields
     const validatedConnections = connections.map((conn: any) => ({
@@ -399,14 +491,15 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       },
     };
   } catch (error) {
-    console.error('Failed to parse visual response:', error);
-    console.error('Response text:', responseText);
+    console.error('[Visual Pipeline - Parse] Failed to parse visual response:', error);
+    console.error('[Visual Pipeline - Parse] Response text preview:', responseText.substring(0, 500));
     return {
       components: [],
       connections: [],
       metadata: {
         total_components: 0,
         total_connections: 0,
+        parse_error: error instanceof Error ? error.message : 'Unknown parse error',
       },
     };
   }

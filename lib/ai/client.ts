@@ -45,10 +45,23 @@ export class AIClient {
     this.model = model || config.ai.model;
     
     if (!this.apiKey) {
-      throw new Error(
-        `AI API key not configured. Set VITE_AI_API_KEY or VITE_${this.provider.toUpperCase()}_API_KEY environment variable.`
-      );
+      const errorMsg = `AI API key not configured. Set VITE_AI_API_KEY or VITE_${this.provider.toUpperCase()}_API_KEY environment variable.`;
+      console.error('[AI Client]', errorMsg);
+      console.error('[AI Client] Current provider:', this.provider);
+      console.error('[AI Client] Available env vars:', {
+        VITE_AI_API_KEY: !!import.meta.env.VITE_AI_API_KEY,
+        VITE_GEMINI_API_KEY: !!import.meta.env.VITE_GEMINI_API_KEY,
+        VITE_OPENAI_API_KEY: !!import.meta.env.VITE_OPENAI_API_KEY,
+        VITE_ANTHROPIC_API_KEY: !!import.meta.env.VITE_ANTHROPIC_API_KEY,
+      });
+      throw new Error(errorMsg);
     }
+
+    console.log('[AI Client] Initialized:', {
+      provider: this.provider,
+      model: this.model,
+      hasApiKey: true,
+    });
 
     // Initialize provider-specific client
     this.client = this.initializeClient();
@@ -321,9 +334,20 @@ export class AIClient {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        return await fn();
+        const result = await fn();
+        if (attempt > 0) {
+          console.log(`[AI Client] Request succeeded after ${attempt} retry attempts`);
+        }
+        return result;
       } catch (error: any) {
         lastError = error;
+
+        // Log all errors for debugging
+        console.error(`[AI Client] Request failed (attempt ${attempt + 1}/${retries + 1}):`, {
+          status: error?.status,
+          message: error?.message,
+          name: error?.name,
+        });
 
         // Check if it's a rate limit error (429)
         const isRateLimit = 
@@ -331,8 +355,23 @@ export class AIClient {
           error?.message?.includes('429') ||
           error?.message?.toLowerCase().includes('rate limit');
 
+        // Check for authentication errors
+        const isAuthError = 
+          error?.status === 401 || 
+          error?.status === 403 ||
+          error?.message?.toLowerCase().includes('api key') ||
+          error?.message?.toLowerCase().includes('unauthorized') ||
+          error?.message?.toLowerCase().includes('forbidden');
+
+        if (isAuthError) {
+          console.error('[AI Client] AUTHENTICATION ERROR - Check your API key configuration');
+          console.error('[AI Client] Verify VITE_AI_API_KEY or VITE_GEMINI_API_KEY is set correctly');
+          throw error; // Don't retry auth errors
+        }
+
         if (!isRateLimit || attempt === retries) {
           // Not a rate limit error, or we've exhausted retries
+          console.error(`[AI Client] Request failed permanently after ${attempt + 1} attempts`);
           throw error;
         }
 
@@ -343,7 +382,7 @@ export class AIClient {
           : baseDelay;
 
         console.warn(
-          `Rate limit hit. Retrying in ${delay}ms (attempt ${attempt + 1}/${retries})...`
+          `[AI Client] Rate limit hit. Retrying in ${delay}ms (attempt ${attempt + 1}/${retries})...`
         );
 
         await this.sleep(delay);
