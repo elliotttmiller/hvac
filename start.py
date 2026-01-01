@@ -30,6 +30,7 @@ This file is zero-dependency and runs on Windows/macOS/Linux with Python 3.8+.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import logging
 import os
@@ -50,6 +51,11 @@ LOG_DIR = ROOT / "logs"
 
 # Performance metrics tracking
 TIMINGS: Dict[str, float] = {}
+
+# Output truncation constants
+MAX_DISPLAYED_ERRORS = 15
+MAX_DISPLAYED_ITEMS = 10
+MAX_DISPLAYED_LINES = 20
 
 
 def ensure_log_directory() -> None:
@@ -120,6 +126,7 @@ def log_step(step_name: str) -> None:
 
 def track_time(func):
     """Decorator to track execution time of functions."""
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -166,14 +173,20 @@ def read_env_file(path: Path) -> Dict[str, str]:
                 k = k.strip()
                 v = v.strip()
                 
-                # Remove inline comments
+                # Remove inline comments (only if not inside quotes)
+                # Simple heuristic: if the value is quoted, keep the # inside
                 if "#" in v:
-                    # Only remove if # is not inside quotes
-                    if not (v.startswith('"') or v.startswith("'")):
+                    # Check if value appears to be quoted
+                    is_quoted = (v.startswith('"') and v.endswith('"')) or \
+                                (v.startswith("'") and v.endswith("'"))
+                    if not is_quoted:
+                        # Remove inline comment
                         v = v.split("#")[0].strip()
                 
-                # Remove quotes
-                v = v.strip('"').strip("'")
+                # Remove surrounding quotes
+                if (v.startswith('"') and v.endswith('"')) or \
+                   (v.startswith("'") and v.endswith("'")):
+                    v = v[1:-1]
                 
                 env[k] = v
                 logger.debug(f"Loaded env variable: {k}={v[:20]}..." if len(v) > 20 else f"Loaded env variable: {k}={v}")
@@ -638,10 +651,10 @@ def validate_env_keys(example: Path, actual_files: List[Path]) -> Tuple[List[str
     
     if missing:
         logger.error(f"❌ Missing {len(missing)} required environment variable(s):")
-        for key in missing[:10]:  # Show first 10
+        for key in missing[:MAX_DISPLAYED_ITEMS]:
             logger.error(f"   • {key}")
-        if len(missing) > 10:
-            logger.error(f"   ... and {len(missing) - 10} more")
+        if len(missing) > MAX_DISPLAYED_ITEMS:
+            logger.error(f"   ... and {len(missing) - MAX_DISPLAYED_ITEMS} more")
         logger.error("")
         logger.error("💡 Recommendation:")
         logger.error("   Copy the missing variables from .env.example to your .env file")
@@ -680,11 +693,11 @@ def run_typescript_check() -> bool:
             logger.error(f"   Found {error_count} type error(s)")
             logger.error("")
             logger.error("   First few errors:")
-            for line in error_lines[:15]:  # Show first 15 lines
+            for line in error_lines[:MAX_DISPLAYED_ERRORS]:
                 logger.error(f"   {line}")
             
-            if len(error_lines) > 15:
-                logger.error(f"   ... and {len(error_lines) - 15} more lines")
+            if len(error_lines) > MAX_DISPLAYED_ERRORS:
+                logger.error(f"   ... and {len(error_lines) - MAX_DISPLAYED_ERRORS} more lines")
         
         if err:
             logger.error(f"   Error details: {err[:500]}")
@@ -739,7 +752,7 @@ def run_build(should_run_build: bool = False) -> bool:
         
         if err:
             logger.error("   Error output:")
-            for line in err.split('\n')[:20]:
+            for line in err.split('\n')[:MAX_DISPLAYED_LINES]:
                 if line.strip():
                     logger.error(f"   {line}")
         
