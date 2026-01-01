@@ -7,7 +7,6 @@ export const SUPPORTED_MIME_TYPES = {
   // Images
   'image/png': ['png'],
   'image/jpeg': ['jpg', 'jpeg'],
-  'image/jpg': ['jpg'],
   
   // Documents
   'application/pdf': ['pdf'],
