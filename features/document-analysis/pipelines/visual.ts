@@ -194,7 +194,7 @@ async function analyzeStandard(imageData: string, blueprintType: BlueprintType):
         systemInstruction,
         responseMimeType: 'application/json',
         responseSchema: VISUAL_ANALYSIS_SCHEMA,
-        temperature: 0.2,
+        temperature: 0.1, // Very low for deterministic OCR extraction
       },
     });
 
@@ -218,10 +218,10 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
   // Select prompts based on blueprint type
   const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
-  // Step 1: Tile the image into 2x2 grid with 10% overlap
+  // Step 1: Tile the image into 2x2 grid with 15% overlap (optimized for edge detection)
   console.log('[Visual Pipeline - Tiling] Step 1: Tiling image into grid...');
-  const tileResult = await tileImage(imageData, 'image/png', 10);
-  console.log(`[Visual Pipeline - Tiling] Created ${tileResult.tiles.length} tiles (2x2 grid with 10% overlap)`);
+  const tileResult = await tileImage(imageData, 'image/png', 15);
+  console.log(`[Visual Pipeline - Tiling] Created ${tileResult.tiles.length} tiles (2x2 grid with 15% overlap)`);
   
   // Step 2: MAP - Process tiles in parallel
   console.log('[Visual Pipeline - Tiling] Step 2: Processing tiles in parallel (MAP phase)...');
@@ -236,7 +236,7 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
             systemInstruction,
             responseMimeType: 'application/json',
             responseSchema: VISUAL_ANALYSIS_SCHEMA,
-            temperature: 0.2,
+            temperature: 0.1, // Very low for deterministic OCR extraction
           },
         });
         
@@ -465,9 +465,27 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         meta: comp.meta || {},
       };
 
-      // Log warning if label is missing or generic
-      if (!comp.label || comp.label === 'unknown' || comp.label === validated.type) {
-        console.warn(`[Visual Pipeline - Parse] Component ${validated.id} has generic/missing label: "${validated.label}"`);
+      // CRITICAL VALIDATION: Reject generic labels for instruments
+      const isGenericLabel = !comp.label || 
+                            comp.label === 'unknown' || 
+                            comp.label === validated.type ||
+                            comp.label.toLowerCase().includes('unknown') ||
+                            comp.label.toLowerCase() === 'unlabeled' ||
+                            comp.label.toLowerCase() === 'instrument' ||
+                            comp.label.toLowerCase() === 'valve' ||
+                            comp.label.toLowerCase() === 'sensor';
+      
+      if (isGenericLabel) {
+        console.error(`[Visual Pipeline - Parse] ⚠️ CRITICAL: Component ${validated.id} has FORBIDDEN generic label: "${validated.label}"`);
+        console.error(`[Visual Pipeline - Parse]   This violates OCR-First mandate. Component should have extracted text.`);
+        console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);
+        console.error(`[Visual Pipeline - Parse]   Reasoning: ${validated.meta?.reasoning || 'Not provided'}`);
+        
+        // Mark as OCR failure if truly generic
+        if (isGenericLabel && !validated.label.includes('unreadable')) {
+          validated.label = `unreadable-OCR-failed-${validated.type}`;
+          validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
+        }
       }
 
       return validated;
