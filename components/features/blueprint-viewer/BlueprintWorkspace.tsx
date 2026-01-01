@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from './InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../../../services/geminiService';
-import { analyzeDocument } from '../../../hvac/features/document-analysis/orchestrator';
+import { analyzeDocument } from '../../../features/document-analysis/orchestrator';
 import { DetectedObject, ValidationIssue } from '../../../types';
 import { ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react';
 
