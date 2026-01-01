@@ -70,7 +70,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     const canvas = canvasRef.current;
     const img = imageRef.current;
     
-    if (!canvas || !img || scale.x === 1) return;
+    if (!canvas || !img || scale.x <= 0) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;

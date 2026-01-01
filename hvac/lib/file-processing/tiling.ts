@@ -1,6 +1,12 @@
 /**
  * Visual Grid Tiling - SOTA Image Processing
  * Splits high-resolution images into overlapping tiles for enhanced precision
+ * 
+ * BROWSER-ONLY: This implementation uses Canvas API which requires a browser environment.
+ * For server-side usage, consider:
+ * 1. Using a headless browser (Puppeteer/Playwright)
+ * 2. Using node-canvas library
+ * 3. Using sharp library for image processing
  */
 
 export interface TileResult {

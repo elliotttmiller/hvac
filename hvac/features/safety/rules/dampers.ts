@@ -42,7 +42,13 @@ export interface DamperValidationResult {
 
 /**
  * Required damper ratings based on location
- * Per IBC Table 716.3.2.1
+ * Per IBC Table 716.3.2.1 and NFPA 90A Section 4.3
+ * 
+ * References:
+ * - IBC 716.3: Fire Resistance-Rated Construction Opening Protectives
+ * - IBC 716.3.2: Fire Dampers
+ * - IBC 716.3.3: Smoke Dampers
+ * - NFPA 90A 4.3.6: Damper Accessibility Requirements
  */
 const LOCATION_REQUIREMENTS: Record<DamperLocation, {
   minRating: number;

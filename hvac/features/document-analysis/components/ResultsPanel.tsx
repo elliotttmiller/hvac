@@ -415,7 +415,7 @@ const ChatTab: React.FC<{
           type="text"
           value={currentQuery}
           onChange={e => setCurrentQuery(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSubmit()}
+          onKeyPress={e => e.key === 'Enter' && onSubmit()}
           placeholder="Ask a question..."
           disabled={isQuerying}
           style={{

@@ -37,7 +37,13 @@ export interface CostSummary {
 
 /**
  * Cost per 1M tokens for various models (as of 2024)
- * These are approximate rates and should be updated regularly
+ * 
+ * IMPORTANT: These rates should be updated regularly as pricing changes.
+ * Last updated: January 2026
+ * Source: Official provider pricing pages
+ * 
+ * TODO: Consider moving to config file or fetching from external API
+ * TODO: Add version tracking and expiration dates for pricing data
  */
 const MODEL_COSTS: Record<string, { input: number; output: number }> = {
   // Gemini models

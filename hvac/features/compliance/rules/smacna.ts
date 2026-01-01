@@ -27,7 +27,12 @@ export interface DuctValidationResult {
  * SMACNA Table 1-1: Rectangular Duct - Minimum Sheet Metal Thickness
  * Pressure classes and required gauge based on duct dimensions
  * 
+ * Reference: SMACNA HVAC Duct Construction Standards - Metal and Flexible
+ * 
  * Structure: [maxDimension, gauge]
+ * - Per SMACNA Chapter 1, Table 1-1
+ * - Based on duct static pressure classification
+ * - Dimensions in inches, gauge is sheet metal thickness
  */
 const RECTANGULAR_GAUGE_TABLE: Record<PressureClass, Array<[number, number]>> = {
   'negative': [
