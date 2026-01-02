@@ -10,7 +10,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const root = path.resolve(path.dirname(__filename), '..', '..');
+
+// Use the explicit workspace root for this project. Do NOT attempt to
+// infer the root via relative path traversal — we want to clean only
+// inside the hvac workspace.
+const DEFAULT_ROOT = 'D:\\AMD\\secrets\\hvac\\extra\\hvac';
+const root = path.resolve(DEFAULT_ROOT);
+console.log(`Using prebuild root: ${root}`);
 
 const targets = [
   path.join(root, '.next'),
