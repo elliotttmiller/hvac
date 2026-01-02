@@ -174,30 +174,31 @@ const OverviewTab: React.FC<{ result: UniversalDocumentResult }> = ({ result }) 
           <InfoRow label="Components Detected" value={result.visual.components.length} />
           <InfoRow label="Connections" value={result.visual.connections.length} />
           
-          {/* Process Log Section - Terminal Style */}
+          {/* Process Log Section - Transplanted from Legacy InspectorPanel */}
           {result.visual.metadata?.process_log && (
             <div style={{ marginTop: '24px' }}>
               <h3 style={{ 
                 margin: '0 0 12px 0',
-                color: '#6B7280',
-                fontSize: '12px',
+                color: '#64748B',
+                fontSize: '11px',
                 textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                fontWeight: '600'
+                letterSpacing: '0.1em',
+                fontWeight: '700'
               }}>
                 Process Log
               </h3>
               <div style={{
-                backgroundColor: '#1F2937',
-                padding: '16px',
-                borderRadius: '6px',
-                fontFamily: 'monospace',
                 fontSize: '12px',
-                color: '#10B981',
-                border: '1px solid #374151',
-                lineHeight: '1.6',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
+                color: '#94A3B8',
+                lineHeight: '1.625',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                padding: '12px',
+                backgroundColor: '#0F172A',
+                borderRadius: '8px',
+                border: '1px solid #1E293B',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                whiteSpace: 'pre-wrap'
               }}>
                 {result.visual.metadata.process_log}
               </div>
