@@ -2,12 +2,16 @@
  * Visual Pipeline - Blueprint Analysis (SOTA Implementation)
  * Implements Visual Grid Tiling + Map-Reduce + Self-Correction
  * Detects HVAC components and connections using configured AI provider
+ * 
+ * Enhanced with P&ID-specific detection for process instrumentation diagrams
  */
 
 import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '../types';
+import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT } from '../prompts/visual/detect';
+import { PID_DETECT_SYSTEM_INSTRUCTION, PID_DETECT_PROMPT, PID_REFINE_SYSTEM_INSTRUCTION, generatePIDRefinePrompt } from '../prompts/visual/detect-pid';
 import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT, PID_DETECT_PROMPT } from '../prompts/visual/detect';
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
 import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
@@ -19,8 +23,35 @@ import { getImageDimensions } from '../../../lib/file-processing/converters';
 // can pass lightweight context such as whether the image is a P&ID/schematic.
 
 /**
+ * Blueprint type for specialized routing
+ */
+type BlueprintType = 'PID' | 'HVAC';
+
+/**
+ * Get appropriate prompts based on blueprint type
+ */
+function getPromptsForBlueprintType(blueprintType: BlueprintType): {
+  systemInstruction: string;
+  prompt: string;
+} {
+  if (blueprintType === 'PID') {
+    return {
+      systemInstruction: PID_DETECT_SYSTEM_INSTRUCTION,
+      prompt: PID_DETECT_PROMPT,
+    };
+  }
+  
+  return {
+    systemInstruction: DETECT_SYSTEM_INSTRUCTION,
+    prompt: DETECT_PROMPT,
+  };
+}
+
+
+/**
  * Analyze blueprint for components and connections
  * Uses SOTA tiling approach for high-resolution images
+ * Automatically detects P&ID vs HVAC blueprints and routes to appropriate pipeline
  */
 export async function analyzeVisual(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   try {
@@ -36,6 +67,11 @@ export async function analyzeVisual(imageData: string, opts?: { isSchematic?: bo
       }
     }
 
+    // Step 1: Detect blueprint type (P&ID vs HVAC)
+    console.log('Detecting blueprint type (P&ID vs HVAC)...');
+    const blueprintType = await detectBlueprintType(imageData);
+    console.log(`Blueprint type detected: ${blueprintType}`);
+
     // Determine if we should use tiling based on image size
     const useTiling = await shouldUseTiling(imageData);
     
@@ -43,6 +79,10 @@ export async function analyzeVisual(imageData: string, opts?: { isSchematic?: bo
     
     if (useTiling) {
       console.log('Using SOTA tiling approach for high-resolution image');
+      result = await analyzeWithTiling(imageData, blueprintType);
+    } else {
+      console.log('Using standard single-pass analysis');
+      result = await analyzeStandard(imageData, blueprintType);
       result = await analyzeWithTiling(imageData, opts);
     } else {
       console.log('Using standard single-pass analysis');
@@ -71,8 +111,68 @@ export async function analyzeVisual(imageData: string, opts?: { isSchematic?: bo
 }
 
 /**
+ * Detect if blueprint is a P&ID (process instrumentation) or HVAC (ductwork) diagram
+ * Uses heuristic: presence of ISA-5.1 tags (e.g., PDI-1401, TT-1402) indicates P&ID
+ */
+async function detectBlueprintType(imageData: string): Promise<BlueprintType> {
+  const client = getAIClient();
+  
+  // Quick heuristic check prompt
+  const detectionPrompt = `
+Analyze this engineering diagram and determine its type.
+
+**INDICATORS OF P&ID (Process & Instrumentation Diagram):**
+- Instrument bubbles/circles with ISA-5.1 tags like: PDI, TT, FIC, PI, LT, TIC
+- Tag format: LETTERS-NUMBERS (e.g., "PDI-1401", "TT-1402")
+- Focus on control instrumentation, valves, process lines
+- Dashed signal lines connecting instruments
+
+**INDICATORS OF HVAC (Heating/Ventilation/Air Conditioning):**
+- Ductwork (rectangular air passages)
+- VAV boxes, AHUs (Air Handling Units)
+- Dampers, diffusers, grilles
+- Duct sizing labels (e.g., "24x12")
+
+Return ONLY "PID" or "HVAC" as a single word.
+`;
+
+  try {
+    const response = await client.generateVision({
+      imageData,
+      prompt: detectionPrompt,
+      options: {
+        systemInstruction: 'You are an engineering document classifier. Respond with ONLY "PID" or "HVAC".',
+        temperature: 0.1,
+      },
+    });
+
+    const cleaned = response.trim().toUpperCase();
+    
+    // Check for P&ID indicators (all uppercase for case-insensitive matching)
+    if (cleaned.includes('PID') || cleaned.includes('INSTRUMENTATION')) {
+      return 'PID';
+    }
+    
+    // Default to HVAC for backward compatibility
+    return 'HVAC';
+  } catch (error) {
+    console.warn('Blueprint type detection failed, defaulting to HVAC:', error);
+    return 'HVAC';
+  }
+}
+
+/**
  * Standard analysis without tiling (for smaller images)
  */
+async function analyzeStandard(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
+  const client = getAIClient();
+  
+  // Select prompts based on blueprint type
+  const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
+  
+  const responseText = await client.generateVision({
+    imageData,
+    prompt,
 async function analyzeStandard(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   const client = getAIClient();
   // Use the orchestrator-provided hint if available; otherwise default to generic prompt
@@ -82,7 +182,7 @@ async function analyzeStandard(imageData: string, opts?: { isSchematic?: boolean
     imageData,
     prompt: promptToUse,
     options: {
-      systemInstruction: DETECT_SYSTEM_INSTRUCTION,
+      systemInstruction,
       responseMimeType: 'application/json',
       responseSchema: VISUAL_ANALYSIS_SCHEMA,
       temperature: 0.2,
@@ -95,8 +195,12 @@ async function analyzeStandard(imageData: string, opts?: { isSchematic?: boolean
 /**
  * SOTA Analysis with Visual Grid Tiling + Map-Reduce + Self-Correction
  */
+async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
 async function analyzeWithTiling(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   const client = getAIClient();
+  
+  // Select prompts based on blueprint type
+  const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
   // Step 1: Tile the image into 2x2 grid with 10% overlap
   console.log('Step 1: Tiling image...');
@@ -112,9 +216,10 @@ async function analyzeWithTiling(imageData: string, opts?: { isSchematic?: boole
 
       const responseText = await client.generateVision({
         imageData: tile.data,
+        prompt,
         prompt: promptToUse,
         options: {
-          systemInstruction: DETECT_SYSTEM_INSTRUCTION,
+          systemInstruction,
           responseMimeType: 'application/json',
           responseSchema: VISUAL_ANALYSIS_SCHEMA,
           temperature: 0.2,
@@ -134,7 +239,8 @@ async function analyzeWithTiling(imageData: string, opts?: { isSchematic?: boole
   console.log('Step 4: Self-correction refinement...');
   const refinedResult = await refineWithFullImage(
     mergedResult,
-    tileResult.fullImage.data
+    tileResult.fullImage.data,
+    blueprintType
   );
   
   return refinedResult;
@@ -192,22 +298,32 @@ function mergeTileResults(
  */
 async function refineWithFullImage(
   mergedResult: VisualAnalysisResult,
-  fullImageData: string
+  fullImageData: string,
+  blueprintType: BlueprintType
 ): Promise<VisualAnalysisResult> {
   const client = getAIClient();
   
-  // Generate refinement prompt with current results
-  const refinePrompt = generateRefinePrompt({
-    components: mergedResult.components,
-    connections: mergedResult.connections,
-  });
+  // Generate refinement prompt with current results based on blueprint type
+  const refinePrompt = blueprintType === 'PID' 
+    ? generatePIDRefinePrompt({
+        components: mergedResult.components,
+        connections: mergedResult.connections,
+      })
+    : generateRefinePrompt({
+        components: mergedResult.components,
+        connections: mergedResult.connections,
+      });
+  
+  const refineSystemInstruction = blueprintType === 'PID' 
+    ? PID_REFINE_SYSTEM_INSTRUCTION 
+    : REFINE_SYSTEM_INSTRUCTION;
   
   // Call AI with full image for correction
   const responseText = await client.generateVision({
     imageData: fullImageData,
     prompt: refinePrompt,
     options: {
-      systemInstruction: REFINE_SYSTEM_INSTRUCTION,
+      systemInstruction: refineSystemInstruction,
       responseMimeType: 'application/json',
       responseSchema: VISUAL_ANALYSIS_SCHEMA,
       temperature: 0.1, // Very low temperature for correction
