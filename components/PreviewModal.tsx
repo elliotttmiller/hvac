@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Scan } from 'lucide-react';
 
 interface Props {
   path: string | null; // relative path from repo root
   open: boolean;
   onClose: () => void;
+  onAnalyze?: (path: string) => void; // New callback for analysis
 }
 
-const PreviewModal: React.FC<Props> = ({ path, open, onClose }) => {
+const PreviewModal: React.FC<Props> = ({ path, open, onClose, onAnalyze }) => {
   const [mime, setMime] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,13 +23,26 @@ const PreviewModal: React.FC<Props> = ({ path, open, onClose }) => {
   if (!open || !path) return null;
 
   const src = `/api/files/content?path=${encodeURIComponent(path)}`;
+  const canAnalyze = mime === 'image' || mime === 'pdf';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       <div className="relative w-[85vw] max-w-5xl h-[85vh] bg-[#0b0b0b] rounded-lg shadow-2xl overflow-hidden">
-        <div className="absolute right-3 top-3 z-20">
+        <div className="absolute right-3 top-3 z-20 flex gap-2">
+          {canAnalyze && onAnalyze && (
+            <button 
+              onClick={() => {
+                onAnalyze(path);
+                onClose();
+              }} 
+              className="px-3 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 flex items-center gap-2 text-zinc-100 text-sm font-medium transition-colors"
+            >
+              <Scan size={14} />
+              Analyze
+            </button>
+          )}
           <button onClick={onClose} className="w-8 h-8 rounded-md bg-white/6 hover:bg-white/10 flex items-center justify-center text-zinc-200">
             <X size={16} />
           </button>

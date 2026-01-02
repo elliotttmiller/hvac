@@ -12,6 +12,23 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Array<{ id: string; name: string; root: string }>>([]);
   const [activeProject, setActiveProject] = useState<string | null>(null);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [fileToAnalyze, setFileToAnalyze] = useState<string | null>(null);
+
+  // Fetch projects on mount
+  React.useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(d => {
+        setProjects(d.projects || []);
+        if (d.projects && d.projects.length > 0 && !activeProject) {
+          setActiveProject(d.projects[0].id);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch projects:', err);
+        setProjects([]);
+      });
+  }, []);
 
   React.useEffect(() => {
     // Update browser tab title based on current view
@@ -41,12 +58,21 @@ const App: React.FC = () => {
     setCurrentView(view);
   };
 
+  // Handle file analysis request from sidebar
+  const handleAnalyzeFile = (filePath: string) => {
+    setFileToAnalyze(filePath);
+    // Switch to analyzer view if not already there
+    if (currentView !== ViewState.ANALYZER) {
+      setCurrentView(ViewState.ANALYZER);
+    }
+  };
+
   const renderView = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
         return <Dashboard />;
       case ViewState.ANALYZER:
-        return <BlueprintWorkspace />;
+        return <BlueprintWorkspace fileToAnalyze={fileToAnalyze} onAnalyzed={() => setFileToAnalyze(null)} />;
       case ViewState.PROJECTS:
         return (
           <ProjectsPage
@@ -77,6 +103,7 @@ const App: React.FC = () => {
         setActiveProject(id);
         setCurrentView(ViewState.ANALYZER);
       }}
+      onAnalyzeFile={handleAnalyzeFile}
     >
         {renderView()}
 

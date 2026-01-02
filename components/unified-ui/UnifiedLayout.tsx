@@ -15,9 +15,11 @@ interface UnifiedLayoutProps {
   onSelectProject?: (id: string) => void;
   onProjectsChange?: (list: { id: string; name: string; root: string }[]) => void;
   onOpenProject?: (id: string) => void;
+  // File analysis callback
+  onAnalyzeFile?: (filePath: string) => void;
 }
 
-const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView, children, projects, activeProject, onSelectProject, onProjectsChange, onOpenProject }) => {
+const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView, children, projects, activeProject, onSelectProject, onProjectsChange, onOpenProject, onAnalyzeFile }) => {
   // Only show the "Explorer" sidebar in Analyzer mode
   const showContextSidebar = currentView === ViewState.ANALYZER;
   
@@ -85,6 +87,7 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
               onSelectProject={onSelectProject}
               onProjectsChange={onProjectsChange}
               onOpenProject={onOpenProject}
+              onAnalyzeFile={onAnalyzeFile}
             />
           </div>
 
