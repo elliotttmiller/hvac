@@ -49,6 +49,8 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     actualHeight: 0 
   });
   const [scale, setScale] = useState({ x: 1, y: 1 });
+  // Note: activeBoxId tracks hover state but currently unused as hover effects use CSS group-hover
+  // Kept for potential future enhancements (e.g., showing active box in external components)
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   
   // Update scale when image loads or container resizes - FIXED: Calculate exact rendered dimensions with object-fit:contain
@@ -223,7 +225,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
       {/* Interactive Hover Cards - Transplanted from Legacy InteractiveViewer */}
       {showBoundingBoxes && components.map(component => {
         const [x1, y1, x2, y2] = component.bbox;
-        // Convert normalized coordinates to percentage for positioning
+        // Convert normalized 0-1 coordinates to percentage (0-100) for CSS positioning
         const x = x1 * 100;
         const y = y1 * 100;
         const width = (x2 - x1) * 100;
