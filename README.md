@@ -23,6 +23,7 @@
 
 This project uses a clean, feature-first architecture with bicameral intelligence:
 
+
 ```
 hvac/
 ├── docs/              # All documentation
