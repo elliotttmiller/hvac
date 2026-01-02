@@ -14,6 +14,22 @@ const App: React.FC = () => {
   const [showCopilot, setShowCopilot] = useState(false);
   const [fileToAnalyze, setFileToAnalyze] = useState<string | null>(null);
 
+  // Fetch projects on mount
+  React.useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(d => {
+        setProjects(d.projects || []);
+        if (d.projects && d.projects.length > 0 && !activeProject) {
+          setActiveProject(d.projects[0].id);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch projects:', err);
+        setProjects([]);
+      });
+  }, []);
+
   React.useEffect(() => {
     // Update browser tab title based on current view
     const base = 'HVAC AI Platform';

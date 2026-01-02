@@ -19,6 +19,14 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0', // CRITICAL: Binds to all network interfaces for container access
         strictPort: true,
 
+        // Proxy API requests to the backend server
+        proxy: {
+          '/api': {
+            target: 'http://localhost:4000',
+            changeOrigin: true,
+          }
+        },
+
         // -----------------------------------------------------------------------
         // CLOUD & TUNNELING CONFIGURATION
         // -----------------------------------------------------------------------
