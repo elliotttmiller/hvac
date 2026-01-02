@@ -101,11 +101,11 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-2">Root Path</label>
+                <label className="block text-xs font-medium text-zinc-400 mb-2">Location (Optional)</label>
                 <input 
                   value={root} 
                   onChange={e => setRoot(e.target.value)} 
-                  placeholder="Relative path (e.g., ./projects)" 
+                  placeholder="Specify location (e.g., ./projects)" 
                   className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 transition-colors"
                 />
               </div>

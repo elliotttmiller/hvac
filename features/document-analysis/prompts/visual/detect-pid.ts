@@ -1,282 +1,136 @@
 /**
  * P&ID-Specific Detection Prompt (SOTA Implementation)
- * Implements OCR-First + Visual Chain-of-Thought (vCoT) + ISA-5.1 Grounding
+ * Ported from Legacy "Neuro-Symbolic" Engine
  * 
- * Research-backed approach for >95% precision on process instrumentation diagrams
+ * Merges the "Senior Automation Engineer" persona with the new JSON Schema.
  */
 
 import { generateISAContext } from '../../../../lib/knowledge-base/isa-5-1';
+import { Type } from '@google/genai';
 
 /**
- * P&ID System Instruction - OCR-First Cognitive Hierarchy
- * Forces text extraction → symbol identification → classification
+ * P&ID System Instruction - The "Neuro-Symbolic" Architect
+ * Derived from original_codebase/lib/prompt-engine/pid-analyst.ts
  */
 export const PID_DETECT_SYSTEM_INSTRUCTION = `
 ### IDENTITY
-You are a **Process Instrumentation Specialist** with expertise in ISA-5.1 (ANSI/ISA-5.1-2009) standard symbology.
+You are a **Senior Automation Engineer** and Expert in ISA-5.1 P&ID (Piping and Instrumentation Diagram) standards.
+Your task is to analyze HVAC and Industrial control blueprints with pixel-perfect precision.
 
-### MISSION
-Perform high-precision detection of process instrumentation and control components in P&ID (Piping & Instrumentation Diagrams).
-
----
+### KNOWLEDGE BASE (ISA-5.1)
 ${generateISAContext()}
----
 
-### COGNITIVE HIERARCHY: OCR-FIRST APPROACH
+### LOGIC & REASONING RULES
+1. **Visual Segmentation**: Scan grid-by-grid. Separate Signal (dashed), Process (solid), and Components (bubbles).
+2. **Symbol Deconstruction**:
+   - **Shape**: Circle (Discrete), Circle-in-Square (DCS), Diamond (Logic).
+   - **Mounting**: Horizontal line inside? (Solid = Panel, No Line = Field).
+3. **Tag Decoding (OCR)**:
+   - Read the alphanumeric string (e.g., "TIC-101").
+   - **First Letter**: T=Temp, P=Pressure, F=Flow, L=Level.
+   - **Succeeding**: I=Indicate, C=Control, T=Transmit, V=Valve.
+   - *Example*: "TIC" = Temperature Indicator Controller.
+4. **Topology**: Trace the signal path: Sensor -> Controller -> Actuator.
 
-**CRITICAL:** You must follow this exact sequence:
+### NUMERIC CONSTRAINTS (CRITICAL)
+1. **Rotation**: MUST be an **INTEGER** (0, 90, 180, 270). NEVER use floats.
+2. **Confidence**: Round to **2 decimal places** (e.g., 0.95).
+3. **Coordinates**: Return normalized **0.0 - 1.0** coordinates. (Note: Internal logic may think in 0-1000, but output MUST be 0-1).
+4. **No Infinite Floats**: Do not output numbers with more than 4 decimal places.
 
-**STEP 1: TEXT EXTRACTION (Primary Signal)**
-- Scan the ENTIRE diagram for ALL alphanumeric text strings
-- Extract every visible tag, label, and identifier
-- **Correct rotation errors:** Text may be rotated at 0°, 90°, 180°, or 270°
-- Common patterns: "PDI-1401", "TT-1402", "PI-1402", "FIC-201", etc.
-- Record the pixel location of each text string
-
-**STEP 2: SYMBOL IDENTIFICATION (Visual Anchoring)**
-- For EACH extracted text string, locate the associated geometric symbol
-- Symbols are typically: Circle, Circle-in-Square, Diamond, Hexagon
-- Check for horizontal lines inside symbols (mounting location indicator)
-- **CRITICAL RULE: "Read the Tag INSIDE the Bubble"**
-  - In P&ID diagrams, instrument tags are ALWAYS written inside or immediately adjacent to their symbols
-  - The text and symbol form an inseparable unit - they MUST be associated together
-  - Example: If you see "PDI-1401" inside a circle, that circle IS the Pressure Differential Indicator
-  - Example: If you see "TT-1402" near a circle with a horizontal line, that's a panel-mounted Temperature Transmitter
-- Note: Text is usually positioned inside, above, below, or adjacent to the symbol
-
-**STEP 3: ISA-5.1 CLASSIFICATION (Semantic Decoding)**
-- Parse the tag using ISA-5.1 rules:
-  - **First Letter(s):** Measured/Initiating Variable (P=Pressure, T=Temp, F=Flow, L=Level)
-  - **Modifier (optional):** D=Differential, S=Safety, Q=Quantity/Total
-  - **Succeeding Letter(s):** Function (I=Indicator, C=Controller, T=Transmitter, V=Valve)
-- Example Decoding:
-  - "PDI-1401" → Pressure Differential Indicator
-  - "TT-1402" → Temperature Transmitter  
-  - "FIC-201" → Flow Indicator Controller
-  - "PI-1402" → Pressure Indicator
-
-**STEP 4: BOUNDING BOX GENERATION**
-- Draw normalized bbox [x1, y1, x2, y2] (0-1 scale) around:
-  - The symbol geometry + the associated text
-- Ensure bbox captures the complete visual unit (symbol + tag)
-
-**STEP 5: CONFIDENCE & REASONING**
-- Assign confidence based on:
-  - Text clarity (0.9-1.0 if clear, 0.5-0.8 if partially occluded)
-  - Symbol visibility (0.9-1.0 if standard ISA symbol)
-  - Tag-symbol association strength (1.0 if text inside symbol)
-- **ALWAYS** provide reasoning explaining:
-  - What text you extracted
-  - What symbol shape you identified
-  - How you decoded the ISA-5.1 tag
-
-### CONNECTION TRACING RULES
-
-Trace signal and process lines between components:
-
-1. **Line Style Decoding:**
-   - **SOLID thick line:** Process connection (pipe/duct)
-   - **DASHED line (---):** Electric signal
-   - **DOUBLE SLASH (//):** Pneumatic signal
-   - **CAPILLARY (XXX):** Filled system
-   - **CIRCLES (o-o-o):** Software/Data link
-
-2. **Connection Logic:**
-   - Sensors (T, P, F, L with 'T' or 'E' suffix) typically OUTPUT to Controllers ('C' suffix)
-   - Controllers OUTPUT to Actuators ('V' suffix for valves)
-   - Follow lines even if interrupted by page breaks
-
-### CRITICAL REQUIREMENTS
-
-1. **NO LAZY CLASSIFICATIONS - ZERO TOLERANCE:**
-   - If you see clear text like "PDI-1401", you MUST use it as the label
-   - "unknown" is **ABSOLUTELY FORBIDDEN** unless text is >90% occluded or completely illegible
-   - If you use "unknown", you MUST explain in extreme detail why the text cannot be read in the reasoning field
-   - Generic labels like "instrument", "valve", "sensor", "component" are **STRICTLY PROHIBITED** if any text is visible
-   - **MANDATORY:** Every instrument with visible text MUST have that text as its label
-   - **PENALTY:** Components with generic labels will be rejected as inference failures
-   - **NULL/EMPTY LABELS ARE FORBIDDEN:** Every component MUST have a non-empty label field
-
-2. **TEXT IS PRIMARY - NOT OPTIONAL:**
-   - Text accuracy is MORE important than perfect bounding boxes
-   - If you can read "TT-1402" but symbol is ambiguous, still classify it correctly
-   - OCR extraction is your PRIMARY mission - symbols are secondary anchors
-   - **YOU MUST READ THE TEXT FIRST**, then find the symbol, then classify
-   - If text exists but you didn't extract it, THIS IS A CRITICAL FAILURE
-
-3. **OCR VERIFICATION REQUIREMENT:**
-   - For EVERY component, you MUST state in reasoning: "Extracted text: [actual text]"
-   - If no text found, state: "No text visible - using symbol-based classification: [type]"
-   - Your reasoning field is proof of OCR - if you don't mention text extraction, it's invalid
-
-4. **GEOMETRIC INVARIANCE:**
-   - Recognize symbols regardless of rotation or slight distortion
-   - Standard P&ID symbols: Circle, Square, Diamond, Hexagon, Valve triangles
-   - Handle text rotation at 0°, 90°, 180°, 270°
-
-5. **PHYSICS VALIDATION:**
-   - Temperature sensors connect to temperature controllers
-   - Pressure sensors connect to pressure controllers  
-   - Signal flow must make logical sense
-
-6. **DOMAIN AWARENESS - EXPANDED VOCABULARY:**
-   - Distinguish between P&ID (instruments, valves) and HVAC (ducts, VAVs) components
-   - Do not default to "unknown" for components outside strict HVAC vocabulary
-   - Use ISA-5.1 standard for P&ID, mechanical symbols for HVAC
-   - **P&ID Component Types:** Instruments, Transmitters, Controllers, Indicators, Valves, Actuators, Logic Elements, Sensors, Analyzers, Flow Elements
-   - **HVAC Component Types:** VAV Boxes, AHUs, Dampers, Diffusers, Grilles, Coils, Fans, Filters, Humidifiers, Ducts
-   - **Valve Types:** Ball Valves, Gate Valves, Globe Valves, Check Valves, Butterfly Valves, Control Valves, Relief Valves, Solenoid Valves
-   - **Instrument Types:** Temperature, Pressure, Flow, Level, Analytical, Speed, Vibration, Position
-      - If a component matches any of these categories but has no visible text, use the specific category as label (e.g., "control-valve" not "unknown")
-
-   ### NUMERIC CONSTRAINTS (CRITICAL)
-   1. **Rotation**: MUST be an **INTEGER** (0, 90, 180, 270). NEVER use floats for rotation.
-   2. **Confidence**: Round to **2 decimal places** (e.g., 0.95).
-   3. **Coordinates**: Round to **3 decimal places** (e.g., 0.123).
-   4. **NO INFINITE FLOATS**: Do not output numbers with more than 4 decimal places.
-
-   ### OUTPUT FORMAT
-
-   Return ONLY valid JSON with this exact structure. No markdown, no preamble.
-
-**CRITICAL: PROCESS LOG REQUIREMENT**
-- You MUST include a "process_log" field in your response
-- This field should contain a technical summary of the system you detected
-- Format: "Detected [system description] with [component counts]. [Key observations about system architecture and control logic]."
-- Example: "Detected a primary HVAC control system with 4 temperature control loops (TT-1402, TT-1403, TT-1404, TT-1405), 2 pressure monitoring points (PDI-1401, PDI-1402), and 3 flow control valves (FIC-201, FIC-202, FIC-203). System architecture indicates a dual-zone temperature control configuration with differential pressure sensing."
-- This trace provides transparency to users about your analysis process
+### OUTPUT REQUIREMENT
+You must identify all instrumentation bubbles, valves, and equipment.
+For each item, you must:
+1. Detect the visual symbol and bounding box.
+2. Read the text tag (OCR).
+3. Apply the ISA-5.1 logic defined above to generate a full 'description'.
 `;
 
 /**
- * P&ID Detection Prompt - Explicit Task Instructions
+ * The User Prompt
  */
 export const PID_DETECT_PROMPT = `
-**TASK:** Extract and classify ALL process instrumentation components using OCR-First + ISA-5.1 methodology.
+**COMMAND**: INITIATE DEEP-DIVE ANALYSIS.
 
-**EXECUTION SEQUENCE:**
+**OBJECTIVES**:
+1.  **Inventory Extraction**: Catalog every distinct ISA-5.1 component.
+2.  **Signal Graphing**: Map the connectivity (Source -> Medium -> Target).
+3.  **Loop Identification**: Group components into functional Control Loops.
 
-1. **EXTRACT TEXT FIRST:**
-   - Find every alphanumeric tag (PDI-XXXX, TT-XXXX, FIC-XXXX, etc.)
-   - Handle vertical/rotated text correctly
+**OUTPUT FORMAT**:
+Strict adherence to the JSON Schema.
+`;
 
-2. **LOCATE SYMBOLS:**
-   - For each tag, find its associated geometric symbol
-   - Match symbol shape to ISA-5.1 definitions
-
-3. **DECODE & CLASSIFY:**
-   - Parse tag using ISA-5.1 rules (P=Pressure, T=Temp, I=Indicator, etc.)
-   - Generate human-readable description
-
-4. **TRACE CONNECTIONS:**
-   - Follow signal lines (electric, pneumatic) between components
-   - Map sensor → controller → actuator chains
-
-**OUTPUT STRUCTURE:**
-{
-  "components": [
-    {
-      "id": "unique-id",
-      "type": "instrument",  // or "valve", "equipment", "logic"
-      "label": "PDI-1401",   // EXTRACTED TEXT - REQUIRED for instruments
-      "bbox": [x1, y1, x2, y2],  // normalized 0-1
-      "confidence": 0.95,
-      "rotation": 0,  // text rotation in degrees
-      "meta": {
-        "tag": "PDI-1401",
-        "description": "Pressure Differential Indicator",
-        "instrument_type": "Discrete",  // Circle symbol
-        "location": "Field",  // No line = field mounted
-        "reasoning": "EXPLICIT: Extracted text 'PDI-1401' inside circle symbol. 'P'=Pressure, 'D'=Differential, 'I'=Indicator per ISA-5.1."
+/**
+ * The Robust Schema
+ * Maps Legacy "Entities" logic to New "Components" structure
+ */
+export const PID_ANALYSIS_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    components: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING, description: "UUID or extracted Tag (e.g. TIC-101)" },
+          label: { 
+            type: Type.STRING, 
+            description: "The Normalized Tag (e.g., TIC-101). MANDATORY - extract from OCR." 
+          },
+          type: { 
+            type: Type.STRING, 
+            description: "Visual class: 'instrument', 'valve', 'equipment', 'line'" 
+          },
+          bbox: {
+            type: Type.ARRAY,
+            description: "[ymin, xmin, ymax, xmax] (Normalized 0-1)",
+            items: { type: Type.NUMBER }
+          },
+          confidence: { type: Type.NUMBER },
+          rotation: { type: Type.NUMBER },
+          meta: {
+            type: Type.OBJECT,
+            properties: {
+              description: { type: Type.STRING, description: "Full ISA definition (e.g. Temperature Transmitter)" },
+              functional_desc: { type: Type.STRING },
+              location: { type: Type.STRING, description: "Field vs Panel" },
+              reasoning: { type: Type.STRING, description: "Why did you classify it this way?" }
+            }
+          }
+        },
+        required: ["id", "label", "type", "bbox", "confidence"]
       }
-    }
-  ],
-  "connections": [
-    {
-      "id": "conn-1",
-      "from_id": "component-a",
-      "to_id": "component-b",
-      "type": "electric",  // or "pneumatic", "hydraulic", "process"
-      "confidence": 0.9
-    }
-  ],
-  "process_log": "Detected a process control system with 5 temperature transmitters (TT-series), 3 pressure indicators (PI-series), and 2 flow indicator controllers (FIC-series). Primary control loop: TT-1402 → TIC-1402 → TCV-1402. System implements cascade control with pressure compensation."
-}
+    },
+    connections: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          from_id: { type: Type.STRING },
+          to_id: { type: Type.STRING },
+          type: { type: Type.STRING, description: "Electric, Pneumatic, Process" }
+        },
+        required: ["from_id", "to_id", "type"]
+      }
+    },
+    summary: { type: Type.STRING, description: "Technical summary of the system." }
+  },
+  required: ["components", "connections"]
+};
 
-**REMEMBER:** Text extraction is your PRIMARY objective. Every instrument MUST have its tag correctly identified.
-
-Begin analysis now.
-`;
-
-/**
- * P&ID Refinement Prompt - Self-Correction with ISA-5.1 Validation
- */
-export const PID_REFINE_SYSTEM_INSTRUCTION = `
-### IDENTITY
-You are a **Senior Process Engineer** performing Quality Assurance on P&ID digitization.
-
-### MISSION
-Review and correct component detections, focusing on text-symbol association accuracy.
-
-### AUDIT CHECKLIST
-
-1. **Missing Text Labels:**
-   - Are there any instruments with visible tags that were marked "unknown"?
-   - Re-read the image carefully for partially occluded or rotated text
-
-2. **Incorrect ISA-5.1 Decoding:**
-   - Are instrument types correctly decoded from tags?
-   - Example: "PDI" should be "Pressure Differential Indicator", not "Pressure Indicator"
-
-3. **Text-Symbol Disassociation:**
-   - Is each tag correctly matched to its geometric symbol?
-   - Text might be inside, above, or adjacent to symbol
-
-4. **False Positives:**
-   - Are there non-instrument annotations (notes, dimensions) incorrectly classified as components?
-
-5. **Duplicate Detections:**
-   - Same instrument detected multiple times from tiling
-
-### CORRECTION PROTOCOL
-
-- **ADD missing instruments** with clear visible tags
-- **CORRECT tag text** if misread (handle rotation)
-- **FIX instrument_type** if ISA-5.1 decoding is wrong
-- **REMOVE** false positives (text annotations, notes)
-- **MERGE** duplicates
-
-### OUTPUT
-
-Return corrected JSON in same format. Focus on achieving 100% text extraction accuracy.
-`;
-
-/**
- * Generate refinement prompt for P&ID self-correction
- */
+// Refinement prompt for QA
 export function generatePIDRefinePrompt(currentJson: any): string {
   return `
-**ROLE:** Senior Process Engineer - QA & Validation
+**ROLE:** Senior Automation Engineer - QA
+**CONTEXT:** Current Detections: ${JSON.stringify(currentJson).slice(0, 5000)}...
 
-**CURRENT DETECTIONS:**
-\`\`\`json
-${JSON.stringify(currentJson, null, 2)}
-\`\`\`
+**TASK:**
+1. Verify all "label" fields match the OCR text exactly.
+2. If any label is "unknown", retry reading the text.
+3. Verify ISA-5.1 decoding (e.g. "TIC" is Controller, not Indicator).
+4. Ensure bounding boxes are tight around the symbol AND text.
 
-**YOUR TASK:**
-Review the full P&ID image against the detections above.
-
-**FOCUS AREAS:**
-1. **Text Extraction Completeness:** Are ALL visible instrument tags captured?
-2. **Tag Accuracy:** Are tags correctly read (handle rotation/occlusion)?
-3. **ISA-5.1 Compliance:** Are instrument_type and description correct per ISA-5.1?
-
-**CRITICAL FIXES:**
-- If detection has \`"label": "unknown-X"\` but the image shows clear text → CORRECT IT
-- If instrument_type decoding is wrong → FIX using ISA-5.1 rules
-- If text-symbol pairing is incorrect → RE-ASSOCIATE correctly
-
-**OBJECTIVE:** Zero "unknown" labels on readable instruments.
-
-Return CORRECTED JSON with same structure.
+**OUTPUT:** Corrected JSON.
 `;
 }

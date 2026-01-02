@@ -153,11 +153,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
       {/* Process Log Section - Enhanced for Responsiveness and Usability */}
       {analysis && (
-        <div className="mt-auto border-t border-white/5 p-3 bg-[#1a1a1a] flex flex-col h-full">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Process Log</div>
+        <div className="mt-auto border-t border-white/5 bg-[#1a1a1a] flex flex-col" style={{ flex: '1 1 auto', overflow: 'hidden' }}>
+          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 px-3 pt-3">Process Log</div>
           <div
-            className="text-xs text-zinc-400 leading-relaxed font-mono p-2.5 bg-[#0a0a0a] rounded border border-white/5 flex-1 overflow-y-auto whitespace-pre-wrap scrollbar-thin"
-            style={{ resize: 'vertical' }}
+            className="text-xs text-zinc-400 leading-relaxed font-mono p-2.5 bg-[#0a0a0a] rounded border border-white/5 overflow-y-auto whitespace-pre-wrap scrollbar-thin"
+            style={{ flex: '1 1 auto', resize: 'none' }}
             contentEditable
             suppressContentEditableWarning
           >
@@ -240,7 +240,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   );
 
   return (
-    <div className="w-80 bg-[#1e1e1e] border-l border-white/10 flex flex-col shrink-0 select-none">
+    <div className="w-full h-full flex flex-col bg-[#1e1e1e] border-l border-white/10 select-none">
       
       {/* Header / Tabs */}
       <div className="h-12 border-b border-white/5 flex items-center px-1">

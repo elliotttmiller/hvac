@@ -80,10 +80,6 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                     <span className="font-mono text-xs text-zinc-300">{project.id}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-zinc-800">
-                    <span className="text-xs text-zinc-500">Root Path</span>
-                    <span className="font-mono text-xs text-zinc-300">{project.root}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-zinc-800">
                     <span className="text-xs text-zinc-500">Status</span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
                       Active
