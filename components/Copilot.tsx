@@ -91,7 +91,7 @@ const Copilot: React.FC = () => {
 
   return (
     <>
-      {/* Floating Button (restricted to predefined positions) */}
+      {/* Floating Button (with hover animation) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -108,9 +108,10 @@ const Copilot: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
         }}
-        className="hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
+        className="hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300 hover:shadow-xl hover:scale-105"
       >
         <Sparkles size={20} />
       </button>
