@@ -175,102 +175,105 @@ const OverviewTab: React.FC<{ result: UniversalDocumentResult }> = ({ result }) 
           <InfoRow label="Connections" value={result.visual.connections.length} />
           
           {/* Process Log Section - Modern Activity Feed */}
-          {result.visual.metadata?.process_log && (
-            <div style={{ marginTop: '24px' }}>
-              <h3 style={{ 
-                margin: '0 0 16px 0',
-                color: '#64748B',
-                fontSize: '11px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                fontWeight: '700'
-              }}>
-                Activity Feed
-              </h3>
-              <div style={{
-                backgroundColor: '#F9FAFB',
-                borderRadius: '12px',
-                padding: '16px',
-                maxHeight: '300px',
-                overflowY: 'auto'
-              }}>
-                {processLogToTimeline(result.visual.metadata.process_log).map((entry, i) => (
-                  <div key={i} style={{ 
-                    display: 'flex', 
-                    gap: '12px',
-                    marginBottom: i < processLogToTimeline(result.visual.metadata.process_log).length - 1 ? '16px' : '0',
-                    animation: 'fadeIn 0.3s ease-in',
-                    animationDelay: `${i * 0.1}s`,
-                    animationFillMode: 'backwards'
-                  }}>
-                    <div style={{ 
+          {result.visual.metadata?.process_log && (() => {
+            const timelineEntries = processLogToTimeline(result.visual.metadata.process_log);
+            return (
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ 
+                  margin: '0 0 16px 0',
+                  color: '#64748B',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  fontWeight: '700'
+                }}>
+                  Activity Feed
+                </h3>
+                <div style={{
+                  backgroundColor: '#F9FAFB',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}>
+                  {timelineEntries.map((entry, i) => (
+                    <div key={i} style={{ 
                       display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center',
-                      minWidth: '20px'
-                    }}>
-                      <div style={{ 
-                        width: '8px', 
-                        height: '8px', 
-                        borderRadius: '50%', 
-                        backgroundColor: getActivityColor(entry.type),
-                        marginTop: '6px',
-                        boxShadow: `0 0 0 3px ${getActivityColor(entry.type)}20`
-                      }} />
-                      {i < processLogToTimeline(result.visual.metadata.process_log).length - 1 && (
-                        <div style={{ 
-                          width: '2px', 
-                          flex: 1,
-                          minHeight: '20px',
-                          backgroundColor: '#E5E7EB',
-                          margin: '4px 0'
-                        }} />
-                      )}
-                    </div>
-                    <div style={{
-                      flex: 1,
-                      backgroundColor: '#FFFFFF',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      border: '1px solid #F3F4F6'
+                      gap: '12px',
+                      marginBottom: i < timelineEntries.length - 1 ? '16px' : '0',
+                      animation: 'fadeIn 0.3s ease-in',
+                      animationDelay: `${i * 0.1}s`,
+                      animationFillMode: 'backwards'
                     }}>
                       <div style={{ 
                         display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px',
-                        marginBottom: '4px'
+                        flexDirection: 'column', 
+                        alignItems: 'center',
+                        minWidth: '20px'
                       }}>
-                        <span style={{ fontSize: '14px' }}>{getActivityIcon(entry.type)}</span>
-                        <span style={{ 
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: '#374151'
-                        }}>
-                          {entry.title}
-                        </span>
+                        <div style={{ 
+                          width: '8px', 
+                          height: '8px', 
+                          borderRadius: '50%', 
+                          backgroundColor: getActivityColor(entry.type),
+                          marginTop: '6px',
+                          boxShadow: `0 0 0 3px ${getActivityColor(entry.type)}20`
+                        }} />
+                        {i < timelineEntries.length - 1 && (
+                          <div style={{ 
+                            width: '2px', 
+                            flex: 1,
+                            minHeight: '20px',
+                            backgroundColor: '#E5E7EB',
+                            margin: '4px 0'
+                          }} />
+                        )}
                       </div>
-                      <p style={{ 
-                        margin: 0,
-                        fontSize: '13px',
-                        color: '#6B7280',
-                        lineHeight: '1.5',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                      <div style={{
+                        flex: 1,
+                        backgroundColor: '#FFFFFF',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        border: '1px solid #F3F4F6'
                       }}>
-                        {entry.message}
-                      </p>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          marginBottom: '4px'
+                        }}>
+                          <span style={{ fontSize: '14px' }}>{getActivityIcon(entry.type)}</span>
+                          <span style={{ 
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: '#374151'
+                          }}>
+                            {entry.title}
+                          </span>
+                        </div>
+                        <p style={{ 
+                          margin: 0,
+                          fontSize: '13px',
+                          color: '#6B7280',
+                          lineHeight: '1.5',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                        }}>
+                          {entry.message}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <style>{`
-                  @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(-10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                  }
-                `}</style>
+                  ))}
+                  <style>{`
+                    @keyframes fadeIn {
+                      from { opacity: 0; transform: translateY(-10px); }
+                      to { opacity: 1; transform: translateY(0); }
+                    }
+                  `}</style>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </>
       )}
       

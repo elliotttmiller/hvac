@@ -82,7 +82,9 @@ const BlueprintWorkspace: React.FC<{
       try {
         // Fetch file content from API
         const response = await fetch(`/api/files/content?path=${encodeURIComponent(fileToAnalyze)}`);
-        if (!response.ok) throw new Error('Failed to load file');
+        if (!response.ok) {
+          throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
+        }
         
         const blob = await response.blob();
         const file = new File([blob], fileToAnalyze.split('/').pop() || 'file', { type: blob.type });
@@ -105,9 +107,7 @@ const BlueprintWorkspace: React.FC<{
         img.onload = () => {
           setImageDims({ width: img.width, height: img.height });
           // Auto-run analysis after image loads
-          setTimeout(() => {
-            runAnalysisInternal(file, url);
-          }, 100);
+          runAnalysisInternal(file, url);
         };
         img.src = url;
         

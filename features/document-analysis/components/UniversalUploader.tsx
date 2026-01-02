@@ -9,6 +9,9 @@ import { analyzeDocument } from '../orchestrator';
 import { UniversalDocumentResult } from '../types';
 import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
+// Utility for Promise-based delays
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export interface UniversalUploaderProps {
   onAnalysisComplete?: (result: UniversalDocumentResult) => void;
   onError?: (error: string) => void;
@@ -70,15 +73,13 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
       setProgress('Analyzing document...');
       
       // Simulate phase transitions for better UX
-      setTimeout(() => {
-        setProcessingPhase('analyzing');
-        setProcessingProgress(60);
-      }, 500);
+      await delay(500);
+      setProcessingPhase('analyzing');
+      setProcessingProgress(60);
       
-      setTimeout(() => {
-        setProcessingPhase('refining');
-        setProcessingProgress(80);
-      }, 1000);
+      await delay(500);
+      setProcessingPhase('refining');
+      setProcessingProgress(80);
       
       // Analyze the document
       const result = await analyzeDocument(conversion.data, {
@@ -89,11 +90,10 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
       setProcessingPhase('complete');
       
       // Brief pause to show completion
-      setTimeout(() => {
-        setAnalyzing(false);
-        setProgress('');
-        onAnalysisComplete?.(result);
-      }, 500);
+      await delay(500);
+      setAnalyzing(false);
+      setProgress('');
+      onAnalysisComplete?.(result);
     } catch (error) {
       setUploading(false);
       setAnalyzing(false);
