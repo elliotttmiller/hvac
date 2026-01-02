@@ -6,8 +6,48 @@ const cors = require('cors');
 const chokidar = require('chokidar');
 const { Server } = require('socket.io');
 
-const ROOT = path.resolve(process.env.WORKSPACES_ROOT || path.join(__dirname, '..'));
+const ROOT = path.resolve(process.env.DATA_ROOT || path.join(__dirname, '../data/projects'));
 const PORT = process.env.PORT || 4000;
+
+// Ensure data directory exists and has demo content
+async function ensureDataDirectory() {
+  try {
+    await fs.access(ROOT);
+  } catch {
+    // Create data/projects directory
+    await fs.mkdir(ROOT, { recursive: true });
+    console.log('Created data directory:', ROOT);
+  }
+
+  // Check if directory is empty
+  const entries = await fs.readdir(ROOT);
+  if (entries.length === 0) {
+    // Create Demo Project folder
+    const demoPath = path.join(ROOT, 'Demo Project');
+    await fs.mkdir(demoPath, { recursive: true });
+    
+    // Copy sample images from docs/example_images to demo project
+    const exampleImagesPath = path.join(__dirname, '../docs/example_images');
+    try {
+      const images = await fs.readdir(exampleImagesPath);
+      for (const img of images) {
+        if (img.match(/\.(jpg|jpeg|png|gif|pdf)$/i)) {
+          const src = path.join(exampleImagesPath, img);
+          const dest = path.join(demoPath, img);
+          await fs.copyFile(src, dest);
+        }
+      }
+      console.log('Created Demo Project with sample images');
+    } catch (err) {
+      console.warn('Could not copy sample images:', err.message);
+    }
+  }
+}
+
+// Initialize data directory before starting server
+(async () => {
+  await ensureDataDirectory();
+})().catch(err => console.error('Failed to initialize data directory:', err));
 
 const app = express();
 app.use(cors());
@@ -61,18 +101,47 @@ async function readTree(dir) {
 }
 
 app.get('/api/projects', async (req, res) => {
-  // single project representing the repo root
-  res.json({ projects: [ { id: 'local', name: path.basename(ROOT), root: '.' } ] });
+  try {
+    // List all directories in ROOT as separate projects
+    const entries = await fs.readdir(ROOT, { withFileTypes: true });
+    const projects = [];
+    
+    for (const entry of entries) {
+      if (entry.isDirectory() && !entry.name.startsWith('.')) {
+        projects.push({
+          id: entry.name,
+          name: entry.name,
+          root: entry.name
+        });
+      }
+    }
+    
+    // If no projects, return a default one
+    if (projects.length === 0) {
+      projects.push({ id: 'local', name: 'Projects', root: '.' });
+    }
+    
+    res.json({ projects });
+  } catch (err) {
+    console.error('Error listing projects:', err);
+    res.json({ projects: [ { id: 'local', name: 'Projects', root: '.' } ] });
+  }
 });
 
 app.get('/api/projects/:projectId/tree', async (req, res) => {
   try {
+    const projectId = req.params.projectId;
     const dir = req.query.dir ? String(req.query.dir) : '.';
-    // Resolve directory within ROOT
-    const absDir = path.join(ROOT, dir);
-    if (!absDir.startsWith(ROOT)) return res.status(400).json({ error: 'Invalid directory' });
+    
+    // Resolve the project root directory
+    const projectRoot = path.join(ROOT, projectId);
+    if (!projectRoot.startsWith(ROOT)) return res.status(400).json({ error: 'Invalid project' });
+    
+    // Resolve directory within project
+    const absDir = dir === '.' ? projectRoot : path.join(projectRoot, dir.replace(new RegExp(`^${projectId}/?`), ''));
+    if (!absDir.startsWith(projectRoot)) return res.status(400).json({ error: 'Invalid directory' });
 
-    // If dir === '.' return top-level immediate children (non-recursive)
+    // Return top-level immediate children (non-recursive)
     async function readImmediateChildren(fullPath) {
       const entries = await fs.readdir(fullPath, { withFileTypes: true });
       const children = [];
@@ -83,13 +152,13 @@ app.get('/api/projects/:projectId/tree', async (req, res) => {
           const stat = await fs.stat(full);
           if (stat.isDirectory()) {
             children.push({
-              id: path.relative(ROOT, full).replace(/\\/g, '/'),
+              id: path.join(projectId, path.relative(projectRoot, full)).replace(/\\/g, '/'),
               name: ent.name,
               type: 'folder'
             });
           } else {
             children.push({
-              id: path.relative(ROOT, full).replace(/\\/g, '/'),
+              id: path.join(projectId, path.relative(projectRoot, full)).replace(/\\/g, '/'),
               name: ent.name,
               type: 'file',
               fileType: inferFileType(ent.name)
