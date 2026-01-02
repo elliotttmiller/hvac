@@ -9,6 +9,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { DetectedComponent, Connection } from '../../features/document-analysis/types';
 
+// Constants for hover card dimensions
+const CARD_WIDTH = 256; // w-64 = 16rem = 256px
+const CARD_HEIGHT = 200; // estimated card height
+const CARD_MARGIN = 12; // mt-3 = 0.75rem = 12px
+
 export interface CanvasOverlayProps {
   imageUrl: string;
   components?: DetectedComponent[];
@@ -60,28 +65,24 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     boxWidth: number,
     boxHeight: number
   ): { position: 'bottom' | 'top' | 'left' | 'right', alignment: 'center' | 'start' | 'end' } => {
-    const cardWidth = 256; // w-64 = 16rem = 256px
-    const cardHeight = 200; // estimated card height
-    const margin = 12; // mt-3 = 0.75rem = 12px
-    
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
     const boxRight = boxLeft + boxWidth;
     const boxBottom = boxTop + boxHeight;
     const boxCenterX = boxLeft + boxWidth / 2;
-    const boxCenterY = boxTop + boxHeight / 2;
     
-    // Check if default position (bottom-center) would clip
-    const wouldClipRight = boxCenterX + cardWidth / 2 > viewportWidth;
-    const wouldClipLeft = boxCenterX - cardWidth / 2 < 0;
-    const wouldClipBottom = boxBottom + margin + cardHeight > viewportHeight;
-    const wouldClipTop = boxTop - margin - cardHeight < 0;
+    // Check if card would clip at viewport edges
+    const wouldClipRight = boxCenterX + CARD_WIDTH / 2 > viewportWidth;
+    const wouldClipLeft = boxCenterX - CARD_WIDTH / 2 < 0;
+    const wouldClipBottom = boxBottom + CARD_MARGIN + CARD_HEIGHT > viewportHeight;
+    const wouldClipTop = boxTop - CARD_MARGIN - CARD_HEIGHT < 0;
+    const hasHorizontalSpace = !wouldClipRight && !wouldClipLeft;
     
     // Determine position priority: bottom > top > right > left
-    if (!wouldClipBottom && !wouldClipRight && !wouldClipLeft) {
+    if (!wouldClipBottom && hasHorizontalSpace) {
       return { position: 'bottom', alignment: 'center' };
-    } else if (!wouldClipTop && !wouldClipRight && !wouldClipLeft) {
+    } else if (!wouldClipTop && hasHorizontalSpace) {
       return { position: 'top', alignment: 'center' };
     } else if (!wouldClipBottom) {
       // Try bottom with adjusted alignment
@@ -100,7 +101,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     }
     
     // Fallback to right or left side positioning if vertical doesn't work
-    const wouldClipRightSide = boxRight + margin + cardWidth > viewportWidth;
+    const wouldClipRightSide = boxRight + CARD_MARGIN + CARD_WIDTH > viewportWidth;
     if (!wouldClipRightSide) {
       return { position: 'right', alignment: 'center' };
     } else {

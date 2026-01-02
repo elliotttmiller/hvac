@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card } from '../../ui/primitives';
 import { 
   FolderOpen, 
   Plus, 
@@ -195,7 +194,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
                       </button>
                     </div>
 
-                    {/* Project Stats (placeholder) */}
+                    {/* Project Stats - TODO: Make dynamic based on actual project data */}
                     <div className="flex items-center gap-4 py-3 mb-4 border-t border-b border-zinc-800">
                       <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                         <Layers size={14} />
