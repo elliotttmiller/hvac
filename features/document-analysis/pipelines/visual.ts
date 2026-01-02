@@ -466,26 +466,39 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       };
 
       // CRITICAL VALIDATION: Reject generic labels for instruments
-      const isGenericLabel = !comp.label || 
-                            comp.label === 'unknown' || 
-                            comp.label === validated.type ||
-                            comp.label.toLowerCase().includes('unknown') ||
-                            comp.label.toLowerCase() === 'unlabeled' ||
-                            comp.label.toLowerCase() === 'instrument' ||
-                            comp.label.toLowerCase() === 'valve' ||
-                            comp.label.toLowerCase() === 'sensor';
+      // Expanded list of forbidden generic labels
+      const forbiddenLabels = [
+        'unknown', 'unlabeled', 'instrument', 'valve', 'sensor', 'component',
+        'equipment', 'device', 'element', 'item', 'object', 'symbol'
+      ];
       
-      if (isGenericLabel) {
+      // Safe label comparison with null checks
+      const labelLower = (validated.label || '').toLowerCase();
+      const isGenericLabel = !comp.label || 
+                            comp.label === '' ||
+                            comp.label === validated.type ||
+                            forbiddenLabels.some(forbidden => labelLower === forbidden || labelLower.includes(forbidden)) ||
+                            labelLower === 'null' ||
+                            labelLower === 'undefined';
+      
+      if (isGenericLabel && !labelLower.includes('unreadable')) {
         console.error(`[Visual Pipeline - Parse] ⚠️ CRITICAL: Component ${validated.id} has FORBIDDEN generic label: "${validated.label}"`);
         console.error(`[Visual Pipeline - Parse]   This violates OCR-First mandate. Component should have extracted text.`);
         console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);
         console.error(`[Visual Pipeline - Parse]   Reasoning: ${validated.meta?.reasoning || 'Not provided'}`);
+        console.error(`[Visual Pipeline - Parse]   Bbox: [${bbox.join(', ')}]`);
         
-        // Mark as OCR failure if not already marked as unreadable
-        if (!validated.label.includes('unreadable')) {
-          validated.label = `unreadable-OCR-failed-${validated.type}`;
-          validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
-        }
+        // Mark as OCR failure with more descriptive label
+        validated.label = `unreadable-OCR-failed-${validated.type}-bbox-${bbox[0].toFixed(3)}-${bbox[1].toFixed(3)}`;
+        validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
+        
+        // Add warning to metadata
+        validated.meta = {
+          ...validated.meta,
+          ocr_failure: true,
+          original_label: comp.label || 'none',
+          warning: 'AI failed to extract text label - OCR-First mandate violated'
+        };
       }
 
       return validated;

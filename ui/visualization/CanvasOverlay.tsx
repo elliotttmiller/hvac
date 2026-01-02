@@ -38,6 +38,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [imageDimensions, setImageDimensions] = useState({ 
     width: 0, 
@@ -49,15 +50,22 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   });
   const [scale, setScale] = useState({ x: 1, y: 1 });
   
-  // Update scale when image loads - FIXED: Calculate exact rendered dimensions with object-fit:contain
+  // Update scale when image loads or container resizes - FIXED: Calculate exact rendered dimensions with object-fit:contain
   useEffect(() => {
     const img = imageRef.current;
     const container = containerRef.current;
     if (!img || !container) return;
     
-    const handleLoad = () => {
+    const calculateDimensions = () => {
       const naturalWidth = img.naturalWidth;
       const naturalHeight = img.naturalHeight;
+      
+      // Safety check: image must be loaded
+      if (naturalWidth === 0 || naturalHeight === 0) {
+        console.warn('[CanvasOverlay] Image not loaded yet, skipping calculation');
+        return;
+      }
+      
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
       
@@ -99,12 +107,40 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
       });
     };
     
+    // Handle image load
+    const handleLoad = () => {
+      calculateDimensions();
+    };
+    
     if (img.complete) {
       handleLoad();
     } else {
       img.addEventListener('load', handleLoad);
-      return () => img.removeEventListener('load', handleLoad);
     }
+    
+    // Add ResizeObserver to handle viewport changes
+    const resizeObserver = new ResizeObserver(() => {
+      // Debounce the recalculation to avoid performance issues during rapid resizing
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (img.complete) {
+          calculateDimensions();
+        }
+      }, 100); // 100ms debounce delay
+    });
+    
+    resizeObserver.observe(container);
+    
+    return () => {
+      img.removeEventListener('load', handleLoad);
+      resizeObserver.disconnect();
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
   }, [imageUrl]);
   
   // Draw overlays on canvas - FIXED: Apply offset for letterboxing

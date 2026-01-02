@@ -97,8 +97,16 @@ export const PID_ANALYSIS_SCHEMA = {
         type: Type.OBJECT,
         properties: {
           id: { type: Type.STRING, description: "UUID" },
-          tag: { type: Type.STRING, description: "The Normalized Tag (e.g., TIC-101). CORRECT ROTATION ERRORS." },
-          label: { type: Type.STRING, description: "The raw visual class (e.g., symbol_circle_solid_line)." },
+          tag: { 
+            type: Type.STRING, 
+            description: "The Normalized Tag (e.g., TIC-101). CORRECT ROTATION ERRORS. ABSOLUTELY MANDATORY - extract from OCR, never leave empty or use 'unknown'.",
+            nullable: false
+          },
+          label: { 
+            type: Type.STRING, 
+            description: "The raw visual class (e.g., symbol_circle_solid_line) or extracted tag text. MANDATORY.",
+            nullable: false
+          },
           
           // Semantic Attributes
           functional_desc: { type: Type.STRING, description: "The ISA-5.1 definition (e.g., 'Temperature Indicator Controller')." },

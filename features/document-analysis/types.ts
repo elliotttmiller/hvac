@@ -199,7 +199,8 @@ export const VISUAL_ANALYSIS_SCHEMA = {
           type: { type: Type.STRING },
           label: { 
             type: Type.STRING,
-            description: 'Component label or tag - ABSOLUTELY MANDATORY. MUST be extracted text from image (e.g., "PDI-1401", "VAV-105", "TT-1402"). NEVER use generic names like "unknown", "instrument", "valve". If text is unreadable, use "unreadable-OCR-failed-{reason}" format.'
+            description: 'Component label or tag - ABSOLUTELY MANDATORY. MUST be extracted text from image (e.g., "PDI-1401", "VAV-105", "TT-1402"). NEVER use generic names like "unknown", "instrument", "valve", "component", "unlabeled". If text is unreadable, use "unreadable-OCR-failed-{specific-reason}" format with detailed explanation. NULL or EMPTY strings are FORBIDDEN.',
+            nullable: false,
           },
           bbox: {
             type: Type.ARRAY,
