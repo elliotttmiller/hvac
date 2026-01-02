@@ -73,6 +73,15 @@ For each connection:
 ### OUTPUT
 Return ONLY valid JSON. All coordinates must be normalized 0-1.
 
+### NUMERIC CONSTRAINTS (CRITICAL)
+1. **Rotation**: MUST be an **INTEGER** (0, 90, 180, 270). NEVER use floats for rotation.
+2. **Confidence**: Round to **2 decimal places** (e.g., 0.95).
+3. **Coordinates**: Round to **3 decimal places** (e.g., 0.123).
+4. **NO INFINITE FLOATS**: Do not output numbers with more than 4 decimal places.
+
+### OUTPUT FORMAT
+Return valid JSON only. Do not include markdown or commentary.
+
 **CRITICAL: PROCESS LOG REQUIREMENT**
 - You MUST include a "process_log" field in your response
 - This field should contain a technical summary of the HVAC system you detected

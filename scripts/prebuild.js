@@ -11,19 +11,22 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 
-// Use the explicit workspace root for this project. Do NOT attempt to
-// infer the root via relative path traversal — we want to clean only
-// inside the hvac workspace.
-const DEFAULT_ROOT = 'D:\\AMD\\secrets\\hvac\\extra\\hvac';
-const root = path.resolve(DEFAULT_ROOT);
+// Determine the workspace root dynamically. Prefer an explicit env var
+// PREBUILD_ROOT for CI or special setups; otherwise use the current
+// working directory (what `npm` sets when running lifecycle scripts).
+const root = process.env.PREBUILD_ROOT
+  ? path.resolve(process.env.PREBUILD_ROOT)
+  : path.resolve(process.cwd());
 console.log(`Using prebuild root: ${root}`);
 
 const targets = [
   path.join(root, '.next'),
-  path.join(root, 'node_modules', '.cache'),
+  path.join(root, '.vite'),                // Vite's top-level cache
   path.join(root, 'node_modules', '.vite'),
+  path.join(root, 'node_modules', '.cache'),
   path.join(root, '.parcel-cache'),
-  path.join(root, 'dist') // optionally remove dist to ensure clean output
+  path.join(root, '.cache'),               // generic cache dir
+  path.join(root, 'dist'),                 // optionally remove dist to ensure clean output
 ];
 
 function rmrf(target) {

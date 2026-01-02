@@ -418,7 +418,7 @@ function loadImageFromBase64(base64Data: string): Promise<HTMLImageElement> {
  */
 function parseVisualResponse(responseText: string): VisualAnalysisResult {
   try {
-    // Remove markdown code blocks if present
+    // 1. Clean Markdown code blocks if present
     let cleanText = responseText.trim();
     if (cleanText.startsWith('```')) {
       cleanText = cleanText
@@ -426,6 +426,18 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         .replace(/^```\s*/, '')
         .replace(/\s*```$/, '');
     }
+
+    // 2. Safeguard against infinite-precision hallucinations
+    // Replace excessively long floating-point literals (10+ decimals) with a fixed 4-decimal representation
+    // e.g. "0.012345678901234..." -> "0.0123"
+    cleanText = cleanText.replace(/(\d+\.\d{10,})/g, (match) => {
+      try {
+        return parseFloat(match).toFixed(4);
+      } catch (e) {
+        // If parseFloat unexpectedly fails, fallback to a conservative truncation
+        return match.substring(0, match.indexOf('.') + 5);
+      }
+    });
 
     const parsed = JSON.parse(cleanText);
 
@@ -435,13 +447,13 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
 
     console.log(`[Visual Pipeline - Parse] Parsing response: ${components.length} components, ${connections.length} connections`);
 
-    // Ensure all components have required fields
+    // Ensure all components have required fields (reuse existing validation)
     const validatedComponents = components.map((comp: any) => {
       // Validate bbox coordinates
-      let bbox = Array.isArray(comp.bbox) && comp.bbox.length === 4 
-        ? comp.bbox 
+      let bbox = Array.isArray(comp.bbox) && comp.bbox.length === 4
+        ? comp.bbox
         : [0, 0, 0, 0];
-      
+
       // Ensure bbox coordinates are in valid range [0, 1]
       bbox = bbox.map((coord: number) => {
         if (typeof coord !== 'number' || isNaN(coord)) {
@@ -455,51 +467,41 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         return coord;
       });
 
-      // MANDATORY LABEL: Ensure label is always present (required by type system)
-      // If AI didn't provide a label, use descriptive fallback that indicates OCR failure
+      // Ensure label present
       const shortId = Math.random().toString(36).substring(2, 10);
-      const label = comp.label && comp.label.trim() !== '' 
-        ? comp.label 
+      const label = comp.label && comp.label.trim() !== ''
+        ? comp.label
         : `unreadable-OCR-failed-${comp.type || 'unknown'}-${shortId}`;
-      
+
       const validated = {
         id: comp.id || generateId(),
         type: comp.type || 'unknown',
-        label: label, // Now guaranteed to be a non-empty string
+        label: label,
         bbox: bbox as [number, number, number, number],
         confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
         rotation: comp.rotation,
         meta: comp.meta || {},
       };
 
-      // CRITICAL VALIDATION: Reject generic labels for instruments
-      // Expanded list of forbidden generic labels
+      // Forbidden generic labels
       const forbiddenLabels = [
         'unknown', 'unlabeled', 'instrument', 'valve', 'sensor', 'component',
         'equipment', 'device', 'element', 'item', 'object', 'symbol'
       ];
-      
-      // Safe label comparison with null checks
+
       const labelLower = (validated.label || '').toLowerCase();
-      const isGenericLabel = !comp.label || 
+      const isGenericLabel = !comp.label ||
                             comp.label === '' ||
                             comp.label === validated.type ||
                             forbiddenLabels.some(forbidden => labelLower === forbidden || labelLower.includes(forbidden)) ||
                             labelLower === 'null' ||
                             labelLower === 'undefined';
-      
+
       if (isGenericLabel && !labelLower.includes('unreadable')) {
         console.error(`[Visual Pipeline - Parse] ⚠️ CRITICAL: Component ${validated.id} has FORBIDDEN generic label: "${validated.label}"`);
-        console.error(`[Visual Pipeline - Parse]   This violates OCR-First mandate. Component should have extracted text.`);
-        console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);
-        console.error(`[Visual Pipeline - Parse]   Reasoning: ${validated.meta?.reasoning || 'Not provided'}`);
-        console.error(`[Visual Pipeline - Parse]   Bbox: [${bbox.join(', ')}]`);
-        
-        // Mark as OCR failure with more descriptive label
+        // mark as OCR failure
         validated.label = `unreadable-OCR-failed-${validated.type}-bbox-${bbox[0].toFixed(3)}-${bbox[1].toFixed(3)}`;
-        validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
-        
-        // Add warning to metadata
+        validated.confidence = Math.min(validated.confidence, 0.3);
         validated.meta = {
           ...validated.meta,
           ocr_failure: true,
@@ -511,7 +513,6 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       return validated;
     });
 
-    // Ensure all connections have required fields
     const validatedConnections = connections.map((conn: any) => ({
       id: conn.id || generateId(),
       from_id: conn.from_id || '',
@@ -526,12 +527,17 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       metadata: {
         total_components: validatedComponents.length,
         total_connections: validatedConnections.length,
-        process_log: parsed.process_log || undefined, // Extract process_log from AI response
+        process_log: parsed.process_log || undefined,
       },
     };
   } catch (error) {
     console.error('[Visual Pipeline - Parse] Failed to parse visual response:', error);
-    console.error('[Visual Pipeline - Parse] Response text preview:', responseText.substring(0, 500));
+    // Log a snippet of the text to debug future hallucinations
+    try {
+      console.error('[Visual Pipeline - Parse] Text snippet:', responseText.substring(0, 500) + '...');
+    } catch (e) {
+      // ignore
+    }
     return {
       components: [],
       connections: [],

@@ -127,11 +127,17 @@ Trace signal and process lines between components:
    - **HVAC Component Types:** VAV Boxes, AHUs, Dampers, Diffusers, Grilles, Coils, Fans, Filters, Humidifiers, Ducts
    - **Valve Types:** Ball Valves, Gate Valves, Globe Valves, Check Valves, Butterfly Valves, Control Valves, Relief Valves, Solenoid Valves
    - **Instrument Types:** Temperature, Pressure, Flow, Level, Analytical, Speed, Vibration, Position
-   - If a component matches any of these categories but has no visible text, use the specific category as label (e.g., "control-valve" not "unknown")
+      - If a component matches any of these categories but has no visible text, use the specific category as label (e.g., "control-valve" not "unknown")
 
-### OUTPUT FORMAT
+   ### NUMERIC CONSTRAINTS (CRITICAL)
+   1. **Rotation**: MUST be an **INTEGER** (0, 90, 180, 270). NEVER use floats for rotation.
+   2. **Confidence**: Round to **2 decimal places** (e.g., 0.95).
+   3. **Coordinates**: Round to **3 decimal places** (e.g., 0.123).
+   4. **NO INFINITE FLOATS**: Do not output numbers with more than 4 decimal places.
 
-Return ONLY valid JSON with this exact structure. No markdown, no preamble.
+   ### OUTPUT FORMAT
+
+   Return ONLY valid JSON with this exact structure. No markdown, no preamble.
 
 **CRITICAL: PROCESS LOG REQUIREMENT**
 - You MUST include a "process_log" field in your response
