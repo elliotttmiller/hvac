@@ -275,7 +275,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
                               ? 'bg-purple-500/10 border-purple-500/20 text-purple-300' 
                               : 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300'
                           }`}>
-                            {component.meta?.tag || 'ID-' + component.id.slice(0, 8)}
+                            {component.meta?.tag || 'ID-' + (component.id.includes('-') ? component.id.split('-')[1] : component.id.slice(0, 8))}
                           </span>
                         </div>
                       </div>
