@@ -455,10 +455,16 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         return coord;
       });
 
+      // MANDATORY LABEL: Ensure label is always present (required by type system)
+      // If AI didn't provide a label, use descriptive fallback that indicates OCR failure
+      const label = comp.label && comp.label.trim() !== '' 
+        ? comp.label 
+        : `unreadable-OCR-failed-${comp.type || 'unknown'}-${generateId().substring(0, 8)}`;
+      
       const validated = {
         id: comp.id || generateId(),
         type: comp.type || 'unknown',
-        label: comp.label || comp.type || 'unlabeled',
+        label: label, // Now guaranteed to be a non-empty string
         bbox: bbox as [number, number, number, number],
         confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
         rotation: comp.rotation,

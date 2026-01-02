@@ -24,7 +24,7 @@ export interface ClassificationResult {
 export interface DetectedComponent {
   id: string;
   type: string; // 'duct', 'vav', 'ahu', 'damper', 'diffuser', etc.
-  label?: string; // Tag or identifier (e.g., "VAV-101")
+  label: string; // Tag or identifier (e.g., "VAV-101") - MANDATORY: Must be extracted text from image
   bbox: [number, number, number, number]; // [x1, y1, x2, y2] normalized 0-1
   confidence: number;
   rotation?: number; // degrees
