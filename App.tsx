@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Array<{ id: string; name: string; root: string }>>([]);
   const [activeProject, setActiveProject] = useState<string | null>(null);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [fileToAnalyze, setFileToAnalyze] = useState<string | null>(null);
 
   React.useEffect(() => {
     // Update browser tab title based on current view
@@ -41,12 +42,21 @@ const App: React.FC = () => {
     setCurrentView(view);
   };
 
+  // Handle file analysis request from sidebar
+  const handleAnalyzeFile = (filePath: string) => {
+    setFileToAnalyze(filePath);
+    // Switch to analyzer view if not already there
+    if (currentView !== ViewState.ANALYZER) {
+      setCurrentView(ViewState.ANALYZER);
+    }
+  };
+
   const renderView = () => {
     switch (currentView) {
       case ViewState.DASHBOARD:
         return <Dashboard />;
       case ViewState.ANALYZER:
-        return <BlueprintWorkspace />;
+        return <BlueprintWorkspace fileToAnalyze={fileToAnalyze} onAnalyzed={() => setFileToAnalyze(null)} />;
       case ViewState.PROJECTS:
         return (
           <ProjectsPage
@@ -77,6 +87,7 @@ const App: React.FC = () => {
         setActiveProject(id);
         setCurrentView(ViewState.ANALYZER);
       }}
+      onAnalyzeFile={handleAnalyzeFile}
     >
         {renderView()}
 

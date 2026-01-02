@@ -7,7 +7,10 @@ import { DetectedObject, ValidationIssue } from '../../../types';
 import { ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
-const BlueprintWorkspace: React.FC = () => {
+const BlueprintWorkspace: React.FC<{
+  fileToAnalyze?: string | null;
+  onAnalyzed?: () => void;
+}> = ({ fileToAnalyze, onAnalyzed }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{width: number, height: number} | null>(null);
@@ -70,6 +73,55 @@ const BlueprintWorkspace: React.FC = () => {
     };
   }, [isResizing]);
 
+  // Handle file analysis from sidebar
+  useEffect(() => {
+    if (!fileToAnalyze) return;
+    
+    // Load the file and trigger analysis
+    const loadAndAnalyze = async () => {
+      try {
+        // Fetch file content from API
+        const response = await fetch(`/api/files/content?path=${encodeURIComponent(fileToAnalyze)}`);
+        if (!response.ok) throw new Error('Failed to load file');
+        
+        const blob = await response.blob();
+        const file = new File([blob], fileToAnalyze.split('/').pop() || 'file', { type: blob.type });
+        
+        // Set as current image file
+        const url = URL.createObjectURL(file);
+        setImageFile(file);
+        setImageUrl(url);
+        
+        // Reset state
+        setAnalysisRaw("");
+        setExecutiveSummary("");
+        setInventory([]);
+        setDetectedBoxes([]);
+        setValidationIssues([]);
+        setSelectedBoxId(null);
+        
+        // Load dimensions
+        const img = new Image();
+        img.onload = () => {
+          setImageDims({ width: img.width, height: img.height });
+          // Auto-run analysis after image loads
+          setTimeout(() => {
+            runAnalysisInternal(file, url);
+          }, 100);
+        };
+        img.src = url;
+        
+        // Mark as analyzed
+        onAnalyzed?.();
+      } catch (error) {
+        console.error('Failed to load file for analysis:', error);
+        onAnalyzed?.();
+      }
+    };
+    
+    loadAndAnalyze();
+  }, [fileToAnalyze, onAnalyzed]);
+
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -130,8 +182,7 @@ const BlueprintWorkspace: React.FC = () => {
     });
   };
 
-  const runAnalysis = async () => {
-    if (!imageFile || !imageUrl) return;
+  const runAnalysisInternal = async (file: File, url: string) => {
     setIsProcessing(true);
     setProcessingPhase('uploading');
     setProcessingProgress(10);
@@ -142,13 +193,13 @@ const BlueprintWorkspace: React.FC = () => {
       setProcessingPhase('classifying');
       setProcessingProgress(30);
       setAnalysisRaw("Step 1: Classifying document...");
-      const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
+      const base64Data = url.split(',')[1] || await blobToBase64(file);
 
       // Use new orchestrator
       setProcessingPhase('analyzing');
       setProcessingProgress(60);
       const result = await analyzeDocument(base64Data, {
-        fileName: imageFile.name,
+        fileName: file.name,
       });
 
       console.log('Analysis result:', result);
@@ -203,6 +254,11 @@ const BlueprintWorkspace: React.FC = () => {
         setAnalysisRaw(`Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`);
         setIsProcessing(false);
     }
+  };
+
+  const runAnalysis = async () => {
+    if (!imageFile || !imageUrl) return;
+    await runAnalysisInternal(imageFile, imageUrl);
   };
 
   const blobToBase64 = (blob: Blob): Promise<string> => {

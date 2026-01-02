@@ -117,7 +117,8 @@ const LeftSidebar: React.FC<{
   onSelectProject?: (id: string) => void;
   onProjectsChange?: (list: Project[]) => void;
   onOpenProject?: (id: string) => void;
-}> = ({ projects: propsProjects, activeProject: propsActiveProject, onSelectProject, onProjectsChange, onOpenProject }) => {
+  onAnalyzeFile?: (filePath: string) => void;
+}> = ({ projects: propsProjects, activeProject: propsActiveProject, onSelectProject, onProjectsChange, onOpenProject, onAnalyzeFile }) => {
   const [projects, setProjects] = useState<Project[]>(propsProjects ?? []);
   const [activeProject, setActiveProject] = useState<string | null>(propsActiveProject ?? null);
   const [tree, setTree] = useState<FileNode[]>([]);
@@ -270,7 +271,12 @@ const LeftSidebar: React.FC<{
             />
         ))}
 
-        <PreviewModal open={!!previewPath} path={previewPath} onClose={()=>setPreviewPath(null)} />
+        <PreviewModal 
+          open={!!previewPath} 
+          path={previewPath} 
+          onClose={()=>setPreviewPath(null)}
+          onAnalyze={onAnalyzeFile}
+        />
         
         {/* Empty State / Drop Zone */}
         <div className="mt-4 mx-3 border border-dashed border-zinc-800 rounded-lg p-4 flex flex-col items-center justify-center text-center hover:border-zinc-700 hover:bg-white/5 transition-all cursor-pointer group">
