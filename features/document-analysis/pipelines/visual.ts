@@ -8,18 +8,21 @@ import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
 import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '../types';
-import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT } from '../prompts/visual/detect';
+import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT, PID_DETECT_PROMPT } from '../prompts/visual/detect';
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
 import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
 import { mergeComponents, localToGlobal } from '../../../lib/utils/math';
 import { generateId } from '../../../lib/utils';
 import { getImageDimensions } from '../../../lib/file-processing/converters';
 
+// The pipeline accepts an optional options bag so callers (the orchestrator)
+// can pass lightweight context such as whether the image is a P&ID/schematic.
+
 /**
  * Analyze blueprint for components and connections
  * Uses SOTA tiling approach for high-resolution images
  */
-export async function analyzeVisual(imageData: string): Promise<VisualAnalysisResult> {
+export async function analyzeVisual(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   try {
     // Check cache first
     const cache = getSemanticCache();
@@ -40,10 +43,10 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     
     if (useTiling) {
       console.log('Using SOTA tiling approach for high-resolution image');
-      result = await analyzeWithTiling(imageData);
+      result = await analyzeWithTiling(imageData, opts);
     } else {
       console.log('Using standard single-pass analysis');
-      result = await analyzeStandard(imageData);
+      result = await analyzeStandard(imageData, opts);
     }
 
     // Cache the result
@@ -70,11 +73,14 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
 /**
  * Standard analysis without tiling (for smaller images)
  */
-async function analyzeStandard(imageData: string): Promise<VisualAnalysisResult> {
+async function analyzeStandard(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   const client = getAIClient();
+  // Use the orchestrator-provided hint if available; otherwise default to generic prompt
+  const promptToUse = opts && opts.isSchematic ? PID_DETECT_PROMPT : DETECT_PROMPT;
+
   const responseText = await client.generateVision({
     imageData,
-    prompt: DETECT_PROMPT,
+    prompt: promptToUse,
     options: {
       systemInstruction: DETECT_SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
@@ -89,7 +95,7 @@ async function analyzeStandard(imageData: string): Promise<VisualAnalysisResult>
 /**
  * SOTA Analysis with Visual Grid Tiling + Map-Reduce + Self-Correction
  */
-async function analyzeWithTiling(imageData: string): Promise<VisualAnalysisResult> {
+async function analyzeWithTiling(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   const client = getAIClient();
   
   // Step 1: Tile the image into 2x2 grid with 10% overlap
@@ -99,11 +105,14 @@ async function analyzeWithTiling(imageData: string): Promise<VisualAnalysisResul
   
   // Step 2: MAP - Process tiles in parallel
   console.log('Step 2: Processing tiles in parallel (MAP phase)...');
-  const tileAnalyses = await Promise.all(
+    const tileAnalyses = await Promise.all(
     tileResult.tiles.map(async (tile) => {
+      // Use orchestrator-provided hint if present; otherwise default to generic prompt
+      const promptToUse = opts && opts.isSchematic ? PID_DETECT_PROMPT : DETECT_PROMPT;
+
       const responseText = await client.generateVision({
         imageData: tile.data,
-        prompt: DETECT_PROMPT,
+        prompt: promptToUse,
         options: {
           systemInstruction: DETECT_SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
@@ -111,7 +120,7 @@ async function analyzeWithTiling(imageData: string): Promise<VisualAnalysisResul
           temperature: 0.2,
         },
       });
-      
+
       const tileResult = parseVisualResponse(responseText);
       return { tile, result: tileResult };
     })

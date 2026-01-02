@@ -36,33 +36,37 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   const imageRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageRect, setImageRect] = useState({ top: 0, left: 0, width: 0, height: 0 });
   const [scale, setScale] = useState({ x: 1, y: 1 });
   
   // Update scale when image loads
+  // Measure the actual rendered image rect (ignoring container whitespace from object-fit)
   useEffect(() => {
     const img = imageRef.current;
-    if (!img) return;
-    
-    const handleLoad = () => {
-      const naturalWidth = img.naturalWidth;
-      const naturalHeight = img.naturalHeight;
-      const displayWidth = img.clientWidth;
-      const displayHeight = img.clientHeight;
-      
-      setImageDimensions({ width: displayWidth, height: displayHeight });
-      setScale({
-        x: displayWidth,
-        y: displayHeight,
-      });
+    const container = containerRef.current;
+    if (!img || !container) return;
+
+    const measure = () => {
+      const imgRect = img.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const left = imgRect.left - containerRect.left;
+      const top = imgRect.top - containerRect.top;
+      const width = imgRect.width;
+      const height = imgRect.height;
+
+      setImageRect({ top, left, width, height });
+      setScale({ x: width, y: height });
     };
-    
-    if (img.complete) {
-      handleLoad();
-    } else {
-      img.addEventListener('load', handleLoad);
-      return () => img.removeEventListener('load', handleLoad);
-    }
+
+    // Measure now and on subsequent layout changes
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
   }, [imageUrl]);
   
   // Draw overlays on canvas
@@ -70,14 +74,21 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     const canvas = canvasRef.current;
     const img = imageRef.current;
     
-    if (!canvas || !img || scale.x <= 0) return;
+  if (!canvas || scale.x <= 0 || imageRect.width <= 0) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Set canvas size to match image display size
-    canvas.width = imageDimensions.width;
-    canvas.height = imageDimensions.height;
+  // Set canvas size to match the actual rendered image size
+  // Use devicePixelRatio for crisp rendering on high-dpi displays
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(imageRect.width * dpr);
+  canvas.height = Math.round(imageRect.height * dpr);
+  canvas.style.width = `${imageRect.width}px`;
+  canvas.style.height = `${imageRect.height}px`;
+  canvas.style.top = `${imageRect.top}px`;
+  canvas.style.left = `${imageRect.left}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -96,7 +107,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     if (showLabels && components.length > 0) {
       drawLabels(ctx, components, scale);
     }
-  }, [components, connections, imageDimensions, scale, selectedComponent, showLabels, showBoundingBoxes, showConnections]);
+  }, [components, connections, imageRect, scale, selectedComponent, showLabels, showBoundingBoxes, showConnections]);
   
   // Handle component clicks
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -135,9 +146,12 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
         onClick={handleCanvasClick}
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
+          top: imageRect.top,
+          left: imageRect.left,
+          width: imageRect.width,
+          height: imageRect.height,
           cursor: onComponentClick ? 'pointer' : 'default',
+          pointerEvents: 'auto',
         }}
       />
     </div>
