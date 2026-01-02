@@ -10,7 +10,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { Activity, ShieldCheck, AlertCircle, Zap, Cpu, TrendingUp, Clock } from 'lucide-react';
+import { Activity, ShieldCheck, AlertCircle, Zap, Cpu, TrendingUp, Clock, Upload, FolderPlus, FileSearch, Settings } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   // Mock Data
@@ -31,18 +31,43 @@ const Dashboard: React.FC = () => {
     { label: 'Efficiency', value: '142ms', sub: 'Avg Inference Time', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
   ];
 
+  const quickActions = [
+    { label: 'Upload Document', icon: Upload, color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', description: 'Analyze new P&ID' },
+    { label: 'New Project', icon: FolderPlus, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', description: 'Create workspace' },
+    { label: 'Search Files', icon: FileSearch, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', description: 'Find documents' },
+    { label: 'Settings', icon: Settings, color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', description: 'Configure system' },
+  ];
+
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-grid-pattern">
+    <div className="flex-1 p-8 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <div className="max-w-7xl mx-auto space-y-8">
-        <header>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Overview</h1>
-          <p className="text-zinc-500 text-sm mt-1">System telemetry and real-time processing metrics.</p>
+        {/* Hero Section with Gradient */}
+        <header className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 blur-3xl -z-10" />
+          <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back</h1>
+          <p className="text-zinc-400 text-sm mt-2">Monitor your HVAC analysis platform and system performance.</p>
         </header>
+
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {quickActions.map((action, index) => (
+            <button
+              key={index}
+              className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 hover:border-zinc-700 p-4 rounded-xl hover:bg-zinc-900/80 transition-all duration-200 group text-left"
+            >
+              <div className={`${action.bg} ${action.color} border ${action.border} p-3 rounded-lg inline-flex mb-3 group-hover:scale-110 transition-transform`}>
+                <action.icon size={20} />
+              </div>
+              <div className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">{action.label}</div>
+              <div className="text-xs text-zinc-500 mt-1">{action.description}</div>
+            </button>
+          ))}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
-            <div key={index} className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 p-5 rounded-xl hover:bg-zinc-900/60 transition-colors group">
+            <div key={index} className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 p-5 rounded-xl hover:bg-zinc-900/80 transition-all duration-200 group">
               <div className="flex justify-between items-start mb-4">
                 <div className={`p-2 rounded-lg ${stat.bg} ${stat.color} border ${stat.border}`}>
                   <stat.icon size={18} />
@@ -64,7 +89,7 @@ const Dashboard: React.FC = () => {
 
         {/* Main Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-xl p-6">
+          <div className="lg:col-span-2 bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-xl p-6">
              <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="text-sm font-medium text-zinc-200">Throughput Velocity</h3>
@@ -101,7 +126,7 @@ const Dashboard: React.FC = () => {
              </div>
           </div>
 
-          <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-xl p-6 flex flex-col">
+          <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-xl p-6 flex flex-col">
              <h3 className="text-sm font-medium text-zinc-200 mb-4">Recent Activity</h3>
              <div className="flex-1 space-y-4">
                 {[1, 2, 3, 4].map((_, i) => (
@@ -116,7 +141,7 @@ const Dashboard: React.FC = () => {
                     </div>
                 ))}
              </div>
-             <button className="w-full mt-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition-colors">
+             <button className="w-full mt-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 hover:text-white transition-colors">
                 View Audit Log
              </button>
           </div>
