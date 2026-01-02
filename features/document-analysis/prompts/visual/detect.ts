@@ -145,3 +145,23 @@ export const DETECT_PROMPT = `
 
 Analyze now.
 `;
+
+/** P&ID / Schematic specific prompt - prioritize tag extraction and P&ID symbols */
+export const PID_DETECT_PROMPT = `
+ROLE: Industrial Instrumentation Expert
+TASK: P&ID Component & Tag Extraction
+
+INSTRUCTIONS:
+1. THIS IS A P&ID / SCHEMATIC. IGNORE architectural elements like walls, doors, and ducts.
+2. DETECT SYMBOLS:
+  - Valves (Gate, Globe, Check, Ball, Safety/Relief)
+  - Instruments (typically circles with tags like "PI", "TI", "FIT")
+  - Equipment (Vessels, Pumps, Compressors)
+3. EXTRACT TAGS AND IDENTIFIERS:
+  - If a symbol has nearby text (e.g., "PZV 0001 A"), capture that exact tag as the component's label.
+  - DO NOT use generic labels such as "Valve" when a tag is present; prefer the specific tag string.
+4. OUTPUT SCHEMA:
+  { components: [{ type: string, id: string, label: string, bbox: [x1,y1,x2,y2], confidence: number, meta: {} }], connections: [...] }
+
+OUTPUT MUST BE STRICT JSON. Coordinates must be normalized 0-1 and use [x1, y1, x2, y2] ordering.
+`;

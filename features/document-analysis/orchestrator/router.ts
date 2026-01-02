@@ -10,7 +10,8 @@ import { analyzeTabular } from '../pipelines/tabular';
 
 export interface RouteResult {
   pipeline: 'visual' | 'textual' | 'tabular' | 'none';
-  handler: ((imageData: string) => Promise<any>) | null;
+  // Handler accepts imageData and an optional options bag (e.g. { isSchematic })
+  handler: ((imageData: string, opts?: { isSchematic?: boolean }) => Promise<any>) | null;
 }
 
 /**

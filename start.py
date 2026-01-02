@@ -40,7 +40,6 @@ import shutil
 import subprocess
 import sys
 import time
-import threading
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -768,7 +767,7 @@ def run_build(should_run_build: bool = False) -> bool:
         return False
 
 
-def start_dev_server(start_api: bool = False) -> int:
+def start_dev_server() -> int:
     """
     Start the dev server and stream logs.
     
@@ -785,96 +784,60 @@ def start_dev_server(start_api: bool = False) -> int:
     logger.info("   Server logs will be displayed below:")
     logger.info("-" * 70)
     
-    # Start frontend dev server and optionally backend API server, streaming both outputs.
-    npm = which_or_none("npm") or "npm"
-
-    front_cmd = [npm, "run", "dev"]
-    back_cmd = [npm, "run", "dev:api"]
-
-    procs = []
-
-    def spawn(cmd, name):
-        logger.info(f"🚀 Starting: {shlex.join(cmd)} ({name})")
+    cmd = [npm, "run", "dev"]
+    logger.debug(f"Spawning: {shlex.join(cmd)}")
+    
+    with subprocess.Popen(
+        cmd,
+        cwd=str(ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        shell=False
+    ) as proc:
         try:
-            p = subprocess.Popen(
-                cmd,
-                cwd=str(ROOT),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                shell=False
-            )
-            return p
-        except FileNotFoundError:
-            logger.error(f"❌ Command not found: {cmd[0]} for {name}")
-            return None
+            assert proc.stdout
+            for line in proc.stdout:
+                # Mirror to console and file
+                print(line.rstrip())
+                logger.debug(f"[dev-server] {line.rstrip()}")
+                
+        except KeyboardInterrupt:
+            logger.info("")
+            logger.info("-" * 70)
+            logger.info("⚠️  Dev server interrupted by user (Ctrl+C)")
+            logger.info("   Stopping process gracefully...")
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning("   Process did not terminate, killing...")
+                proc.kill()
+                proc.wait()
+                
+        except Exception as e:
+            logger.error(f"❌ Dev server error: {e}")
+            logger.exception("Dev server exception:")
+            
+        finally:
+            rc = proc.poll()
+            if rc is None:
+                logger.debug("Process still running, terminating...")
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+            
+            rc = proc.returncode or 0
+            logger.info(f"Dev server exited with code {rc}")
+            return rc
 
     front_proc = spawn(front_cmd, 'frontend')
     if front_proc:
         procs.append(('frontend', front_proc))
-
-    back_proc = None
-    if start_api:
-        back_proc = spawn(back_cmd, 'backend')
-        if back_proc:
-            procs.append(('backend', back_proc))
-
-    # Reader threads
-    threads = []
-    stop_flag = threading.Event()
-
-    def reader_loop(p, name):
-        try:
-            assert p.stdout
-            for line in p.stdout:
-                if line is None:
-                    break
-                print(f"[{name}] {line.rstrip()}")
-                logger.debug(f"[{name}] {line.rstrip()}")
-        except Exception as e:
-            logger.debug(f"Reader for {name} exited: {e}")
-
-    for name, p in procs:
-        t = threading.Thread(target=reader_loop, args=(p, name), daemon=True)
-        t.start()
-        threads.append(t)
-
-    try:
-        # Wait for processes to exit (if any). When both exit, return combined code (non-zero if any non-zero)
-        codes = []
-        for name, p in procs:
-            rc = p.wait()
-            logger.info(f"{name} process exited with code {rc}")
-            codes.append(rc)
-
-        # Join reader threads briefly
-        for t in threads:
-            t.join(timeout=0.1)
-
-        # Determine overall code
-        overall = 0 if all(c == 0 for c in codes) else (codes[0] if codes else 0)
-        return overall
-
-    except KeyboardInterrupt:
-        logger.info("")
-        logger.info("-" * 70)
-        logger.info("⚠️  Dev servers interrupted by user (Ctrl+C)")
-        for name, p in procs:
-            try:
-                p.terminate()
-            except Exception:
-                pass
-        # Wait briefly then kill
-        time.sleep(1)
-        for name, p in procs:
-            if p.poll() is None:
-                try:
-                    p.kill()
-                except Exception:
-                    pass
-        return 130
-
 
 def print_summary(results: Dict[str, bool], timings: Dict[str, float]) -> None:
     """Print comprehensive summary with color-coded status."""
@@ -961,6 +924,9 @@ def print_final_recommendations(results: Dict[str, bool]) -> None:
         logger.error("   2. Fix TypeScript errors first")
         logger.error("   3. Check logs/start.log for details")
 
+    # Reader threads
+    threads = []
+    stop_flag = threading.Event()
 
 def main(argv: Optional[List[str]] = None) -> int:
     """Main entry point for the startup script."""
@@ -1114,12 +1080,8 @@ def main(argv: Optional[List[str]] = None) -> int:
                 logger.error("")
                 logger.error("   Fix the issues above and try again")
                 return 1
-            # Determine whether to start backend API as well
-            api_entry = ROOT / 'server' / 'index.cjs'
-            start_api = api_entry.exists()
-            if start_api:
-                logger.info("ℹ️  Found local API server entry, starting backend + frontend dev servers")
-            rc = start_dev_server(start_api=start_api)
+            
+            rc = start_dev_server()
             logger.info(f"Dev server returned exit code: {rc}")
         
         # Determine overall exit code
