@@ -176,6 +176,9 @@ const LeftSidebar: React.FC<{
 
   // preview state
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+  
+  // Project dropdown state (click-based instead of hover)
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
 
   // load children for a folder (lazy)
   const loadChildren = async (id: string) => {
@@ -206,8 +209,11 @@ const LeftSidebar: React.FC<{
              <Briefcase size={12} className="text-cyan-500" />
              <span className="text-xs font-semibold text-zinc-400">Active Workspace</span>
          </div>
-         <div className="relative group">
-            <button className="w-full flex items-center gap-3 p-2 bg-[#252526] hover:bg-zinc-800 border border-white/5 hover:border-zinc-600 rounded-lg transition-all text-left">
+         <div className="relative">
+            <button 
+              onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+              className="w-full flex items-center gap-3 p-2 bg-[#252526] hover:bg-zinc-800 border border-white/5 hover:border-zinc-600 rounded-lg transition-all text-left"
+            >
         <div className="w-8 h-8 rounded bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
           <span className="text-xs font-bold text-zinc-300">{currentProject ? currentProject.name.substring(0,1) : '?'}</span>
         </div>
@@ -215,25 +221,35 @@ const LeftSidebar: React.FC<{
           <div className="text-xs font-medium text-zinc-200 truncate">{currentProject ? currentProject.name : ''}</div>
           <div className="text-[10px] text-zinc-500 truncate">{currentProject ? currentProject.root : ''}</div>
                 </div>
-                <ChevronDown size={12} className="text-zinc-500" />
+                <ChevronDown size={12} className={`text-zinc-500 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             
-            {/* Project List Dropdown (Simulated for this view, would be a real dropdown/modal in prod) */}
-      <div className="hidden group-hover:block absolute top-full left-0 right-0 mt-1 bg-[#252526] border border-zinc-700 rounded-lg shadow-xl z-20 overflow-hidden">
-        {projects.map(p => (
+            {/* Project List Dropdown - Click-based with proper z-index */}
+      {isProjectDropdownOpen && (
+        <>
+          {/* Backdrop to close dropdown when clicking outside */}
           <div 
-            key={p.id}
-            onClick={() => {
-              setActiveProject(p.id);
-              if (onSelectProject) onSelectProject(p.id);
-            }} 
-            className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-cyan-400' : 'text-zinc-300'}`}
-          >
-            <span>{p.name}</span>
-            {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 my-auto"></div>}
+            className="fixed inset-0 z-10" 
+            onClick={() => setIsProjectDropdownOpen(false)}
+          />
+          <div className="absolute top-full left-0 right-0 mt-1 bg-[#252526] border border-zinc-700 rounded-lg shadow-xl z-20 overflow-hidden">
+            {projects.map(p => (
+              <div 
+                key={p.id}
+                onClick={() => {
+                  setActiveProject(p.id);
+                  if (onSelectProject) onSelectProject(p.id);
+                  setIsProjectDropdownOpen(false);
+                }} 
+                className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-cyan-400' : 'text-zinc-300'}`}
+              >
+                <span>{p.name}</span>
+                {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 my-auto"></div>}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
          </div>
       </div>
 
