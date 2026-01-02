@@ -127,6 +127,13 @@ Trace signal and process lines between components:
 ### OUTPUT FORMAT
 
 Return ONLY valid JSON with this exact structure. No markdown, no preamble.
+
+**CRITICAL: PROCESS LOG REQUIREMENT**
+- You MUST include a "process_log" field in your response
+- This field should contain a technical summary of the system you detected
+- Format: "Detected [system description] with [component counts]. [Key observations about system architecture and control logic]."
+- Example: "Detected a primary HVAC control system with 4 temperature control loops (TT-1402, TT-1403, TT-1404, TT-1405), 2 pressure monitoring points (PDI-1401, PDI-1402), and 3 flow control valves (FIC-201, FIC-202, FIC-203). System architecture indicates a dual-zone temperature control configuration with differential pressure sensing."
+- This trace provides transparency to users about your analysis process
 `;
 
 /**
@@ -180,7 +187,8 @@ export const PID_DETECT_PROMPT = `
       "type": "electric",  // or "pneumatic", "hydraulic", "process"
       "confidence": 0.9
     }
-  ]
+  ],
+  "process_log": "Detected a process control system with 5 temperature transmitters (TT-series), 3 pressure indicators (PI-series), and 2 flow indicator controllers (FIC-series). Primary control loop: TT-1402 → TIC-1402 → TCV-1402. System implements cascade control with pressure compensation."
 }
 
 **REMEMBER:** Text extraction is your PRIMARY objective. Every instrument MUST have its tag correctly identified.

@@ -72,6 +72,13 @@ For each connection:
 
 ### OUTPUT
 Return ONLY valid JSON. All coordinates must be normalized 0-1.
+
+**CRITICAL: PROCESS LOG REQUIREMENT**
+- You MUST include a "process_log" field in your response
+- This field should contain a technical summary of the HVAC system you detected
+- Format: "Detected [system description] with [component counts]. [Key observations about airflow and control logic]."
+- Example: "Detected a dual-zone HVAC system with 1 main AHU (AHU-1), 6 VAV boxes (VAV-101 through VAV-106), 3 supply dampers (SD-101, SD-102, SD-103), and 12 diffusers. Supply air flows from AHU-1 through main trunk duct to VAV zones. Return air system uses dashed lines showing paths back to AHU."
+- This trace provides transparency to users about your analysis process
 `;
 
 export const DETECT_PROMPT = `
@@ -135,13 +142,15 @@ export const DETECT_PROMPT = `
       "to_id": "component-b",
       "type": "supply|return|electric|pneumatic|signal"
     }
-  ]
+  ],
+  "process_log": "Detected a single-zone HVAC system with 1 AHU (AHU-1), 4 VAV boxes (VAV-101, VAV-102, VAV-103, VAV-104), and 8 diffusers. Main supply duct feeds all VAV units. Return air system visible with dashed lines."
 }
 
 **REMEMBER:** 
 - Text extraction is PRIMARY - every visible label MUST be captured
 - "unknown" labels are FORBIDDEN if text is readable
 - Generic type names are NOT acceptable when specific text tags exist
+- Process log is MANDATORY for system transparency
 
 Analyze now.
 `;

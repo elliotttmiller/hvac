@@ -526,6 +526,7 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       metadata: {
         total_components: validatedComponents.length,
         total_connections: validatedConnections.length,
+        process_log: parsed.process_log || undefined, // Extract process_log from AI response
       },
     };
   } catch (error) {

@@ -54,6 +54,7 @@ export interface VisualAnalysisResult {
     total_components: number;
     total_connections: number;
     image_dimensions?: { width: number; height: number };
+    process_log?: string; // AI reasoning trace for user transparency
     error?: string; // Added to capture error messages
     parse_error?: string; // Added to capture parsing errors
   };
@@ -239,6 +240,10 @@ export const VISUAL_ANALYSIS_SCHEMA = {
         },
         required: ['id', 'from_id', 'to_id', 'type'],
       },
+    },
+    process_log: {
+      type: Type.STRING,
+      description: 'A technical summary of the detection process and system understanding. Example: "Detected a primary HVAC control system with 4 temperature control loops, 2 pressure monitoring points, and 3 flow control valves. System architecture indicates a dual-zone temperature control configuration with differential pressure sensing."',
     },
   },
   required: ['components', 'connections'],

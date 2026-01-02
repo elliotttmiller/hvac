@@ -173,6 +173,36 @@ const OverviewTab: React.FC<{ result: UniversalDocumentResult }> = ({ result }) 
           <h3 style={{ margin: '24px 0 16px 0' }}>Visual Analysis</h3>
           <InfoRow label="Components Detected" value={result.visual.components.length} />
           <InfoRow label="Connections" value={result.visual.connections.length} />
+          
+          {/* Process Log Section - Terminal Style */}
+          {result.visual.metadata?.process_log && (
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ 
+                margin: '0 0 12px 0',
+                color: '#6B7280',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontWeight: '600'
+              }}>
+                Process Log
+              </h3>
+              <div style={{
+                backgroundColor: '#1F2937',
+                padding: '16px',
+                borderRadius: '6px',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                color: '#10B981',
+                border: '1px solid #374151',
+                lineHeight: '1.6',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
+                {result.visual.metadata.process_log}
+              </div>
+            </div>
+          )}
         </>
       )}
       
