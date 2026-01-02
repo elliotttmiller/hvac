@@ -457,9 +457,10 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
 
       // MANDATORY LABEL: Ensure label is always present (required by type system)
       // If AI didn't provide a label, use descriptive fallback that indicates OCR failure
+      const shortId = Math.random().toString(36).substring(2, 10);
       const label = comp.label && comp.label.trim() !== '' 
         ? comp.label 
-        : `unreadable-OCR-failed-${comp.type || 'unknown'}-${generateId().substring(0, 8)}`;
+        : `unreadable-OCR-failed-${comp.type || 'unknown'}-${shortId}`;
       
       const validated = {
         id: comp.id || generateId(),
