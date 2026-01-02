@@ -4,24 +4,52 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    
     return {
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        host: '0.0.0.0', // CRITICAL: Binds to all network interfaces for container access
+        strictPort: true,
+        
+        // -----------------------------------------------------------------------
+        // CLOUD & TUNNELING CONFIGURATION
+        // -----------------------------------------------------------------------
+        // Allows the server to respond to requests from *.loca.lt or ngrok domains
+        allowedHosts: true, 
+        
+        // Enables CORS to prevent browser security blocks when accessing via Tunnel
+        cors: true,         
+        
+        // Fixes the "Black Screen" / Infinite Loading loop
+        // Tells the browser to connect to the HMR socket via HTTPS (Port 443)
+        // instead of trying to hit localhost:3000 directly
+        hmr: {
+          clientPort: 443, 
+        },
+        
+        // Ensures file changes are detected in virtualized environments (Colab/Docker)
+        watch: {
+          usePolling: true,
+          interval: 100,
+        }
       },
+      
       plugins: [react()],
+      
       define: {
+        // Preserves your existing env injection logic
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
+      
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
-      ,
+      },
+      
       build: {
-        // Use manualChunks to separate vendor libraries and keep the main chunk smaller.
+        // Preserves your existing chunk splitting strategy
         rollupOptions: {
           output: {
             manualChunks(id) {
