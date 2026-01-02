@@ -53,6 +53,61 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   // Kept for potential future enhancements (e.g., showing active box in external components)
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   
+  // Smart positioning: Calculate optimal placement for hover cards to avoid viewport clipping
+  const calculateCardPosition = (
+    boxLeft: number,
+    boxTop: number,
+    boxWidth: number,
+    boxHeight: number
+  ): { position: 'bottom' | 'top' | 'left' | 'right', alignment: 'center' | 'start' | 'end' } => {
+    const cardWidth = 256; // w-64 = 16rem = 256px
+    const cardHeight = 200; // estimated card height
+    const margin = 12; // mt-3 = 0.75rem = 12px
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    const boxRight = boxLeft + boxWidth;
+    const boxBottom = boxTop + boxHeight;
+    const boxCenterX = boxLeft + boxWidth / 2;
+    const boxCenterY = boxTop + boxHeight / 2;
+    
+    // Check if default position (bottom-center) would clip
+    const wouldClipRight = boxCenterX + cardWidth / 2 > viewportWidth;
+    const wouldClipLeft = boxCenterX - cardWidth / 2 < 0;
+    const wouldClipBottom = boxBottom + margin + cardHeight > viewportHeight;
+    const wouldClipTop = boxTop - margin - cardHeight < 0;
+    
+    // Determine position priority: bottom > top > right > left
+    if (!wouldClipBottom && !wouldClipRight && !wouldClipLeft) {
+      return { position: 'bottom', alignment: 'center' };
+    } else if (!wouldClipTop && !wouldClipRight && !wouldClipLeft) {
+      return { position: 'top', alignment: 'center' };
+    } else if (!wouldClipBottom) {
+      // Try bottom with adjusted alignment
+      if (wouldClipRight) {
+        return { position: 'bottom', alignment: 'end' };
+      } else if (wouldClipLeft) {
+        return { position: 'bottom', alignment: 'start' };
+      }
+    } else if (!wouldClipTop) {
+      // Try top with adjusted alignment
+      if (wouldClipRight) {
+        return { position: 'top', alignment: 'end' };
+      } else if (wouldClipLeft) {
+        return { position: 'top', alignment: 'start' };
+      }
+    }
+    
+    // Fallback to right or left side positioning if vertical doesn't work
+    const wouldClipRightSide = boxRight + margin + cardWidth > viewportWidth;
+    if (!wouldClipRightSide) {
+      return { position: 'right', alignment: 'center' };
+    } else {
+      return { position: 'left', alignment: 'center' };
+    }
+  };
+  
   // Update scale when image loads or container resizes - FIXED: Calculate exact rendered dimensions with object-fit:contain
   useEffect(() => {
     const img = imageRef.current;
@@ -232,6 +287,59 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
         const height = (y2 - y1) * 100;
         
         const isText = component.type === 'text';
+        const isActive = activeBoxId === component.id;
+        
+        // Calculate absolute pixel positions for smart positioning
+        const boxLeft = imageDimensions.offsetX + (x / 100) * imageDimensions.actualWidth;
+        const boxTop = imageDimensions.offsetY + (y / 100) * imageDimensions.actualHeight;
+        const boxWidth = (width / 100) * imageDimensions.actualWidth;
+        const boxHeight = (height / 100) * imageDimensions.actualHeight;
+        
+        // Calculate smart card position to avoid viewport clipping
+        const cardPlacement = calculateCardPosition(boxLeft, boxTop, boxWidth, boxHeight);
+        
+        // Dynamic positioning classes based on placement
+        let cardPositionClass = '';
+        let connectorClass = '';
+        
+        switch (cardPlacement.position) {
+          case 'bottom':
+            cardPositionClass = 'top-full mt-3';
+            connectorClass = 'absolute -top-1.5 w-3 h-3 bg-slate-900 border-l border-t border-slate-700/50 transform rotate-45';
+            if (cardPlacement.alignment === 'center') {
+              cardPositionClass += ' left-1/2 -translate-x-1/2';
+              connectorClass += ' left-1/2 -translate-x-1/2';
+            } else if (cardPlacement.alignment === 'end') {
+              cardPositionClass += ' right-0';
+              connectorClass += ' right-8';
+            } else {
+              cardPositionClass += ' left-0';
+              connectorClass += ' left-8';
+            }
+            break;
+          case 'top':
+            cardPositionClass = 'bottom-full mb-3';
+            connectorClass = 'absolute -bottom-1.5 w-3 h-3 bg-slate-900 border-r border-b border-slate-700/50 transform rotate-45';
+            if (cardPlacement.alignment === 'center') {
+              cardPositionClass += ' left-1/2 -translate-x-1/2';
+              connectorClass += ' left-1/2 -translate-x-1/2';
+            } else if (cardPlacement.alignment === 'end') {
+              cardPositionClass += ' right-0';
+              connectorClass += ' right-8';
+            } else {
+              cardPositionClass += ' left-0';
+              connectorClass += ' left-8';
+            }
+            break;
+          case 'right':
+            cardPositionClass = 'left-full ml-3 top-1/2 -translate-y-1/2';
+            connectorClass = 'absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-slate-900 border-l border-b border-slate-700/50 transform rotate-45';
+            break;
+          case 'left':
+            cardPositionClass = 'right-full mr-3 top-1/2 -translate-y-1/2';
+            connectorClass = 'absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-slate-900 border-r border-t border-slate-700/50 transform rotate-45';
+            break;
+        }
         
         return (
           <div
@@ -242,12 +350,13 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
                 : 'border-cyan-500/60 hover:border-cyan-400 hover:bg-cyan-500/10'
             }`}
             style={{
-              left: `${imageDimensions.offsetX + (x / 100) * imageDimensions.actualWidth}px`,
-              top: `${imageDimensions.offsetY + (y / 100) * imageDimensions.actualHeight}px`,
-              width: `${(width / 100) * imageDimensions.actualWidth}px`,
-              height: `${(height / 100) * imageDimensions.actualHeight}px`,
+              left: `${boxLeft}px`,
+              top: `${boxTop}px`,
+              width: `${boxWidth}px`,
+              height: `${boxHeight}px`,
               transform: `rotate(${component.rotation || 0}deg)`,
-              transformOrigin: 'center center'
+              transformOrigin: 'center center',
+              zIndex: isActive ? 50 : 10, // Active box gets higher z-index
             }}
             onMouseEnter={() => setActiveBoxId(component.id)}
             onMouseLeave={() => setActiveBoxId(null)}
@@ -259,8 +368,8 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
             <div className="absolute -bottom-[1px] -left-[1px] w-1.5 h-1.5 border-b-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="absolute -bottom-[1px] -right-[1px] w-1.5 h-1.5 border-b-2 border-r-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
-            {/* SLEEK POPOVER CARD - Transplanted from Legacy */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none group-hover:pointer-events-auto origin-top scale-95 group-hover:scale-100">
+            {/* SLEEK POPOVER CARD - Smart positioned to avoid viewport clipping */}
+            <div className={`absolute ${cardPositionClass} w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto origin-top scale-95 group-hover:scale-100`} style={{ zIndex: 100 }}>
               <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] p-0 overflow-hidden ring-1 ring-white/10">
                 {/* Color Strip */}
                 <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600 via-fuchsia-500 to-purple-600' : 'from-cyan-600 via-blue-500 to-cyan-600'}`}></div>
@@ -307,8 +416,8 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
                   </div>
                 </div>
               </div>
-              {/* Triangle Connector */}
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-l border-t border-slate-700/50 transform rotate-45"></div>
+              {/* Triangle Connector - dynamically positioned */}
+              <div className={connectorClass}></div>
             </div>
           </div>
         );
