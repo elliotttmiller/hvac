@@ -24,6 +24,7 @@ const BlueprintWorkspace: React.FC = () => {
   
   // Interactivity State
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
+  const [hoveredComponentId, setHoveredComponentId] = useState<string | null>(null);
 
   // Right Panel Resize State
   const [panelWidth, setPanelWidth] = useState(320);
@@ -152,9 +153,13 @@ const BlueprintWorkspace: React.FC = () => {
 
       // Process visual analysis results
       if (result.visual && result.visual.components) {
+        console.log('[BlueprintWorkspace] Visual components received:', result.visual.components);
+        
         const boxes = result.visual.components.map((comp) => {
           // Convert normalized bbox (0-1) to percentage
           const [x1, y1, x2, y2] = comp.bbox;
+          console.log(`[BlueprintWorkspace] Component ${comp.label}: bbox=[${x1}, ${y1}, ${x2}, ${y2}]`);
+          
           return {
             id: comp.id,
             label: comp.label || comp.type,
@@ -209,7 +214,9 @@ const BlueprintWorkspace: React.FC = () => {
         isProcessing={isProcessing}
         backendType={backendType}
         selectedBoxId={selectedBoxId}
+        hoveredComponentId={hoveredComponentId}
         onSelectBox={setSelectedBoxId}
+        onHoverComponent={setHoveredComponentId}
         onFileUpload={handleFileUpload}
         onClearImage={handleClearImage}
         onRunAnalysis={runAnalysis}
@@ -247,7 +254,10 @@ const BlueprintWorkspace: React.FC = () => {
                 detectedBoxes={detectedBoxes}
                 validationIssues={validationIssues}
                 selectedBoxId={selectedBoxId}
+                hoveredComponentId={hoveredComponentId}
+                isAnalyzing={isProcessing}
                 onSelectBox={setSelectedBoxId}
+                onHoverComponent={setHoveredComponentId}
             />
           </div>
       </div>

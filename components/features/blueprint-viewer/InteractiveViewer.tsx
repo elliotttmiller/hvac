@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, FileSearch, Scan, Type, Layers, X, Eye, Server, Sparkles, Box, ZoomIn, ZoomOut, Move } from 'lucide-react';
 import { DetectedObject, GeminiModel } from '../../../types';
+import { CanvasOverlay } from '../../../ui/visualization/CanvasOverlay';
+import { DetectedComponent } from '../../../features/document-analysis/types';
 
 interface InteractiveViewerProps {
   imageUrl: string | null;
@@ -8,7 +10,9 @@ interface InteractiveViewerProps {
   isProcessing: boolean;
   backendType: 'RAY' | 'GEMINI';
   selectedBoxId: string | null;
+  hoveredComponentId: string | null;
   onSelectBox: (id: string | null) => void;
+  onHoverComponent: (id: string | null) => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
   onRunAnalysis: () => void;
@@ -21,7 +25,9 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   isProcessing,
   backendType,
   selectedBoxId,
+  hoveredComponentId,
   onSelectBox,
+  onHoverComponent,
   onFileUpload,
   onClearImage,
   onRunAnalysis,
@@ -31,6 +37,22 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [showOCR, setShowOCR] = useState(false);
   const [showGeo, setShowGeo] = useState(false);
   const [zoom, setZoom] = useState(1);
+  
+  // Convert DetectedObject[] to DetectedComponent[] for CanvasOverlay
+  const components: DetectedComponent[] = detectedBoxes.map(box => ({
+    id: box.id,
+    type: box.type || 'component',
+    label: box.label,
+    bbox: [
+      box.x / 100,  // Convert percentage back to normalized 0-1
+      box.y / 100,
+      (box.x + box.width) / 100,
+      (box.y + box.height) / 100
+    ] as [number, number, number, number],
+    confidence: box.confidence,
+    rotation: box.rotation,
+    meta: box.meta
+  }));
 
   return (
     <div className="flex-1 relative bg-[#121212] flex flex-col overflow-hidden">
@@ -86,69 +108,23 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
             </label>
           </div>
         ) : (
-          <div className="relative w-full h-full flex items-center justify-center overflow-auto cursor-grab active:cursor-grabbing">
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
               <div 
-                className="relative inline-block shadow-2xl shadow-black/50 transition-transform duration-200 ease-out"
-                style={{ transform: `scale(${zoom})` }}
-                onClick={(e) => e.stopPropagation()} // Prevent deselection when clicking image area
+                className="relative w-full h-full"
+                onClick={() => onSelectBox(null)} // Deselect on background click
               >
-                  <img 
-                    src={imageUrl} 
-                    alt="Blueprint" 
-                    className={`max-w-none shadow-2xl ${showGeo ? 'perspective-[1000px] rotate-x-2 scale-[0.98] duration-500' : ''}`} 
+                  {/* Use CanvasOverlay for proper bounding box rendering with object-fit:contain support */}
+                  <CanvasOverlay
+                    imageUrl={imageUrl}
+                    components={components}
+                    selectedComponent={selectedBoxId}
+                    hoveredComponent={hoveredComponentId}
+                    onComponentClick={(component) => onSelectBox(component.id)}
+                    onComponentHover={onHoverComponent}
+                    showLabels={true}
+                    showBoundingBoxes={showOBB}
+                    showConnections={false}
                   />
-                  
-                  {/* Render Bounding Boxes */}
-                  {detectedBoxes.map(box => {
-                      const isText = box.type === 'text';
-                      const isVisible = (isText && showOCR) || (!isText && showOBB);
-                      const isSelected = selectedBoxId === box.id;
-                      
-                      if (!isVisible) return null;
-
-                      return (
-                          <div 
-                              key={box.id}
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  onSelectBox(box.id);
-                              }}
-                              className={`absolute flex items-start justify-start group cursor-pointer transition-all duration-300
-                                ${isSelected 
-                                    ? 'border-2 border-cyan-500 bg-cyan-500/20 z-10' 
-                                    : isText 
-                                        ? 'border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/10' 
-                                        : 'border border-cyan-400/30 hover:border-cyan-400 hover:bg-cyan-400/10'
-                                }
-                              `}
-                              style={{
-                                  left: `${box.x}%`,
-                                  top: `${box.y}%`,
-                                  width: `${box.width}%`,
-                                  height: `${box.height}%`,
-                                  transform: `rotate(${box.rotation || 0}deg)`,
-                                  transformOrigin: 'center center'
-                              }}
-                          >
-                              {/* Selection Handles (Figma Style) - Only visible when selected */}
-                              {isSelected && (
-                                <>
-                                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
-                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
-                                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
-                                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-cyan-500 shadow-sm"></div>
-                                </>
-                              )}
-
-                              {/* Label (Hover or Selected) */}
-                              <div className={`absolute -top-5 left-0 px-1.5 py-0.5 text-[9px] font-bold text-white bg-black/80 backdrop-blur rounded transition-opacity whitespace-nowrap z-20
-                                  ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                              `}>
-                                  {box.label}
-                              </div>
-                          </div>
-                      );
-                  })}
                   
                   {isProcessing && (
                         <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] flex items-center justify-center z-50">
@@ -168,12 +144,6 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
             <div className="bg-[#1e1e1e] border border-white/10 rounded-full px-4 py-2 flex items-center gap-4 shadow-xl">
                 
-                <div className="flex items-center gap-2 border-r border-white/10 pr-4">
-                    <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} className="text-zinc-400 hover:text-white"><ZoomOut size={14}/></button>
-                    <span className="text-[10px] font-mono text-zinc-300 w-8 text-center">{Math.round(zoom * 100)}%</span>
-                    <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} className="text-zinc-400 hover:text-white"><ZoomIn size={14}/></button>
-                </div>
-
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={() => setShowOBB(!showOBB)} 

@@ -21,7 +21,10 @@ interface InspectorPanelProps {
   detectedBoxes: DetectedObject[];
   validationIssues: ValidationIssue[];
   selectedBoxId: string | null;
+  hoveredComponentId: string | null;
+  isAnalyzing: boolean;
   onSelectBox: (id: string | null) => void;
+  onHoverComponent: (id: string | null) => void;
 }
 
 type Tab = 'COMPONENTS' | 'PRICING' | 'QUOTE';
@@ -33,7 +36,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
    detectedBoxes,
    validationIssues, 
    selectedBoxId,
-   onSelectBox
+   hoveredComponentId,
+   isAnalyzing,
+   onSelectBox,
+   onHoverComponent
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,14 +98,23 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-1">
-        {filteredBoxes.length > 0 ? (
+        {isAnalyzing ? (
+          <div className="p-8 text-center">
+            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <div className="text-xs text-zinc-400">Analyzing blueprint...</div>
+          </div>
+        ) : filteredBoxes.length > 0 ? (
           filteredBoxes.map((box) => (
             <div 
               key={box.id}
               onClick={() => onSelectBox(box.id)}
+              onMouseEnter={() => onHoverComponent(box.id)}
+              onMouseLeave={() => onHoverComponent(null)}
               className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
                 selectedBoxId === box.id 
                   ? 'bg-cyan-500/10 border border-cyan-500/30' 
+                  : hoveredComponentId === box.id
+                  ? 'bg-cyan-500/5 border border-cyan-500/20'
                   : 'hover:bg-white/5 border border-transparent'
               }`}
             >
@@ -123,7 +138,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           ))
         ) : (
           <div className="p-4 text-center text-zinc-500 text-xs italic">
-            No components found.
+            {detectedBoxes.length === 0 ? 'No components detected. Click "Run" to analyze the blueprint.' : 'No components found.'}
           </div>
         )}
       </div>

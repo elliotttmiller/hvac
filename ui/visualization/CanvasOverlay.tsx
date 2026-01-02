@@ -14,7 +14,9 @@ export interface CanvasOverlayProps {
   components?: DetectedComponent[];
   connections?: Connection[];
   selectedComponent?: string | null;
+  hoveredComponent?: string | null;
   onComponentClick?: (component: DetectedComponent) => void;
+  onComponentHover?: (componentId: string | null) => void;
   showLabels?: boolean;
   showBoundingBoxes?: boolean;
   showConnections?: boolean;
@@ -30,7 +32,9 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   components = [],
   connections = [],
   selectedComponent = null,
+  hoveredComponent = null,
   onComponentClick,
+  onComponentHover,
   showLabels = true,
   showBoundingBoxes = true,
   showConnections = true,
@@ -167,14 +171,14 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     
     // Draw component bounding boxes
     if (showBoundingBoxes && components.length > 0) {
-      drawComponents(ctx, components, scale, selectedComponent);
+      drawComponents(ctx, components, scale, selectedComponent, hoveredComponent);
     }
     
     // Draw labels
     if (showLabels && components.length > 0) {
       drawLabels(ctx, components, scale);
     }
-  }, [components, connections, imageDimensions, scale, selectedComponent, showLabels, showBoundingBoxes, showConnections]);
+  }, [components, connections, imageDimensions, scale, selectedComponent, hoveredComponent, showLabels, showBoundingBoxes, showConnections]);
   
   // Handle component clicks
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -195,6 +199,34 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     }
   };
   
+  // Handle component hover
+  const handleCanvasHover = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!onComponentHover || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale.x;
+    const y = (e.clientY - rect.top) / scale.y;
+    
+    // Find hovered component
+    let foundComponent: DetectedComponent | null = null;
+    for (const component of components) {
+      const [x1, y1, x2, y2] = component.bbox;
+      if (x >= x1 && x <= x2 && y >= y1 && y <= y2) {
+        foundComponent = component;
+        break;
+      }
+    }
+    
+    onComponentHover(foundComponent ? foundComponent.id : null);
+  };
+  
+  const handleCanvasLeave = () => {
+    if (onComponentHover) {
+      onComponentHover(null);
+    }
+  };
+  
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <img
@@ -211,6 +243,8 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
       <canvas
         ref={canvasRef}
         onClick={handleCanvasClick}
+        onMouseMove={handleCanvasHover}
+        onMouseLeave={handleCanvasLeave}
         style={{
           position: 'absolute',
           top: `${imageDimensions.offsetY}px`,
@@ -229,7 +263,8 @@ function drawComponents(
   ctx: CanvasRenderingContext2D,
   components: DetectedComponent[],
   scale: { x: number; y: number },
-  selectedId: string | null
+  selectedId: string | null,
+  hoveredId: string | null = null
 ) {
   components.forEach(component => {
     const [x1, y1, x2, y2] = component.bbox;
@@ -241,14 +276,15 @@ function drawComponents(
     // Determine color based on component type
     const color = getComponentColor(component.type);
     const isSelected = component.id === selectedId;
+    const isHovered = component.id === hoveredId;
     
     // Draw bounding box
-    ctx.strokeStyle = isSelected ? '#FFD700' : color;
-    ctx.lineWidth = isSelected ? 3 : 2;
+    ctx.strokeStyle = isSelected ? '#FFD700' : isHovered ? '#00D9FF' : color;
+    ctx.lineWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
     ctx.strokeRect(x, y, width, height);
     
     // Fill with semi-transparent color
-    ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.1)' : `${color}20`;
+    ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.1)' : isHovered ? 'rgba(0, 217, 255, 0.08)' : `${color}20`;
     ctx.fillRect(x, y, width, height);
   });
 }
