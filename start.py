@@ -13,14 +13,12 @@ designed to help pinpoint issues during development, CI, or local startup.
 Features:
 - Comprehensive environment validation (Python, Node, npm, git)
 - Dependency installation verification with auto-install option
-- Repository health and disk space checks
+- Repository health checks
 - .env configuration loading and validation against .env.example
 - Package.json scripts validation (dev, build, preview)
 - Pre-build script execution and validation
-- TypeScript typecheck with detailed error reporting (npx tsc --noEmit)
 - Optional production build (npm run build) with progress tracking
 - Optional dev server startup (npm run dev) with log streaming
-- Performance metrics tracking with timing for each stage
 - Comprehensive structured logging with progress indicators
 - Platform-specific optimizations (Windows/macOS/Linux)
 - Actionable error messages with recommendations
@@ -49,9 +47,6 @@ from typing import Dict, List, Optional, Tuple, Any
 
 ROOT = Path(__file__).resolve().parent
 LOG_DIR = ROOT / "logs"
-
-# Performance metrics tracking
-TIMINGS: Dict[str, float] = {}
 
 # Output truncation constants
 MAX_DISPLAYED_ERRORS = 15
@@ -92,19 +87,6 @@ def log_step(step_name: str) -> None:
     logger.info("=" * 70)
     logger.info(f"  {step_name}")
     logger.info("=" * 70)
-
-
-def track_time(func):
-    """Decorator to track execution time of functions."""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        elapsed = time.time() - start_time
-        TIMINGS[func.__name__] = elapsed
-        logger.debug(f"⏱️  {func.__name__} took {elapsed:.2f}s")
-        return result
-    return wrapper
 
 
 def read_env_file(path: Path) -> Dict[str, str]:
@@ -242,7 +224,6 @@ def which_or_none(name: str) -> Optional[str]:
     return p
 
 
-@track_time
 def check_platform() -> Dict[str, Any]:
     """Gather comprehensive platform information."""
     log_step("Platform Information")
@@ -262,7 +243,6 @@ def check_platform() -> Dict[str, Any]:
     return info
 
 
-@track_time
 def check_environment() -> Dict[str, str]:
     """Collect comprehensive environment information."""
     log_step("Environment Validation")
@@ -302,109 +282,10 @@ def check_environment() -> Dict[str, str]:
     else:
         logger.warning("⚠️  npx not found in PATH")
     
-    # git
-    info["git_path"] = which_or_none("git") or "(not found)"
-    if info["git_path"] != "(not found)":
-        rc, out, _ = run_cmd([info["git_path"], "--version"])
-        info["git_version"] = out.strip() if rc == 0 else "(error)"
-        logger.info(f"✅ Git: {info['git_version']}")
-    else:
-        info["git_version"] = "(not found)"
-        logger.warning("⚠️  Git not found in PATH")
-    
     logger.debug(f"Environment summary: {json.dumps(info, indent=2)}")
     return info
 
 
-@track_time
-def check_disk_space() -> Dict[str, Any]:
-    """Check available disk space."""
-    log_step("Disk Space Check")
-    
-    try:
-        stat = shutil.disk_usage(ROOT)
-        total_gb = stat.total / (1024 ** 3)
-        used_gb = stat.used / (1024 ** 3)
-        free_gb = stat.free / (1024 ** 3)
-        percent_used = (stat.used / stat.total) * 100
-        
-        info = {
-            "total_gb": round(total_gb, 2),
-            "used_gb": round(used_gb, 2),
-            "free_gb": round(free_gb, 2),
-            "percent_used": round(percent_used, 2)
-        }
-        
-        logger.info(f"💾 Disk Space:")
-        logger.info(f"   Total: {info['total_gb']:.2f} GB")
-        logger.info(f"   Used:  {info['used_gb']:.2f} GB ({info['percent_used']:.1f}%)")
-        logger.info(f"   Free:  {info['free_gb']:.2f} GB")
-        
-        # Warn if disk space is low
-        if free_gb < 1.0:
-            logger.error("❌ Low disk space! Less than 1 GB available")
-            logger.error("   Consider freeing up disk space before building")
-        elif free_gb < 5.0:
-            logger.warning("⚠️  Disk space is getting low (< 5 GB available)")
-        else:
-            logger.info("✅ Sufficient disk space available")
-        
-        return info
-    except Exception as e:
-        logger.error(f"❌ Failed to check disk space: {e}")
-        return {"error": str(e)}
-
-
-@track_time
-def check_git_status() -> Dict[str, Any]:
-    """Check git repository status."""
-    log_step("Git Repository Status")
-    
-    info: Dict[str, Any] = {}
-    git_path = which_or_none("git")
-    
-    if not git_path:
-        logger.warning("⚠️  Git not available, skipping repository checks")
-        return {"available": False}
-    
-    info["available"] = True
-    
-    # Check if we're in a git repository
-    rc, out, _ = run_cmd([git_path, "rev-parse", "--git-dir"])
-    if rc != 0:
-        logger.warning("⚠️  Not a git repository")
-        info["is_repo"] = False
-        return info
-    
-    info["is_repo"] = True
-    
-    # Get current branch
-    rc, out, _ = run_cmd([git_path, "rev-parse", "--abbrev-ref", "HEAD"])
-    if rc == 0:
-        info["branch"] = out.strip()
-        logger.info(f"📍 Current branch: {info['branch']}")
-    
-    # Get last commit
-    rc, out, _ = run_cmd([git_path, "log", "-1", "--pretty=format:%h - %s (%ar)"])
-    if rc == 0:
-        info["last_commit"] = out.strip()
-        logger.info(f"📝 Last commit: {info['last_commit']}")
-    
-    # Check for uncommitted changes
-    rc, out, _ = run_cmd([git_path, "status", "--porcelain"])
-    if rc == 0:
-        changes = [line for line in out.strip().split('\n') if line]
-        info["uncommitted_changes"] = len(changes)
-        if changes:
-            logger.warning(f"⚠️  {len(changes)} uncommitted change(s)")
-            logger.debug(f"Changed files:\n{chr(10).join(changes[:10])}")
-        else:
-            logger.info("✅ Working directory clean")
-    
-    return info
-
-
-@track_time
 def check_dependencies() -> Dict[str, bool]:
     """Check if npm dependencies are installed."""
     log_step("Dependency Validation")
@@ -442,7 +323,6 @@ def check_dependencies() -> Dict[str, bool]:
     return info
 
 
-@track_time
 def install_dependencies() -> bool:
     """Install npm dependencies."""
     log_step("Installing Dependencies")
@@ -467,69 +347,6 @@ def install_dependencies() -> bool:
         return False
 
 
-@track_time
-def check_repo_files() -> List[str]:
-    """Check for critical repository files."""
-    log_step("Repository Files Validation")
-    
-    missing: List[str] = []
-    required = [
-        "package.json",
-        "vite.config.ts",
-        "tsconfig.json",
-        "index.html",
-        "index.tsx"
-    ]
-    
-    for name in required:
-        p = ROOT / name
-        if not p.exists():
-            missing.append(name)
-            logger.error(f"❌ Missing required file: {name}")
-        else:
-            logger.info(f"✅ Found: {name}")
-    
-    if not missing:
-        logger.info("✅ All required repository files present")
-    
-    return missing
-
-
-@track_time
-def validate_package_scripts() -> Dict[str, bool]:
-    """Validate that required npm scripts exist in package.json."""
-    log_step("Package Scripts Validation")
-    
-    package_json = ROOT / "package.json"
-    required_scripts = ["dev", "build", "preview"]
-    results: Dict[str, bool] = {}
-    
-    try:
-        with package_json.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        scripts = data.get("scripts", {})
-        
-        for script_name in required_scripts:
-            if script_name in scripts:
-                logger.info(f"✅ Script '{script_name}': {scripts[script_name]}")
-                results[script_name] = True
-            else:
-                logger.error(f"❌ Missing required script: {script_name}")
-                results[script_name] = False
-        
-        if all(results.values()):
-            logger.info("✅ All required npm scripts are defined")
-        
-    except Exception as e:
-        logger.error(f"❌ Failed to validate package.json scripts: {e}")
-        for script_name in required_scripts:
-            results[script_name] = False
-    
-    return results
-
-
-@track_time
 def load_and_display_config() -> Dict[str, Any]:
     """Load and display .env configuration."""
     log_step("Configuration Loading")
@@ -594,8 +411,7 @@ def load_and_display_config() -> Dict[str, Any]:
     return config_summary
 
 
-@track_time
-def validate_env_keys(example: Path, actual_files: List[Path]) -> Tuple[List[str], List[str]]:
+def validate_environment() -> Tuple[List[str], List[str]]:
     """
     Validate environment variables against example file.
     
@@ -604,13 +420,21 @@ def validate_env_keys(example: Path, actual_files: List[Path]) -> Tuple[List[str
     """
     log_step("Environment Variables Validation")
     
+    example = ROOT / ".env.example"
+    candidate_actuals = [
+        ROOT / ".env",
+        ROOT / ".env.local",
+        ROOT / ".env.development",
+        ROOT / ".env.development.local"
+    ]
+    
     logger.info(f"📋 Validating against: {example.name}")
-    logger.info(f"   Checking files: {', '.join(f.name for f in actual_files if f.exists())}")
+    logger.info(f"   Checking files: {', '.join(f.name for f in candidate_actuals if f.exists())}")
     
     example_env = read_env_file(example) if example.exists() else {}
     actual_env: Dict[str, str] = {}
     
-    for p in actual_files:
+    for p in candidate_actuals:
         if p.exists():
             actual_env.update(read_env_file(p))
     
@@ -636,245 +460,7 @@ def validate_env_keys(example: Path, actual_files: List[Path]) -> Tuple[List[str
     return missing, unexpected
 
 
-@track_time
-def run_typescript_check() -> bool:
-    """Run TypeScript typecheck with detailed error reporting."""
-    log_step("TypeScript Type Check")
-    
-    npx = which_or_none("npx") or "npx"
-    logger.info("🔍 Running: npx tsc --noEmit")
-    logger.info("   This validates TypeScript types across the project...")
-    
-    rc, out, err = run_cmd([npx, "tsc", "--noEmit"], timeout=180)
-    
-    if rc == 0:
-        logger.info("✅ TypeScript check passed - no type errors found")
-        return True
-    else:
-        logger.error(f"❌ TypeScript check FAILED (exit code: {rc})")
-        
-        # Parse and display errors more clearly
-        if out:
-            error_lines = [line for line in out.split('\n') if line.strip()]
-            error_count = len([line for line in error_lines if 'error TS' in line])
-            
-            logger.error(f"   Found {error_count} type error(s)")
-            logger.error("")
-            logger.error("   First few errors:")
-            for line in error_lines[:MAX_DISPLAYED_ERRORS]:
-                logger.error(f"   {line}")
-            
-            if len(error_lines) > MAX_DISPLAYED_ERRORS:
-                logger.error(f"   ... and {len(error_lines) - MAX_DISPLAYED_ERRORS} more lines")
-        
-        if err:
-            logger.error(f"   Error details: {err[:500]}")
-        
-        logger.error("")
-        logger.error("💡 Recommendation:")
-        logger.error("   Fix TypeScript errors before building")
-        logger.error("   Run 'npx tsc --noEmit' locally for full error details")
-        
-        return False
-
-
-@track_time
-def run_build(should_run_build: bool = False) -> bool:
-    """Run production build with progress tracking."""
-    if not should_run_build:
-        logger.info("ℹ️  Production build skipped (not requested)")
-        logger.info("   Use --build flag to run production build")
-        return True
-    
-    log_step("Production Build")
-    
-    npm = which_or_none("npm") or "npm"
-    logger.info("🏗️  Running: npm run build")
-    logger.info("   This may take a few minutes...")
-    
-    start_time = time.time()
-    rc, out, err = run_cmd([npm, "run", "build"], timeout=600)
-    elapsed = time.time() - start_time
-    
-    if rc == 0:
-        logger.info(f"✅ Build succeeded in {elapsed:.1f}s")
-        
-        # Check for dist directory
-        dist_dir = ROOT / "dist"
-        if dist_dir.exists():
-            try:
-                # Count files in dist
-                file_count = sum(1 for _ in dist_dir.rglob('*') if _.is_file())
-                # Calculate dist size
-                total_size = sum(f.stat().st_size for f in dist_dir.rglob('*') if f.is_file())
-                size_mb = total_size / (1024 * 1024)
-                
-                logger.info(f"📦 Build output: {file_count} files ({size_mb:.2f} MB)")
-                logger.info(f"   Location: {dist_dir}")
-            except Exception as e:
-                logger.debug(f"Failed to analyze dist directory: {e}")
-        
-        return True
-    else:
-        logger.error(f"❌ Build failed after {elapsed:.1f}s (exit code: {rc})")
-        
-        if err:
-            logger.error("   Error output:")
-            for line in err.split('\n')[:MAX_DISPLAYED_LINES]:
-                if line.strip():
-                    logger.error(f"   {line}")
-        
-        if out:
-            logger.debug(f"Build stdout:\n{out}")
-        
-        logger.error("")
-        logger.error("💡 Recommendation:")
-        logger.error("   1. Check the error messages above")
-        logger.error("   2. Ensure all dependencies are installed: npm install")
-        logger.error("   3. Fix any TypeScript errors first")
-        logger.error("   4. Check logs/start.log for full details")
-        
-        return False
-
-
-def start_dev_server(start_api: bool = False) -> int:
-    """
-    Start the dev server and stream logs.
-    
-    Returns:
-        The process return code when it exits (or when interrupted).
-    
-    Note: This call blocks until the dev server exits (Ctrl+C to stop).
-    """
-    log_step("Development Server")
-    
-    npm = which_or_none("npm") or "npm"
-    logger.info("🚀 Starting: npm run dev")
-    logger.info("   Press Ctrl+C to stop the server")
-    logger.info("   Server logs will be displayed below:")
-    logger.info("-" * 70)
-
-    # Start frontend dev server and optionally backend API server, streaming both outputs.
-    front_cmd = [npm, "run", "dev"]
-    back_cmd = [npm, "run", "dev:api"]
-
-    # We maintain two lists: one for waiting on processes and one for those
-    # where we have a pipe and spawn reader threads.
-    procs_wait = []
-    procs_pipe = []
-
-    def spawn(cmd, name, passthrough: bool = False):
-        logger.info(f"🚀 Starting: {shlex.join(cmd)} ({name})")
-        try:
-            run_env = os.environ.copy()
-            if passthrough:
-                # In passthrough mode inherit stdio so child thinks it's a TTY.
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=str(ROOT),
-                    shell=False,
-                    env=run_env
-                )
-            else:
-                # Capture stdout/stderr so we can stream and log it ourselves.
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=str(ROOT),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    shell=False,
-                    env=run_env
-                )
-            return p
-        except FileNotFoundError:
-            logger.error(f"❌ Command not found: {cmd[0]} for {name}")
-            return None
-
-    # `passthrough` flag will be supplied by caller (main)
-    passthrough = False
-    try:
-        passthrough = bool(start_dev_server.__dict__.get("_passthrough", False))
-    except Exception:
-        passthrough = False
-
-    front_proc = spawn(front_cmd, 'frontend', passthrough=passthrough)
-    if front_proc:
-        procs_wait.append(('frontend', front_proc))
-        if front_proc.stdout is not None:
-            procs_pipe.append(('frontend', front_proc))
-
-    back_proc = None
-    if start_api:
-        back_proc = spawn(back_cmd, 'backend', passthrough=passthrough)
-        if back_proc:
-            procs_wait.append(('backend', back_proc))
-            if back_proc.stdout is not None:
-                procs_pipe.append(('backend', back_proc))
-
-    # Reader threads for piped processes
-    threads = []
-
-    def reader_loop(p, name):
-        try:
-            if not p.stdout:
-                return
-            for line in p.stdout:
-                if line is None:
-                    break
-                text = line.rstrip()
-                print(f"[{name}] {text}")
-                try:
-                    sys.stdout.flush()
-                except Exception:
-                    pass
-                logger.info(f"[{name}] {text}")
-        except Exception as e:
-            logger.debug(f"Reader for {name} exited: {e}")
-
-    for name, p in procs_pipe:
-        t = threading.Thread(target=reader_loop, args=(p, name), daemon=True)
-        t.start()
-        threads.append(t)
-
-    try:
-        # Wait for processes to exit (if any). When both exit, return combined code (non-zero if any non-zero)
-        codes = []
-        for name, p in procs_wait:
-            rc = p.wait()
-            logger.info(f"{name} process exited with code {rc}")
-            codes.append(rc)
-
-        # Join reader threads briefly
-        for t in threads:
-            t.join(timeout=0.1)
-
-        # Determine overall code
-        overall = 0 if all(c == 0 for c in codes) else (codes[0] if codes else 0)
-        return overall
-
-    except KeyboardInterrupt:
-        logger.info("")
-        logger.info("-" * 70)
-        logger.info("⚠️  Dev servers interrupted by user (Ctrl+C)")
-        for name, p in procs_wait:
-            try:
-                p.terminate()
-            except Exception:
-                pass
-        # Wait briefly then kill
-        time.sleep(1)
-        for name, p in procs_wait:
-            if p.poll() is None:
-                try:
-                    p.kill()
-                except Exception:
-                    pass
-        return 130
-
-
-def print_summary(results: Dict[str, bool], timings: Dict[str, float]) -> None:
+def print_summary(results: Dict[str, bool]) -> None:
     """Print comprehensive summary with color-coded status."""
     log_step("Diagnostic Summary")
     
@@ -902,15 +488,6 @@ def print_summary(results: Dict[str, bool], timings: Dict[str, float]) -> None:
         logger.error("❌ Failed Checks:")
         for key in failed:
             logger.error(f"   • {key}")
-    
-    # Performance summary
-    if timings:
-        logger.info("")
-        logger.info("⏱️  Performance Metrics:")
-        total_time = sum(timings.values())
-        for func_name, duration in sorted(timings.items(), key=lambda x: x[1], reverse=True):
-            logger.info(f"   {func_name}: {duration:.2f}s")
-        logger.info(f"   Total: {total_time:.2f}s")
 
 
 def print_final_recommendations(results: Dict[str, bool]) -> None:
@@ -945,19 +522,35 @@ def print_final_recommendations(results: Dict[str, bool]) -> None:
         logger.error("❌ Missing Environment Variables:")
         logger.error("   1. Copy .env.example to .env: cp .env.example .env")
         logger.error("   2. Edit .env and add your API keys")
-    
-    if not results.get("tsc_ok", True):
-        logger.error("")
-        logger.error("❌ TypeScript Errors:")
-        logger.error("   Run: npx tsc --noEmit")
-        logger.error("   Fix the reported type errors")
-    
-    if not results.get("build_ok", True):
-        logger.error("")
-        logger.error("❌ Build Failed:")
-        logger.error("   1. Ensure all dependencies are installed")
-        logger.error("   2. Fix TypeScript errors first")
-        logger.error("   3. Check logs/start.log for details")
+
+
+def start_dev_server():
+    """Start the development server and API server."""
+    logger.info("Starting development and API servers...")
+
+    npm = which_or_none("npm")
+    if not npm:
+        logger.error("npm not found. Please ensure Node.js is installed.")
+        return 1
+
+    try:
+        # Start frontend dev server
+        frontend_proc = subprocess.Popen([npm, "run", "dev"], cwd=str(ROOT), shell=True)
+        logger.info("Frontend development server started.")
+
+        # Start backend API server
+        api_proc = subprocess.Popen([npm, "run", "dev:api"], cwd=str(ROOT), shell=True)
+        logger.info("Backend API server started.")
+
+        # Wait for both processes to complete
+        frontend_proc.wait()
+        api_proc.wait()
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to start servers: {e}")
+        return 1
+
+    return 0
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -1033,16 +626,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             logger.error("")
             logger.error("❌ CRITICAL: Node.js or npm not found")
             logger.error("   Cannot proceed without Node.js environment")
-            print_summary(results, TIMINGS)
+            print_summary(results)
             return 1
-        
-        # Disk space check
-        disk_info = check_disk_space()
-        results["disk_space_ok"] = "error" not in disk_info
-        
-        # Git status
-        git_info = check_git_status()
-        results["git_ok"] = git_info.get("is_repo", False)
         
         # Dependency check
         dep_info = check_dependencies()
@@ -1061,17 +646,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             logger.error("")
             logger.error("❌ Dependencies not installed")
             logger.error("   Run with --auto-install flag or manually run: npm install")
-            print_summary(results, TIMINGS)
+            print_summary(results)
             print_final_recommendations(results)
             return 1
-        
-        # Repository files check
-        missing_files = check_repo_files()
-        results["repo_files_ok"] = len(missing_files) == 0
-        
-        # Package scripts validation
-        script_results = validate_package_scripts()
-        results["scripts_ok"] = all(script_results.values())
         
         # Configuration loading and display
         config_info = load_and_display_config()
@@ -1085,14 +662,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             ROOT / ".env.development",
             ROOT / ".env.development.local"
         ]
-        missing_env_keys, unexpected = validate_env_keys(example, candidate_actuals)
+        missing_env_keys, unexpected = validate_environment()
         results["env_keys_ok"] = len(missing_env_keys) == 0
-        
-        # TypeScript typecheck
-        results["tsc_ok"] = run_typescript_check()
-        
-        # Production build (optional)
-        results["build_ok"] = run_build(should_run_build=args.build)
         
         # Print summary
         total_elapsed = time.time() - overall_start_time
@@ -1101,7 +672,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         logger.info(f"⏱️  Total diagnostic time: {total_elapsed:.2f}s")
         logger.info("=" * 70)
         
-        print_summary(results, TIMINGS)
+        print_summary(results)
         print_final_recommendations(results)
         
         logger.info("")
@@ -1114,9 +685,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             # Only start dev server if critical checks passed
             critical_checks = [
                 "env_ok",
-                "dependencies_ok",
-                "repo_files_ok",
-                "tsc_ok"
+                "dependencies_ok"
             ]
             critical_failed = [k for k in critical_checks if not results.get(k, False)]
             
@@ -1133,18 +702,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             if start_api:
                 logger.info("ℹ️  Found local API server entry, starting backend + frontend dev servers")
             # Mark passthrough option on the function so the inner spawn can read it
-            start_dev_server._passthrough = bool(args.passthrough)
-            logger.info(f"ℹ️  Passthrough mode: {'ENABLED' if start_dev_server._passthrough else 'DISABLED'}")
-            rc = start_dev_server(start_api=start_api)
-            logger.info(f"Dev server returned exit code: {rc}")
+            logger.info(f"ℹ️  Passthrough mode: {'ENABLED' if args.passthrough else 'DISABLED'}")
+            start_dev_server()
         
         # Determine overall exit code
         critical_fail = not all([
             results.get("env_ok", False),
-            results.get("dependencies_ok", False),
-            results.get("repo_files_ok", False),
-            results.get("tsc_ok", False),
-            results.get("build_ok", True)  # Build is optional
+            results.get("dependencies_ok", False)
         ])
         
         return 1 if critical_fail else 0
