@@ -174,33 +174,100 @@ const OverviewTab: React.FC<{ result: UniversalDocumentResult }> = ({ result }) 
           <InfoRow label="Components Detected" value={result.visual.components.length} />
           <InfoRow label="Connections" value={result.visual.connections.length} />
           
-          {/* Process Log Section - Transplanted from Legacy InspectorPanel */}
+          {/* Process Log Section - Modern Activity Feed */}
           {result.visual.metadata?.process_log && (
             <div style={{ marginTop: '24px' }}>
               <h3 style={{ 
-                margin: '0 0 12px 0',
+                margin: '0 0 16px 0',
                 color: '#64748B',
                 fontSize: '11px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.1em',
                 fontWeight: '700'
               }}>
-                Process Log
+                Activity Feed
               </h3>
               <div style={{
-                fontSize: '12px',
-                color: '#94A3B8',
-                lineHeight: '1.625',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                padding: '12px',
-                backgroundColor: '#0F172A',
-                borderRadius: '8px',
-                border: '1px solid #1E293B',
-                maxHeight: '240px',
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap'
+                backgroundColor: '#F9FAFB',
+                borderRadius: '12px',
+                padding: '16px',
+                maxHeight: '300px',
+                overflowY: 'auto'
               }}>
-                {result.visual.metadata.process_log}
+                {processLogToTimeline(result.visual.metadata.process_log).map((entry, i) => (
+                  <div key={i} style={{ 
+                    display: 'flex', 
+                    gap: '12px',
+                    marginBottom: i < processLogToTimeline(result.visual.metadata.process_log).length - 1 ? '16px' : '0',
+                    animation: 'fadeIn 0.3s ease-in',
+                    animationDelay: `${i * 0.1}s`,
+                    animationFillMode: 'backwards'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center',
+                      minWidth: '20px'
+                    }}>
+                      <div style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        borderRadius: '50%', 
+                        backgroundColor: getActivityColor(entry.type),
+                        marginTop: '6px',
+                        boxShadow: `0 0 0 3px ${getActivityColor(entry.type)}20`
+                      }} />
+                      {i < processLogToTimeline(result.visual.metadata.process_log).length - 1 && (
+                        <div style={{ 
+                          width: '2px', 
+                          flex: 1,
+                          minHeight: '20px',
+                          backgroundColor: '#E5E7EB',
+                          margin: '4px 0'
+                        }} />
+                      )}
+                    </div>
+                    <div style={{
+                      flex: 1,
+                      backgroundColor: '#FFFFFF',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                      border: '1px solid #F3F4F6'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '6px',
+                        marginBottom: '4px'
+                      }}>
+                        <span style={{ fontSize: '14px' }}>{getActivityIcon(entry.type)}</span>
+                        <span style={{ 
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: '#374151'
+                        }}>
+                          {entry.title}
+                        </span>
+                      </div>
+                      <p style={{ 
+                        margin: 0,
+                        fontSize: '13px',
+                        color: '#6B7280',
+                        lineHeight: '1.5',
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                      }}>
+                        {entry.message}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <style>{`
+                  @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                  }
+                `}</style>
               </div>
             </div>
           )}
@@ -497,5 +564,74 @@ const InfoRow: React.FC<{ label: string; value: any; valueColor?: string }> = ({
     <span style={{ fontWeight: '600', color: valueColor }}>{value}</span>
   </div>
 );
+
+/**
+ * Process log parsing and timeline helpers
+ */
+interface TimelineEntry {
+  type: 'reasoning' | 'vision' | 'validation' | 'processing' | 'general';
+  title: string;
+  message: string;
+}
+
+function processLogToTimeline(log: string): TimelineEntry[] {
+  const lines = log.split('\n').filter(l => l.trim());
+  return lines.map(line => {
+    // Detect entry type based on keywords
+    const lower = line.toLowerCase();
+    
+    if (lower.includes('reason') || lower.includes('analyz') || lower.includes('think')) {
+      return {
+        type: 'reasoning' as const,
+        title: 'Reasoning',
+        message: line
+      };
+    } else if (lower.includes('vision') || lower.includes('detect') || lower.includes('visual')) {
+      return {
+        type: 'vision' as const,
+        title: 'Vision Analysis',
+        message: line
+      };
+    } else if (lower.includes('validat') || lower.includes('check') || lower.includes('verif')) {
+      return {
+        type: 'validation' as const,
+        title: 'Validation',
+        message: line
+      };
+    } else if (lower.includes('process') || lower.includes('execut') || lower.includes('start')) {
+      return {
+        type: 'processing' as const,
+        title: 'Processing',
+        message: line
+      };
+    } else {
+      return {
+        type: 'general' as const,
+        title: 'System',
+        message: line
+      };
+    }
+  });
+}
+
+function getActivityIcon(type: string): string {
+  switch (type) {
+    case 'reasoning': return '🧠';
+    case 'vision': return '👁️';
+    case 'validation': return '✅';
+    case 'processing': return '⚙️';
+    default: return '📝';
+  }
+}
+
+function getActivityColor(type: string): string {
+  switch (type) {
+    case 'reasoning': return '#3B82F6'; // blue
+    case 'vision': return '#8B5CF6'; // purple
+    case 'validation': return '#10B981'; // green
+    case 'processing': return '#F59E0B'; // amber
+    default: return '#6B7280'; // gray
+  }
+}
 
 export default ResultsPanel;

@@ -5,6 +5,7 @@ import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../../../s
 import { analyzeDocument } from '../../../features/document-analysis/orchestrator';
 import { DetectedObject, ValidationIssue } from '../../../types';
 import { ChevronRight, PanelRightOpen, PanelRightClose } from 'lucide-react';
+import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
 const BlueprintWorkspace: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -12,6 +13,8 @@ const BlueprintWorkspace: React.FC = () => {
   const [imageDims, setImageDims] = useState<{width: number, height: number} | null>(null);
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('uploading');
+  const [processingProgress, setProcessingProgress] = useState(0);
   // We now default to the Gemini workflow (single default AI pipeline).
   const [backendType, setBackendType] = useState<'RAY' | 'GEMINI'>('GEMINI');
   
@@ -130,19 +133,28 @@ const BlueprintWorkspace: React.FC = () => {
   const runAnalysis = async () => {
     if (!imageFile || !imageUrl) return;
     setIsProcessing(true);
+    setProcessingPhase('uploading');
+    setProcessingProgress(10);
     setAnalysisRaw("Initializing analysis pipeline...");
 
     try {
       // New Architecture 2.0 Pipeline
+      setProcessingPhase('classifying');
+      setProcessingProgress(30);
       setAnalysisRaw("Step 1: Classifying document...");
       const base64Data = imageUrl.split(',')[1] || await blobToBase64(imageFile);
 
       // Use new orchestrator
+      setProcessingPhase('analyzing');
+      setProcessingProgress(60);
       const result = await analyzeDocument(base64Data, {
         fileName: imageFile.name,
       });
 
       console.log('Analysis result:', result);
+      
+      setProcessingPhase('refining');
+      setProcessingProgress(90);
       
       // Update executive summary
       setExecutiveSummary(result.executive_summary || `Document classified as: ${result.document_type}`);
@@ -179,11 +191,16 @@ const BlueprintWorkspace: React.FC = () => {
         setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
       }
 
+      setProcessingProgress(100);
       setAnalysisRaw(JSON.stringify(result, null, 2));
+      
+      // Brief pause to show completion
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 500);
     } catch (error) {
         console.error(error);
         setAnalysisRaw(`Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`);
-    } finally {
         setIsProcessing(false);
     }
   };
@@ -201,6 +218,12 @@ const BlueprintWorkspace: React.FC = () => {
 
   return (
     <div className="flex-1 flex h-full bg-[#121212] overflow-hidden relative">
+      
+      <ProcessingOverlay
+        isOpen={isProcessing}
+        phase={processingPhase}
+        progress={processingProgress}
+      />
       
       {/* Center Canvas */}
       <InteractiveViewer 

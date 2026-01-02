@@ -7,6 +7,7 @@ import React, { useState, useRef } from 'react';
 import { convertFileForGemini, ConversionResult } from '../../../lib/file-processing/converters';
 import { analyzeDocument } from '../orchestrator';
 import { UniversalDocumentResult } from '../types';
+import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
 export interface UniversalUploaderProps {
   onAnalysisComplete?: (result: UniversalDocumentResult) => void;
@@ -29,6 +30,8 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('uploading');
+  const [processingProgress, setProcessingProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleFileSelect = async (file: File) => {
@@ -48,9 +51,12 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
     
     try {
       setUploading(true);
+      setProcessingPhase('uploading');
+      setProcessingProgress(10);
       setProgress('Converting file...');
       
       // Convert file to format suitable for analysis
+      setProcessingProgress(30);
       const conversion: ConversionResult = await convertFileForGemini(file);
       
       if (!conversion.success || !conversion.data) {
@@ -59,17 +65,35 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
       
       setUploading(false);
       setAnalyzing(true);
+      setProcessingPhase('classifying');
+      setProcessingProgress(40);
       setProgress('Analyzing document...');
+      
+      // Simulate phase transitions for better UX
+      setTimeout(() => {
+        setProcessingPhase('analyzing');
+        setProcessingProgress(60);
+      }, 500);
+      
+      setTimeout(() => {
+        setProcessingPhase('refining');
+        setProcessingProgress(80);
+      }, 1000);
       
       // Analyze the document
       const result = await analyzeDocument(conversion.data, {
         fileName: file.name,
       });
       
-      setAnalyzing(false);
-      setProgress('');
+      setProcessingProgress(100);
+      setProcessingPhase('complete');
       
-      onAnalysisComplete?.(result);
+      // Brief pause to show completion
+      setTimeout(() => {
+        setAnalyzing(false);
+        setProgress('');
+        onAnalysisComplete?.(result);
+      }, 500);
     } catch (error) {
       setUploading(false);
       setAnalyzing(false);
@@ -115,21 +139,29 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
   const isProcessing = uploading || analyzing;
   
   return (
-    <div
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onClick={!isProcessing ? handleClick : undefined}
-      style={{
-        border: `2px dashed ${dragActive ? '#2196F3' : '#ccc'}`,
-        borderRadius: '8px',
-        padding: '40px',
-        textAlign: 'center',
-        cursor: isProcessing ? 'not-allowed' : 'pointer',
-        backgroundColor: dragActive ? '#f0f7ff' : '#fafafa',
-        transition: 'all 0.3s ease',
-      }}
-    >
+    <>
+      <ProcessingOverlay
+        isOpen={isProcessing}
+        phase={processingPhase}
+        progress={processingProgress}
+        message={progress}
+      />
+      
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onClick={!isProcessing ? handleClick : undefined}
+        style={{
+          border: `2px dashed ${dragActive ? '#2196F3' : '#ccc'}`,
+          borderRadius: '8px',
+          padding: '40px',
+          textAlign: 'center',
+          cursor: isProcessing ? 'not-allowed' : 'pointer',
+          backgroundColor: dragActive ? '#f0f7ff' : '#fafafa',
+          transition: 'all 0.3s ease',
+        }}
+      >
       <input
         ref={fileInputRef}
         type="file"
@@ -171,6 +203,7 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
         </>
       )}
     </div>
+    </>
   );
 };
 
