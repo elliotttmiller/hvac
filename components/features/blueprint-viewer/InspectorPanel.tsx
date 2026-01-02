@@ -151,11 +151,16 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
       )}
 
-      {/* Process Log Section - Transplanted from Legacy InspectorPanel */}
+      {/* Process Log Section - Enhanced for Responsiveness and Usability */}
       {analysis && (
-        <div className="mt-auto border-t border-white/5 p-3 bg-[#1a1a1a]">
+        <div className="mt-auto border-t border-white/5 p-3 bg-[#1a1a1a] flex flex-col h-full">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Process Log</div>
-          <div className="text-xs text-zinc-400 leading-relaxed font-mono p-2.5 bg-[#0a0a0a] rounded border border-white/5 max-h-40 overflow-y-auto whitespace-pre-wrap scrollbar-thin">
+          <div
+            className="text-xs text-zinc-400 leading-relaxed font-mono p-2.5 bg-[#0a0a0a] rounded border border-white/5 flex-1 overflow-y-auto whitespace-pre-wrap scrollbar-thin"
+            style={{ resize: 'vertical' }}
+            contentEditable
+            suppressContentEditableWarning
+          >
             {analysis}
           </div>
         </div>
