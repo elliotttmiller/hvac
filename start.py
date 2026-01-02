@@ -835,6 +835,9 @@ def start_dev_server() -> int:
             logger.info(f"Dev server exited with code {rc}")
             return rc
 
+    front_proc = spawn(front_cmd, 'frontend')
+    if front_proc:
+        procs.append(('frontend', front_proc))
 
 def print_summary(results: Dict[str, bool], timings: Dict[str, float]) -> None:
     """Print comprehensive summary with color-coded status."""
@@ -921,6 +924,9 @@ def print_final_recommendations(results: Dict[str, bool]) -> None:
         logger.error("   2. Fix TypeScript errors first")
         logger.error("   3. Check logs/start.log for details")
 
+    # Reader threads
+    threads = []
+    stop_flag = threading.Event()
 
 def main(argv: Optional[List[str]] = None) -> int:
     """Main entry point for the startup script."""

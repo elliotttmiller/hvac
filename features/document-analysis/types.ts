@@ -195,10 +195,14 @@ export const VISUAL_ANALYSIS_SCHEMA = {
         properties: {
           id: { type: Type.STRING },
           type: { type: Type.STRING },
-          label: { type: Type.STRING },
+          label: { 
+            type: Type.STRING,
+            description: 'Component label or tag - REQUIRED for all instruments and tagged components. Use extracted text, not generic names.'
+          },
           bbox: {
             type: Type.ARRAY,
             items: { type: Type.NUMBER },
+            description: 'Bounding box coordinates [x1, y1, x2, y2] in normalized 0-1 range'
           },
           confidence: { type: Type.NUMBER },
           rotation: { type: Type.NUMBER },
@@ -207,11 +211,14 @@ export const VISUAL_ANALYSIS_SCHEMA = {
             properties: {
               tag: { type: Type.STRING },
               description: { type: Type.STRING },
-              reasoning: { type: Type.STRING },
+              reasoning: { 
+                type: Type.STRING,
+                description: 'Detailed explanation of how this component was identified, including text extraction process'
+              },
             },
           },
         },
-        required: ['id', 'type', 'bbox', 'confidence'],
+        required: ['id', 'type', 'label', 'bbox', 'confidence'],
       },
     },
     connections: {

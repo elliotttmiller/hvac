@@ -2,6 +2,8 @@
  * Canvas Overlay Component
  * Renders bounding boxes and annotations on top of images
  * Uses normalized 0-1 coordinates that scale to viewport
+ * 
+ * FIXED: Accounts for object-fit:contain letterboxing to eliminate drift
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -21,6 +23,7 @@ export interface CanvasOverlayProps {
 /**
  * Canvas Overlay Component
  * Handles normalized 0-1 coordinates and scales to current viewport size
+ * Accounts for object-fit:contain letterboxing/pillarboxing
  */
 export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   imageUrl,
@@ -69,7 +72,7 @@ export const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     };
   }, [imageUrl]);
   
-  // Draw overlays on canvas
+  // Draw overlays on canvas - FIXED: Apply offset for letterboxing
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imageRef.current;
