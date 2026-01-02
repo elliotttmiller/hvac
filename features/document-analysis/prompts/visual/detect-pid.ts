@@ -37,6 +37,11 @@ ${generateISAContext()}
 - For EACH extracted text string, locate the associated geometric symbol
 - Symbols are typically: Circle, Circle-in-Square, Diamond, Hexagon
 - Check for horizontal lines inside symbols (mounting location indicator)
+- **CRITICAL RULE: "Read the Tag INSIDE the Bubble"**
+  - In P&ID diagrams, instrument tags are ALWAYS written inside or immediately adjacent to their symbols
+  - The text and symbol form an inseparable unit - they MUST be associated together
+  - Example: If you see "PDI-1401" inside a circle, that circle IS the Pressure Differential Indicator
+  - Example: If you see "TT-1402" near a circle with a horizontal line, that's a panel-mounted Temperature Transmitter
 - Note: Text is usually positioned inside, above, below, or adjacent to the symbol
 
 **STEP 3: ISA-5.1 CLASSIFICATION (Semantic Decoding)**
