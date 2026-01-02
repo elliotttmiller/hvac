@@ -4,6 +4,7 @@
 
 ## 🎯 Features
 
+
 - **Universal Document Analysis**: Automatically classifies and processes blueprints, spec sheets, and schedules
 - **Multi-Provider AI Support**: Works with Gemini, OpenAI, Anthropic, or custom AI endpoints
 - **SOTA Visual Processing**: 2x2 grid tiling with map-reduce-refine pattern for >95% component detection
