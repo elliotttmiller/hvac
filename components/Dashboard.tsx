@@ -76,8 +76,11 @@ const Dashboard: React.FC = () => {
                     <span className="px-2 py-1 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono">7D</span>
                 </div>
              </div>
-             <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+         <div className="h-72 w-full">
+           {/* Use a fixed pixel height for the ResponsiveContainer to avoid layout timing issues
+              when parent containers are measured by the browser (flex/overflow layouts).
+              h-72 (Tailwind) equals 18rem -> typically 288px. */}
+           <ResponsiveContainer width="100%" height={288}>
                   <AreaChart data={processingData}>
                     <defs>
                       <linearGradient id="colorThroughput" x1="0" y1="0" x2="0" y2="1">

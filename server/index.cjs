@@ -120,6 +120,45 @@ app.get('/api/files/content', (req, res) => {
   });
 });
 
+// === AI / Gemini proxy endpoints (server-side) ===
+app.post('/api/generate-thinking', async (req, res) => {
+  try {
+    const { prompt, history } = req.body || {};
+    // Require the service at runtime to avoid bundling server SDKs into client code
+    const svc = require('../services/geminiService');
+    const text = await svc.generateThinkingResponse(prompt || '', history || []);
+    res.json({ text });
+  } catch (e) {
+    console.error('generate-thinking error', e);
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.post('/api/analyze-blueprint', async (req, res) => {
+  try {
+    const { image } = req.body || {};
+    const svc = require('../services/geminiService');
+    const result = await svc.analyzeBlueprintImage(image || '');
+    // result is stringified JSON from the service
+    res.json(JSON.parse(result));
+  } catch (e) {
+    console.error('analyze-blueprint error', e);
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.post('/api/generate-inventory', async (req, res) => {
+  try {
+    const { analysis } = req.body || {};
+    const svc = require('../services/geminiService');
+    const inv = await svc.generateInventoryFromAnalysis(analysis || '');
+    res.json(JSON.parse(inv));
+  } catch (e) {
+    console.error('generate-inventory error', e);
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 // Watch for file changes and broadcast minimal events
 const watcher = chokidar.watch(ROOT, { ignored: /node_modules|\.git|dist|logs/, ignoreInitial: true, depth: 5 });
 watcher

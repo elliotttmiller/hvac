@@ -79,42 +79,11 @@ def ensure_log_directory() -> None:
 ensure_log_directory()
 LOG_FILE = LOG_DIR / "start.log"
 
+# Use the shared logging bootstrap so other Python entrypoints can reuse it
+from scripts.logging_bootstrap import configure_logger
 
-def setup_logger() -> logging.Logger:
-    """Setup comprehensive logging with console and file handlers."""
-    logger = logging.getLogger("hvac.start")
-    logger.setLevel(logging.DEBUG)
-    
-    # Console handler (INFO level) with detailed formatting
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
-    console_fmt = logging.Formatter(
-        "[%(levelname)s] %(message)s"
-    )
-    ch.setFormatter(console_fmt)
-    
-    # Rotating file handler (DEBUG level) with comprehensive formatting
-    fh = RotatingFileHandler(
-        LOG_FILE, 
-        maxBytes=10_000_000,  # 10MB
-        backupCount=5, 
-        encoding="utf-8"
-    )
-    fh.setLevel(logging.DEBUG)
-    file_fmt = logging.Formatter(
-        "%(asctime)s [%(levelname)-8s] %(name)s - %(funcName)s:%(lineno)d - %(message)s"
-    )
-    fh.setFormatter(file_fmt)
-    
-    # Avoid duplicate handlers
-    if not logger.handlers:
-        logger.addHandler(ch)
-        logger.addHandler(fh)
-    
-    return logger
-
-
-logger = setup_logger()
+# Configure the logger (this will also load .env/.env.local into os.environ if present)
+logger = configure_logger(LOG_FILE)
 
 
 def log_step(step_name: str) -> None:
@@ -784,58 +753,87 @@ def start_dev_server(start_api: bool = False) -> int:
     logger.info("   Press Ctrl+C to stop the server")
     logger.info("   Server logs will be displayed below:")
     logger.info("-" * 70)
-    
-    # Start frontend dev server and optionally backend API server, streaming both outputs.
-    npm = which_or_none("npm") or "npm"
 
+    # Start frontend dev server and optionally backend API server, streaming both outputs.
     front_cmd = [npm, "run", "dev"]
     back_cmd = [npm, "run", "dev:api"]
 
-    procs = []
+    # We maintain two lists: one for waiting on processes and one for those
+    # where we have a pipe and spawn reader threads.
+    procs_wait = []
+    procs_pipe = []
 
-    def spawn(cmd, name):
+    def spawn(cmd, name, passthrough: bool = False):
         logger.info(f"🚀 Starting: {shlex.join(cmd)} ({name})")
         try:
-            p = subprocess.Popen(
-                cmd,
-                cwd=str(ROOT),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                shell=False
-            )
+            run_env = os.environ.copy()
+            if passthrough:
+                # In passthrough mode inherit stdio so child thinks it's a TTY.
+                p = subprocess.Popen(
+                    cmd,
+                    cwd=str(ROOT),
+                    shell=False,
+                    env=run_env
+                )
+            else:
+                # Capture stdout/stderr so we can stream and log it ourselves.
+                p = subprocess.Popen(
+                    cmd,
+                    cwd=str(ROOT),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    shell=False,
+                    env=run_env
+                )
             return p
         except FileNotFoundError:
             logger.error(f"❌ Command not found: {cmd[0]} for {name}")
             return None
 
-    front_proc = spawn(front_cmd, 'frontend')
+    # `passthrough` flag will be supplied by caller (main)
+    passthrough = False
+    try:
+        passthrough = bool(start_dev_server.__dict__.get("_passthrough", False))
+    except Exception:
+        passthrough = False
+
+    front_proc = spawn(front_cmd, 'frontend', passthrough=passthrough)
     if front_proc:
-        procs.append(('frontend', front_proc))
+        procs_wait.append(('frontend', front_proc))
+        if front_proc.stdout is not None:
+            procs_pipe.append(('frontend', front_proc))
 
     back_proc = None
     if start_api:
-        back_proc = spawn(back_cmd, 'backend')
+        back_proc = spawn(back_cmd, 'backend', passthrough=passthrough)
         if back_proc:
-            procs.append(('backend', back_proc))
+            procs_wait.append(('backend', back_proc))
+            if back_proc.stdout is not None:
+                procs_pipe.append(('backend', back_proc))
 
-    # Reader threads
+    # Reader threads for piped processes
     threads = []
-    stop_flag = threading.Event()
 
     def reader_loop(p, name):
         try:
-            assert p.stdout
+            if not p.stdout:
+                return
             for line in p.stdout:
                 if line is None:
                     break
-                print(f"[{name}] {line.rstrip()}")
-                logger.debug(f"[{name}] {line.rstrip()}")
+                text = line.rstrip()
+                print(f"[{name}] {text}")
+                try:
+                    sys.stdout.flush()
+                except Exception:
+                    pass
+                logger.info(f"[{name}] {text}")
         except Exception as e:
             logger.debug(f"Reader for {name} exited: {e}")
 
-    for name, p in procs:
+    for name, p in procs_pipe:
         t = threading.Thread(target=reader_loop, args=(p, name), daemon=True)
         t.start()
         threads.append(t)
@@ -843,7 +841,7 @@ def start_dev_server(start_api: bool = False) -> int:
     try:
         # Wait for processes to exit (if any). When both exit, return combined code (non-zero if any non-zero)
         codes = []
-        for name, p in procs:
+        for name, p in procs_wait:
             rc = p.wait()
             logger.info(f"{name} process exited with code {rc}")
             codes.append(rc)
@@ -860,14 +858,14 @@ def start_dev_server(start_api: bool = False) -> int:
         logger.info("")
         logger.info("-" * 70)
         logger.info("⚠️  Dev servers interrupted by user (Ctrl+C)")
-        for name, p in procs:
+        for name, p in procs_wait:
             try:
                 p.terminate()
             except Exception:
                 pass
         # Wait briefly then kill
         time.sleep(1)
-        for name, p in procs:
+        for name, p in procs_wait:
             if p.poll() is None:
                 try:
                     p.kill()
@@ -989,6 +987,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Automatically install npm dependencies if missing"
     )
+
+    parser.add_argument(
+        "--passthrough",
+        dest="passthrough",
+        action="store_true",
+        help="Run dev servers with stdio inherited (no capture) for best TTY fidelity"
+    )
+    parser.add_argument(
+        "--no-passthrough",
+        dest="passthrough",
+        action="store_false",
+        help="Disable passthrough and capture dev server output (opposite of --passthrough)"
+    )
+    # Make passthrough the default behavior for interactive developer runs
+    parser.set_defaults(passthrough=True)
     
     args = parser.parse_args(argv)
     
@@ -1119,6 +1132,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             start_api = api_entry.exists()
             if start_api:
                 logger.info("ℹ️  Found local API server entry, starting backend + frontend dev servers")
+            # Mark passthrough option on the function so the inner spawn can read it
+            start_dev_server._passthrough = bool(args.passthrough)
+            logger.info(f"ℹ️  Passthrough mode: {'ENABLED' if start_dev_server._passthrough else 'DISABLED'}")
             rc = start_dev_server(start_api=start_api)
             logger.info(f"Dev server returned exit code: {rc}")
         
