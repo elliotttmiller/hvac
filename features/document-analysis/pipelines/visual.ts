@@ -12,11 +12,67 @@ import { config } from '../../../app/config';
 import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '../types';
 import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT } from '../prompts/visual/detect';
 import { PID_DETECT_SYSTEM_INSTRUCTION, PID_DETECT_PROMPT, PID_REFINE_SYSTEM_INSTRUCTION, generatePIDRefinePrompt } from '../prompts/visual/detect-pid';
+import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT, PID_DETECT_PROMPT } from '../prompts/visual/detect';
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
 import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
 import { mergeComponents, localToGlobal } from '../../../lib/utils/math';
 import { generateId } from '../../../lib/utils';
 import { getImageDimensions } from '../../../lib/file-processing/converters';
+
+// The pipeline accepts an optional options bag so callers (the orchestrator)
+// can pass lightweight context such as whether the image is a P&ID/schematic.
+
+/**
+ * Blueprint type for specialized routing
+ */
+type BlueprintType = 'PID' | 'HVAC';
+
+/**
+ * Get appropriate prompts based on blueprint type
+ */
+function getPromptsForBlueprintType(blueprintType: BlueprintType): {
+  systemInstruction: string;
+  prompt: string;
+} {
+  if (blueprintType === 'PID') {
+    return {
+      systemInstruction: PID_DETECT_SYSTEM_INSTRUCTION,
+      prompt: PID_DETECT_PROMPT,
+    };
+  }
+  
+  return {
+    systemInstruction: DETECT_SYSTEM_INSTRUCTION,
+    prompt: DETECT_PROMPT,
+  };
+}
+
+
+/**
+ * Blueprint type for specialized routing
+ */
+type BlueprintType = 'PID' | 'HVAC';
+
+/**
+ * Get appropriate prompts based on blueprint type
+ */
+function getPromptsForBlueprintType(blueprintType: BlueprintType): {
+  systemInstruction: string;
+  prompt: string;
+} {
+  if (blueprintType === 'PID') {
+    return {
+      systemInstruction: PID_DETECT_SYSTEM_INSTRUCTION,
+      prompt: PID_DETECT_PROMPT,
+    };
+  }
+  
+  return {
+    systemInstruction: DETECT_SYSTEM_INSTRUCTION,
+    prompt: DETECT_PROMPT,
+  };
+}
+
 
 /**
  * Blueprint type for specialized routing
@@ -49,7 +105,7 @@ function getPromptsForBlueprintType(blueprintType: BlueprintType): {
  * Uses SOTA tiling approach for high-resolution images
  * Automatically detects P&ID vs HVAC blueprints and routes to appropriate pipeline
  */
-export async function analyzeVisual(imageData: string): Promise<VisualAnalysisResult> {
+export async function analyzeVisual(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   try {
     console.log('[Visual Pipeline] Starting analysis...');
     
@@ -66,9 +122,9 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     }
 
     // Step 1: Detect blueprint type (P&ID vs HVAC)
-    console.log('[Visual Pipeline] Step 1: Detecting blueprint type (P&ID vs HVAC)...');
+    console.log('Detecting blueprint type (P&ID vs HVAC)...');
     const blueprintType = await detectBlueprintType(imageData);
-    console.log(`[Visual Pipeline] Blueprint type detected: ${blueprintType}`);
+    console.log(`Blueprint type detected: ${blueprintType}`);
 
     // Determine if we should use tiling based on image size
     console.log('[Visual Pipeline] Step 2: Checking if tiling is needed...');
@@ -78,23 +134,15 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     let result: VisualAnalysisResult;
     
     if (useTiling) {
-      console.log('[Visual Pipeline] Using SOTA tiling approach for high-resolution image');
+      console.log('Using SOTA tiling approach for high-resolution image');
       result = await analyzeWithTiling(imageData, blueprintType);
     } else {
-      console.log('[Visual Pipeline] Using standard single-pass analysis');
+      console.log('Using standard single-pass analysis');
       result = await analyzeStandard(imageData, blueprintType);
-    }
-
-    // Validate result
-    if (!result.components || result.components.length === 0) {
-      console.warn('[Visual Pipeline] WARNING: Zero components detected - possible silent failure');
-      console.warn('[Visual Pipeline] This could indicate:');
-      console.warn('  1. API authentication failure');
-      console.warn('  2. Overly aggressive confidence filtering');
-      console.warn('  3. Tiling coordinate transformation error');
-      console.warn('  4. Image quality or format issue');
+      result = await analyzeWithTiling(imageData, opts);
     } else {
-      console.log(`[Visual Pipeline] SUCCESS: Detected ${result.components.length} components and ${result.connections.length} connections`);
+      console.log('Using standard single-pass analysis');
+      result = await analyzeStandard(imageData, opts);
     }
 
     // Cache the result
@@ -178,25 +226,29 @@ Return ONLY "PID" or "HVAC" as a single word.
  * Standard analysis without tiling (for smaller images)
  */
 async function analyzeStandard(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
-  console.log('[Visual Pipeline - Standard] Starting single-pass analysis...');
   const client = getAIClient();
   
   // Select prompts based on blueprint type
   const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
-  console.log(`[Visual Pipeline - Standard] Using ${blueprintType} prompts`);
-  
-  try {
-    const responseText = await client.generateVision({
-      imageData,
-      prompt,
-      options: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-        responseSchema: VISUAL_ANALYSIS_SCHEMA,
-        temperature: 0.1, // Very low for deterministic OCR extraction
-      },
-    });
+  const responseText = await client.generateVision({
+    imageData,
+    prompt,
+async function analyzeStandard(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
+  const client = getAIClient();
+  // Use the orchestrator-provided hint if available; otherwise default to generic prompt
+  const promptToUse = opts && opts.isSchematic ? PID_DETECT_PROMPT : DETECT_PROMPT;
+
+  const responseText = await client.generateVision({
+    imageData,
+    prompt: promptToUse,
+    options: {
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema: VISUAL_ANALYSIS_SCHEMA,
+      temperature: 0.2,
+    },
+  });
 
     console.log('[Visual Pipeline - Standard] Received response from AI');
     const result = parseVisualResponse(responseText);
@@ -212,49 +264,38 @@ async function analyzeStandard(imageData: string, blueprintType: BlueprintType):
  * SOTA Analysis with Visual Grid Tiling + Map-Reduce + Self-Correction
  */
 async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType): Promise<VisualAnalysisResult> {
-  console.log('[Visual Pipeline - Tiling] Starting tiled analysis...');
+async function analyzeWithTiling(imageData: string, opts?: { isSchematic?: boolean }): Promise<VisualAnalysisResult> {
   const client = getAIClient();
   
   // Select prompts based on blueprint type
   const { systemInstruction, prompt } = getPromptsForBlueprintType(blueprintType);
   
-  // Step 1: Tile the image into 2x2 grid with 15% overlap (optimized for edge detection)
+  // Step 1: Tile the image into 2x2 grid with 10% overlap
   console.log('[Visual Pipeline - Tiling] Step 1: Tiling image into grid...');
-  const tileResult = await tileImage(imageData, 'image/png', 15);
-  console.log(`[Visual Pipeline - Tiling] Created ${tileResult.tiles.length} tiles (2x2 grid with 15% overlap)`);
+  const tileResult = await tileImage(imageData, 'image/png', 10);
+  console.log(`[Visual Pipeline - Tiling] Created ${tileResult.tiles.length} tiles (2x2 grid with 10% overlap)`);
   
   // Step 2: MAP - Process tiles in parallel
-  console.log('[Visual Pipeline - Tiling] Step 2: Processing tiles in parallel (MAP phase)...');
-  const tileAnalyses = await Promise.all(
-    tileResult.tiles.map(async (tile, index) => {
-      console.log(`[Visual Pipeline - Tiling] Processing tile ${index + 1}/${tileResult.tiles.length} (position: ${tile.position})`);
-      try {
-        const responseText = await client.generateVision({
-          imageData: tile.data,
-          prompt,
-          options: {
-            systemInstruction,
-            responseMimeType: 'application/json',
-            responseSchema: VISUAL_ANALYSIS_SCHEMA,
-            temperature: 0.1, // Very low for deterministic OCR extraction
-          },
-        });
-        
-        const tileResult = parseVisualResponse(responseText);
-        console.log(`[Visual Pipeline - Tiling] Tile ${index + 1}: Found ${tileResult.components.length} components`);
-        return { tile, result: tileResult };
-      } catch (error) {
-        console.error(`[Visual Pipeline - Tiling] ERROR in tile ${index + 1}:`, error);
-        // Return empty result for failed tile instead of failing entire pipeline
-        return { 
-          tile, 
-          result: { 
-            components: [], 
-            connections: [], 
-            metadata: { total_components: 0, total_connections: 0 } 
-          } 
-        };
-      }
+  console.log('Step 2: Processing tiles in parallel (MAP phase)...');
+    const tileAnalyses = await Promise.all(
+    tileResult.tiles.map(async (tile) => {
+      // Use orchestrator-provided hint if present; otherwise default to generic prompt
+      const promptToUse = opts && opts.isSchematic ? PID_DETECT_PROMPT : DETECT_PROMPT;
+
+      const responseText = await client.generateVision({
+        imageData: tile.data,
+        prompt,
+        prompt: promptToUse,
+        options: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: VISUAL_ANALYSIS_SCHEMA,
+          temperature: 0.2,
+        },
+      });
+
+      const tileResult = parseVisualResponse(responseText);
+      return { tile, result: tileResult };
     })
   );
   
@@ -465,27 +506,9 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         meta: comp.meta || {},
       };
 
-      // CRITICAL VALIDATION: Reject generic labels for instruments
-      const isGenericLabel = !comp.label || 
-                            comp.label === 'unknown' || 
-                            comp.label === validated.type ||
-                            comp.label.toLowerCase().includes('unknown') ||
-                            comp.label.toLowerCase() === 'unlabeled' ||
-                            comp.label.toLowerCase() === 'instrument' ||
-                            comp.label.toLowerCase() === 'valve' ||
-                            comp.label.toLowerCase() === 'sensor';
-      
-      if (isGenericLabel) {
-        console.error(`[Visual Pipeline - Parse] ⚠️ CRITICAL: Component ${validated.id} has FORBIDDEN generic label: "${validated.label}"`);
-        console.error(`[Visual Pipeline - Parse]   This violates OCR-First mandate. Component should have extracted text.`);
-        console.error(`[Visual Pipeline - Parse]   Type: ${validated.type}, Confidence: ${validated.confidence}`);
-        console.error(`[Visual Pipeline - Parse]   Reasoning: ${validated.meta?.reasoning || 'Not provided'}`);
-        
-        // Mark as OCR failure if not already marked as unreadable
-        if (!validated.label.includes('unreadable')) {
-          validated.label = `unreadable-OCR-failed-${validated.type}`;
-          validated.confidence = Math.min(validated.confidence, 0.3); // Reduce confidence for failed OCR
-        }
+      // Log warning if label is missing or generic
+      if (!comp.label || comp.label === 'unknown' || comp.label === validated.type) {
+        console.warn(`[Visual Pipeline - Parse] Component ${validated.id} has generic/missing label: "${validated.label}"`);
       }
 
       return validated;

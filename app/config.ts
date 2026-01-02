@@ -43,6 +43,8 @@ export const config = {
     complianceEngine: import.meta.env.VITE_FEATURE_COMPLIANCE === 'true',
     safetyEngine: import.meta.env.VITE_FEATURE_SAFETY === 'true',
     pricingEngine: import.meta.env.VITE_FEATURE_PRICING === 'true',
+    // Schematic cache TTL in days (used for quick schematic/P&ID detection)
+    schematicCacheTtlDays: parseInt(import.meta.env.VITE_SCHEMATIC_CACHE_TTL_DAYS || '7'),
   },
 
   // Rate Limiting
