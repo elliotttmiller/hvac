@@ -119,19 +119,56 @@ export function localToGlobal(
   localBbox: [number, number, number, number],
   tileBbox: { x1: number; y1: number; x2: number; y2: number }
 ): [number, number, number, number] {
-  const [localX1, localY1, localX2, localY2] = localBbox;
-  
-  // Calculate tile dimensions
-  const tileWidth = tileBbox.x2 - tileBbox.x1;
-  const tileHeight = tileBbox.y2 - tileBbox.y1;
-  
-  // Transform to global coordinates
-  const globalX1 = tileBbox.x1 + (localX1 * tileWidth);
-  const globalY1 = tileBbox.y1 + (localY1 * tileHeight);
-  const globalX2 = tileBbox.x1 + (localX2 * tileWidth);
-  const globalY2 = tileBbox.y1 + (localY2 * tileHeight);
-  
-  return [globalX1, globalY1, globalX2, globalY2];
+  // The pipeline historically has had inconsistent bbox orderings from
+  // different vision models: some return [x1, y1, x2, y2] and some
+  // return [ymin, xmin, ymax, xmax]. To be robust, try both
+  // interpretations and pick the one that yields a valid positive
+  // width/height in normalized 0-1 space.
+
+  const tryInterpretation = (
+    order: 'xyxy' | 'yxyx'
+  ): [number, number, number, number] => {
+    let x1: number, y1: number, x2: number, y2: number;
+    if (order === 'xyxy') {
+      [x1, y1, x2, y2] = localBbox as [number, number, number, number];
+    } else {
+      // input is [ymin, xmin, ymax, xmax]
+      const [ymin, xmin, ymax, xmax] = localBbox as [number, number, number, number];
+      x1 = xmin;
+      y1 = ymin;
+      x2 = xmax;
+      y2 = ymax;
+    }
+
+    const tileWidth = tileBbox.x2 - tileBbox.x1;
+    const tileHeight = tileBbox.y2 - tileBbox.y1;
+
+    const globalX1 = tileBbox.x1 + x1 * tileWidth;
+    const globalY1 = tileBbox.y1 + y1 * tileHeight;
+    const globalX2 = tileBbox.x1 + x2 * tileWidth;
+    const globalY2 = tileBbox.y1 + y2 * tileHeight;
+
+    return [globalX1, globalY1, globalX2, globalY2];
+  };
+
+  const a = tryInterpretation('xyxy');
+  const b = tryInterpretation('yxyx');
+
+  const widthA = a[2] - a[0];
+  const heightA = a[3] - a[1];
+  const widthB = b[2] - b[0];
+  const heightB = b[3] - b[1];
+
+  // Prefer the interpretation that results in positive width/height and
+  // coordinates inside [0,1]. If both are plausible, prefer 'xyxy'.
+  const isAValid = widthA > 0 && heightA > 0 && a.every((v) => v >= 0 && v <= 1);
+  const isBValid = widthB > 0 && heightB > 0 && b.every((v) => v >= 0 && v <= 1);
+
+  if (isAValid) return a;
+  if (isBValid) return b;
+
+  // Fallback to 'xyxy' interpretation (best-effort)
+  return a;
 }
 
 /**
