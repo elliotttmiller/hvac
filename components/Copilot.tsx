@@ -15,14 +15,8 @@ const Copilot: React.FC = () => {
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // State to toggle Copilot panel
-  // Simple pointer-based dragging state (avoids react-draggable/findDOMNode)
+  // Updated to restrict movement to predefined positions only
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const dragRef = useRef<{ dragging: boolean; startX: number; startY: number } | null>(null);
-  // initialize to bottom-right offset
-  useEffect(() => {
-    // start near bottom-right by default
-    setPos({ x: -96, y: -96 });
-  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,41 +74,65 @@ const Copilot: React.FC = () => {
     }
   };
 
+  const predefinedPositions = [
+    { name: 'Bottom Right', x: -96, y: -96 },
+    { name: 'Bottom Left', x: 96, y: -96 },
+    { name: 'Bottom Center', x: 0, y: -96 },
+    { name: 'Right Center', x: -96, y: 0 },
+    { name: 'Top Right', x: -96, y: 96 },
+    { name: 'Top Center', x: 0, y: 96 },
+    { name: 'Top Left', x: 96, y: 96 },
+    { name: 'Left Center', x: 96, y: 0 }
+  ];
+
+  const handlePositionChange = (position) => {
+    setPos({ x: position.x, y: position.y });
+  };
+
   return (
     <>
-      {/* Floating Button (custom pointer-drag to avoid legacy findDOMNode) */}
+      {/* Floating Button (restricted to predefined positions) */}
       <button
-        ref={(el) => { /* keep ref available if needed */ }}
         onClick={() => setIsOpen(!isOpen)}
-        onPointerDown={(e) => {
-          // Start dragging if user holds pointer for move; allow click to still toggle
-          dragRef.current = { dragging: true, startX: e.clientX, startY: e.clientY };
-          (e.target as Element).setPointerCapture?.(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (!dragRef.current || !dragRef.current.dragging) return;
-          const dx = e.clientX - dragRef.current.startX;
-          const dy = e.clientY - dragRef.current.startY;
-          // update start to allow smooth dragging
-          dragRef.current.startX = e.clientX;
-          dragRef.current.startY = e.clientY;
-          setPos((p) => ({ x: p.x + dx, y: p.y + dy }));
-        }}
-        onPointerUp={(e) => {
-          if (dragRef.current) dragRef.current.dragging = false;
-          try { (e.target as Element).releasePointerCapture?.(e.pointerId); } catch {}
-        }}
         style={{
           position: 'fixed',
-          right: 24 + (pos.x < 0 ? 0 : 0),
-          bottom: 24 + (pos.y < 0 ? 0 : 0),
-          transform: `translate(${pos.x}px, ${pos.y}px)`,
-          zIndex: 60
+          right: `calc(24px + ${pos.x}px)`,
+          bottom: `calc(24px + ${pos.y}px)`,
+          zIndex: 60,
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          backgroundColor: '#6b46c1',
+          color: '#fff',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer'
         }}
-        className="p-4 bg-purple-500 text-white rounded-full shadow-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
+        className="hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300"
       >
-        <Sparkles size={24} />
+        <Sparkles size={20} />
       </button>
+
+      {/* Position Selector */}
+      {isOpen && (
+        <div className="fixed bottom-16 right-16 bg-white p-4 rounded shadow-lg">
+          <h4 className="text-sm font-semibold mb-2">Move Button</h4>
+          <ul>
+            {predefinedPositions.map((pos, index) => (
+              <li key={index}>
+                <button
+                  onClick={() => handlePositionChange(pos)}
+                  className="text-sm text-blue-500 hover:underline"
+                >
+                  {pos.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Copilot Panel */}
       {isOpen && (
