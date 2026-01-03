@@ -118,7 +118,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               ref={imageRef}
               src={imageUrl} 
               alt="Blueprint" 
-              className={`w-full h-full object-contain`} 
+              className={`w-full h-full`} 
               onLoad={updateMetrics}
             />
 
@@ -136,7 +136,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                 // API sends: [ymin, xmin, ymax, xmax] (Normalized 0-1)
                 const [ymin, xmin, ymax, xmax] = box.bbox;
                 
-                // Convert to CSS Percentages
+                // Convert to CSS Percentages (relative to the image itself)
                 const style = {
                   left: `${xmin * 100}%`,
                   top: `${ymin * 100}%`,
@@ -144,19 +144,31 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                   height: `${(ymax - ymin) * 100}%`
                 };
 
+                // Calculate if hover card would go off-screen
+                // Position card based on available space
+                const boxCenterY = (ymin + ymax) / 2;
+                const boxCenterX = (xmin + xmax) / 2;
+                const shouldPositionAbove = boxCenterY > 0.6; // If in bottom 40%, position above
+                const shouldPositionLeft = boxCenterX > 0.7; // If in right 30%, position left
+
                 return (
                   <div 
                     key={box.id}
                     className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
                       ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                      hover:border-opacity-100 hover:bg-opacity-20
+                      hover:border-opacity-100 hover:bg-opacity-20 hover:z-50
                     `}
                     style={style}
                     onMouseEnter={() => setActiveBoxId(box.id)}
                     onMouseLeave={() => setActiveBoxId(null)}
                   >
-                    {/* Hover Card */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
+                    {/* Hover Card with Smart Positioning */}
+                    <div 
+                      className={`absolute w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100
+                        ${shouldPositionAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
+                        ${shouldPositionLeft ? 'right-0' : 'left-1/2 -translate-x-1/2'}
+                      `}
+                    >
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
                         <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-cyan-600'}`} />
                         <div className="p-3 text-left">
