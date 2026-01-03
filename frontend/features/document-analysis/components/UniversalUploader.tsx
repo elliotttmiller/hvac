@@ -6,6 +6,7 @@
 import React, { useState, useRef } from 'react';
 import { convertFileForGemini, ConversionResult } from '@/lib/file-processing/converters';
 import { analyzeDocument } from '../orchestrator';
+import { config } from '@/app/config';
 import { UniversalDocumentResult } from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
 
@@ -75,33 +76,46 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
       }
       
       setUploading(false);
-      setAnalyzing(true);
-      setProcessingPhase('classifying');
-      setProcessingProgress(40);
-      setProgress('Analyzing document...');
-      
-      // Simulate phase transitions for better UX
-      await delay(500);
-      setProcessingPhase('analyzing');
-      setProcessingProgress(60);
-      
-      await delay(500);
-      setProcessingPhase('refining');
-      setProcessingProgress(80);
-      
-      // Analyze the document
-      const result = await analyzeDocument(conversion.data, {
-        fileName: file.name,
-      });
-      
-      setProcessingProgress(100);
-      setProcessingPhase('complete');
-      
-      // Brief pause to show completion
-      await delay(500);
-      setAnalyzing(false);
-      setProgress('');
-      onAnalysisComplete?.(result);
+
+      // If autoAnalyze is disabled, skip calling the analysis pipeline here.
+      if (!config.features.autoAnalyze) {
+        // Reset UI and notify caller that upload completed but analysis did not run.
+        setAnalyzing(false);
+        setProcessingPhase('complete');
+        setProcessingProgress(100);
+        setProgress('Upload complete (analysis deferred)');
+        await delay(500);
+        setProgress('');
+        onAnalysisComplete?.({ type: 'UPLOAD_ONLY' } as any);
+      } else {
+        setAnalyzing(true);
+        setProcessingPhase('classifying');
+        setProcessingProgress(40);
+        setProgress('Analyzing document...');
+        
+        // Simulate phase transitions for better UX
+        await delay(500);
+        setProcessingPhase('analyzing');
+        setProcessingProgress(60);
+        
+        await delay(500);
+        setProcessingPhase('refining');
+        setProcessingProgress(80);
+        
+        // Analyze the document
+        const result = await analyzeDocument(conversion.data, {
+          fileName: file.name,
+        });
+        
+        setProcessingProgress(100);
+        setProcessingPhase('complete');
+        
+        // Brief pause to show completion
+        await delay(500);
+        setAnalyzing(false);
+        setProgress('');
+        onAnalysisComplete?.(result);
+      }
 
       // Dispatch file-upload event for synchronization
       const fileUploadEvent = new CustomEvent('file-upload', { detail: file });

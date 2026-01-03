@@ -26,7 +26,10 @@ const targets = [
   path.join(root, 'node_modules', '.cache'),
   path.join(root, '.parcel-cache'),
   path.join(root, '.cache'),               // generic cache dir
-  path.join(root, 'dist'),                 // optionally remove dist to ensure clean output
+  // Frontend build output for this repo is under frontend/dist. Keep root/dist
+  // for backward compatibility but prefer frontend/dist first.
+  path.join(root, 'frontend', 'dist'),    // frontend build output
+  path.join(root, 'dist'),                // optionally remove dist to ensure clean output
 ];
 
 function rmrf(target) {

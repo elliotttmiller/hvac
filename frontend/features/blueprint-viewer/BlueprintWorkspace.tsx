@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from './InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeDocument } from '@/features/document-analysis/orchestrator';
+import { config } from '@/app/config';
 import { DetectedComponent, ValidationIssue} from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
 
@@ -27,29 +28,33 @@ const BlueprintWorkspace: React.FC<{
   // Auto-run analysis when a file is selected from the sidebar
   useEffect(() => {
     if (!fileToAnalyze) return;
-    
-    const loadAndAnalyze = async () => {
+
+    const loadAndMaybeAnalyze = async () => {
       try {
         const response = await fetch(`/api/files/content?path=${encodeURIComponent(fileToAnalyze)}`);
         if (!response.ok) throw new Error('Failed to load file');
-        
+
         const blob = await response.blob();
         const file = new File([blob], fileToAnalyze.split('/').pop() || 'file');
         const url = URL.createObjectURL(file);
-        
+
         setImageUrl(url);
         setDetectedBoxes([]);
         setInventory([]);
-        
-        await runAnalysisInternal(file, url);
+
+        // Only run analysis automatically when the feature flag is enabled
+        if (config.features.autoAnalyze) {
+          await runAnalysisInternal(file, url);
+        }
+
         onAnalyzed?.();
       } catch (error) {
         console.error('Failed to load file for analysis:', error);
         onAnalyzed?.();
       }
     };
-    
-    loadAndAnalyze();
+
+    loadAndMaybeAnalyze();
   }, [fileToAnalyze, onAnalyzed]);
 
   // Main analysis function
@@ -96,7 +101,8 @@ const BlueprintWorkspace: React.FC<{
     if (file) {
       const url = URL.createObjectURL(file);
       setImageUrl(url);
-      runAnalysisInternal(file, url);
+      // Only auto-run analysis on upload when feature is enabled
+      if (config.features.autoAnalyze) runAnalysisInternal(file, url);
     }
   };
 
