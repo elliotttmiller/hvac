@@ -118,7 +118,8 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               ref={imageRef}
               src={imageUrl} 
               alt="Blueprint" 
-              className={`w-full h-full`} 
+              className={`w-full h-full block`}
+              style={{ objectFit: 'fill' }}
               onLoad={updateMetrics}
             />
 
@@ -162,6 +163,12 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                     onMouseEnter={() => setActiveBoxId(box.id)}
                     onMouseLeave={() => setActiveBoxId(null)}
                   >
+                    {/* Corner Markers */}
+                    <div className="absolute -top-[2px] -left-[2px] w-2 h-2 border-t-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute -top-[2px] -right-[2px] w-2 h-2 border-t-2 border-r-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute -bottom-[2px] -left-[2px] w-2 h-2 border-b-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute -bottom-[2px] -right-[2px] w-2 h-2 border-b-2 border-r-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
                     {/* Hover Card with Smart Positioning */}
                     <div 
                       className={`absolute w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100
