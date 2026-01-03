@@ -162,7 +162,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                         <div className="p-3 text-left">
                           <div className="flex justify-between items-center mb-1">
                             <h4 className="text-xs font-bold text-slate-100 uppercase truncate pr-2">{box.label || box.id}</h4>
-                            <span className="text-[10px] text-cyan-400 font-mono">{Math.round(box.confidence * 100)}%</span>
+                            <span className="text-[10px] text-cyan-400 font-mono">{Math.round((box.confidence || 0) * 100)}%</span>
                           </div>
                           <div className="text-[10px] text-slate-400 capitalize mb-2">{box.type}</div>
                           {box.meta?.description && (
