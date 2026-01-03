@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import LeftSidebar from './LeftSidebar';
 import TopHeader from './TopHeader';
 import ActivityBar from './ActivityBar';
-import { ViewState } from '../../types';
+import { ViewState } from '@/features/document-analysis/types';
 import { ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 interface UnifiedLayoutProps {

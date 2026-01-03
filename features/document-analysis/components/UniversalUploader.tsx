@@ -6,7 +6,7 @@
 import React, { useState, useRef } from 'react';
 import { convertFileForGemini, ConversionResult } from '../../../lib/file-processing/converters';
 import { analyzeDocument } from '../orchestrator';
-import { UniversalDocumentResult } from '../types';
+import { UniversalDocumentResult } from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
 // Utility for Promise-based delays

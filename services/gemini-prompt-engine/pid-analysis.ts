@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { GeminiModel } from '../../types';
+import { GeminiModel } from '@/features/document-analysis/types';
 import { 
   PID_ANALYSIS_SYSTEM_INSTRUCTION, 
   PID_ANALYSIS_SCHEMA,

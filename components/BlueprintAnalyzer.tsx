@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileSearch, CheckCircle, AlertOctagon, Layers, Type, Scan, Eye, Server, X } from 'lucide-react';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../services/geminiService';
-import { DetectedObject } from '../types';
+import { DetectedObject } from '@/features/document-analysis/types';
 
 const BlueprintAnalyzer: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);

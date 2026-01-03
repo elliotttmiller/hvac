@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { UniversalDocumentResult, ValidationIssue } from '../types';
+import { UniversalDocumentResult, ValidationIssue } from '@/features/document-analysis/types';
 import { processQuery, QueryResponse, ConversationMessage, generateSuggestedQuestions } from '../orchestrator/query-engine';
 
 export interface ResultsPanelProps {

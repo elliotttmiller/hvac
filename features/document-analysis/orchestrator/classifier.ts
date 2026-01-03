@@ -6,7 +6,7 @@
 import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
-import { ClassificationResult, CLASSIFICATION_SCHEMA } from '../types';
+import { ClassificationResult, CLASSIFICATION_SCHEMA } from '@/features/document-analysis/types';
 import { CLASSIFY_SYSTEM_INSTRUCTION, CLASSIFY_PROMPT } from '../prompts/classify';
 
 export async function classifyDocument(
@@ -81,8 +81,8 @@ function parseClassificationResponse(responseText: string): ClassificationResult
       throw new Error('Invalid classification response format');
     }
 
-    // Validate document type
-    const validTypes = ['BLUEPRINT', 'SPEC_SHEET', 'SCHEDULE'];
+    // Validate document type - include all known DocumentType values
+    const validTypes = ['BLUEPRINT', 'SCHEMATIC', 'SPEC_SHEET', 'SCHEDULE'];
     if (!validTypes.includes(parsed.type)) {
       console.warn(`Invalid document type: ${parsed.type}, defaulting to UNKNOWN`);
       return {

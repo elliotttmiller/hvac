@@ -4,7 +4,7 @@
  */
 
 import { getAIClient } from '../../../lib/ai/client';
-import { UniversalDocumentResult } from '../types';
+import { UniversalDocumentResult } from '@/features/document-analysis/types';
 
 export interface QueryRequest {
   query: string;

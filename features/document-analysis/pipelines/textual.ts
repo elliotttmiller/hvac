@@ -6,7 +6,7 @@
 import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
-import { TextualAnalysisResult, TEXTUAL_ANALYSIS_SCHEMA } from '../types';
+import { TextualAnalysisResult, TEXTUAL_ANALYSIS_SCHEMA } from '@/features/document-analysis/types';
 import { EXTRACT_SPECS_SYSTEM_INSTRUCTION, EXTRACT_SPECS_PROMPT } from '../prompts/textual/extract-specs';
 import { generateId } from '../../../lib/utils';
 

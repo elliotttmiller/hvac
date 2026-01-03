@@ -12,7 +12,7 @@ import {
    Plus,
    Copy
 } from 'lucide-react';
-import { ValidationIssue, DetectedObject } from '../../../types';
+import { ValidationIssue, DetectedObject } from '@/features/document-analysis/types';
 import { config } from '../../../app/config';
 
 interface InspectorPanelProps {

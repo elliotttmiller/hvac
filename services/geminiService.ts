@@ -2,7 +2,7 @@
 // into the browser bundle. When running in a browser environment we proxy calls
 // to the server via fetch to keep secrets and server-side SDKs out of the client.
 
-import { GeminiModel } from '../types';
+import { GeminiModel } from '@/features/document-analysis/types';
 
 // Detect browser environment
 const isBrowser = typeof window !== 'undefined' && typeof window.fetch === 'function';

@@ -3,7 +3,7 @@
  * Step 2 of the analysis pipeline - routes to appropriate processing pipeline
  */
 
-import { DocumentType } from '../types';
+import { DocumentType } from '@/features/document-analysis/types';
 import { analyzeVisual } from '../pipelines/visual';
 import { analyzeTextual } from '../pipelines/textual';
 import { analyzeTabular } from '../pipelines/tabular';

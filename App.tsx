@@ -5,7 +5,7 @@ import BlueprintWorkspace from './components/features/blueprint-viewer/Blueprint
 import ProjectsPage from './components/unified-ui/ProjectsPage';
 import CopilotModal from './components/CopilotModal';
 import Copilot from './components/Copilot';
-import { ViewState } from './types';
+import { ViewState } from '@/features/document-analysis/types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);

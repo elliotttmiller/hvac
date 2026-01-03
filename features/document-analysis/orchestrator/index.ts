@@ -5,7 +5,7 @@
 
 import { classifyDocument } from './classifier';
 import { routeToPipeline } from './router';
-import { UniversalDocumentResult, DocumentType } from '../types';
+import { UniversalDocumentResult, DocumentType } from '@/features/document-analysis/types';
 import { generateId } from '../../../lib/utils';
 
 export interface AnalysisOptions {

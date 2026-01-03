@@ -1,5 +1,5 @@
 import React from 'react';
-import { ViewState } from '../../types';
+import { ViewState } from '@/features/document-analysis/types';
 import { 
   LayoutGrid, 
   Presentation,

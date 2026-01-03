@@ -1,6 +1,6 @@
 /**
- * Document Analysis - Type Definitions and Zod Schemas
- * Universal Document Model for all document types
+ * Document Analysis - Universal Type Definitions
+ * This file is the SINGLE SOURCE OF TRUTH for all data structures in the application.
  */
 
 import { Type } from '@google/genai';
@@ -9,7 +9,67 @@ import { Type } from '@google/genai';
 // DOCUMENT CLASSIFICATION
 // ============================================================================
 
-export type DocumentType = 'BLUEPRINT' | 'SPEC_SHEET' | 'SCHEDULE' | 'UNKNOWN';
+// ------------------------------------------------------------------
+// Shared app-level types (migrated from repo root `types.ts`)
+// ------------------------------------------------------------------
+export enum ViewState {
+  DASHBOARD = 'DASHBOARD',
+  ANALYZER = 'ANALYZER',
+  COPILOT = 'COPILOT',
+  PROJECTS = 'PROJECTS'
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  isThinking?: boolean;
+  timestamp: number;
+}
+
+export enum GeminiModel {
+  FLASH = 'gemini-2.5-flash',
+  PRO = 'gemini-2.5-pro',
+  VISION = 'gemini-2.5-flash'
+}
+
+export interface HvacEntity {
+  label: string;
+  tag?: string;
+  description?: string;
+  bbox: [number, number, number, number];
+  confidence?: number;
+  attributes?: {
+    type: string;
+    text: string;
+    confidence: number;
+  }[];
+}
+
+export interface RayServeResponse {
+  entities: HvacEntity[];
+  quote: any | null;
+  metadata: {
+    raw_count: number;
+    entity_count: number;
+  };
+}
+
+// Canonical UI-facing detected object (percent coordinates)
+export interface DetectedObject {
+  id: string;
+  label: string;
+  confidence: number;
+  x: number; // percentage 0-100
+  y: number; // percentage 0-100
+  width: number; // percentage 0-100
+  height: number; // percentage 0-100
+  rotation?: number;
+  type?: 'component' | 'text' | 'symbol';
+  meta?: Record<string, any>;
+}
+
+export type DocumentType = 'BLUEPRINT' | 'SCHEMATIC' | 'SPEC_SHEET' | 'SCHEDULE' | 'UNKNOWN';
 
 export interface ClassificationResult {
   type: DocumentType;
@@ -22,10 +82,13 @@ export interface ClassificationResult {
 // ============================================================================
 
 export interface DetectedComponent {
-  id: string;
-  type: string; // 'duct', 'vav', 'ahu', 'damper', 'diffuser', etc.
-  label: string; // Tag or identifier (e.g., "VAV-101") - MANDATORY: Must be extracted text from image
-  bbox: [number, number, number, number]; // [x1, y1, x2, y2] normalized 0-1
+  id: string;   // The primary identifier (e.g. "PDI-1401" or UUID)
+  type: string; // 'valve', 'instrument', 'duct', 'vav', etc.
+  label: string; // The OCR text extracted (e.g., "PDI-1401")
+  
+  // CRITICAL: Gemini Native Coordinates are [ymin, xmin, ymax, xmax]
+  bbox: [number, number, number, number]; 
+  
   confidence: number;
   rotation?: number; // degrees
   meta?: {
@@ -35,7 +98,8 @@ export interface DetectedComponent {
     parent_system?: string;
     mounting?: string;
     instrument_type?: string;
-    [key: string]: any; // Allow additional dynamic metadata (e.g., source_tile)
+    source_tile?: string;
+    [key: string]: any;
   };
 }
 
@@ -43,7 +107,7 @@ export interface Connection {
   id: string;
   from_id: string;
   to_id: string;
-  type: 'supply' | 'return' | 'electric' | 'pneumatic' | 'signal';
+  type: 'supply' | 'return' | 'electric' | 'pneumatic' | 'signal' | 'process';
   confidence?: number;
 }
 
@@ -55,8 +119,7 @@ export interface VisualAnalysisResult {
     total_connections: number;
     image_dimensions?: { width: number; height: number };
     process_log?: string; // AI reasoning trace for user transparency
-    error?: string; // Added to capture error messages
-    parse_error?: string; // Added to capture parsing errors
+    parse_error?: string; // Capture parsing errors
   };
 }
 
@@ -67,7 +130,7 @@ export interface VisualAnalysisResult {
 export interface TextBlock {
   id: string;
   text: string;
-  bbox: [number, number, number, number]; // normalized 0-1
+  bbox: [number, number, number, number]; // [ymin, xmin, ymax, xmax]
   confidence?: number;
   rotation?: number;
   font_size?: number;
@@ -148,7 +211,7 @@ export interface UniversalDocumentResult {
   // Classification
   classification: ClassificationResult;
   
-  // Analysis Results (populated based on document type)
+  // Analysis Results
   visual?: VisualAnalysisResult;
   textual?: TextualAnalysisResult;
   tabular?: TabularAnalysisResult;
@@ -173,8 +236,8 @@ export const CLASSIFICATION_SCHEMA = {
   properties: {
     type: {
       type: Type.STRING,
-      enum: ['BLUEPRINT', 'SPEC_SHEET', 'SCHEDULE'],
-      description: 'The document type classification',
+      enum: ['BLUEPRINT', 'SCHEMATIC', 'SPEC_SHEET', 'SCHEDULE'],
+      description: 'The document type classification. SCHEMATIC includes P&IDs.',
     },
     confidence: {
       type: Type.NUMBER,
@@ -196,29 +259,31 @@ export const VISUAL_ANALYSIS_SCHEMA = {
       items: {
         type: Type.OBJECT,
         properties: {
-          id: { type: Type.STRING },
-          type: { type: Type.STRING },
+          id: { 
+            type: Type.STRING,
+            description: "Unique ID. MUST be the text tag if visible (e.g. 'PDI-1401')."
+          },
+          type: { 
+            type: Type.STRING,
+            description: "Classification (e.g. 'valve', 'instrument', 'duct')."
+          },
           label: { 
             type: Type.STRING,
-            description: 'Component label or tag - ABSOLUTELY MANDATORY. MUST be extracted text from image (e.g., "PDI-1401", "VAV-105", "TT-1402"). NEVER use generic names like "unknown", "instrument", "valve", "component", "unlabeled". If text is unreadable, use "unreadable-OCR-failed-{specific-reason}" format with detailed explanation. NULL or EMPTY strings are FORBIDDEN.',
-            nullable: false,
+            description: "The exact text extracted via OCR (e.g. 'PDI 1401'). MANDATORY. NEVER use 'unknown'."
           },
           bbox: {
             type: Type.ARRAY,
+            description: "Normalized coordinates [ymin, xmin, ymax, xmax]. MANDATORY.",
             items: { type: Type.NUMBER },
-            description: 'Bounding box coordinates [x1, y1, x2, y2] in normalized 0-1 range'
           },
           confidence: { type: Type.NUMBER },
-          rotation: { type: Type.NUMBER },
+          rotation: { type: Type.NUMBER, description: "Integer degrees (0, 90, 180)." },
           meta: {
             type: Type.OBJECT,
             properties: {
               tag: { type: Type.STRING },
               description: { type: Type.STRING },
-              reasoning: { 
-                type: Type.STRING,
-                description: 'Detailed explanation of how this component was identified, including text extraction process'
-              },
+              reasoning: { type: Type.STRING },
             },
           },
         },
@@ -230,20 +295,19 @@ export const VISUAL_ANALYSIS_SCHEMA = {
       items: {
         type: Type.OBJECT,
         properties: {
-          id: { type: Type.STRING },
           from_id: { type: Type.STRING },
           to_id: { type: Type.STRING },
           type: {
             type: Type.STRING,
-            enum: ['supply', 'return', 'electric', 'pneumatic', 'signal'],
+            enum: ['supply', 'return', 'electric', 'pneumatic', 'signal', 'process'],
           },
         },
-        required: ['id', 'from_id', 'to_id', 'type'],
+        required: ['from_id', 'to_id', 'type'],
       },
     },
     process_log: {
       type: Type.STRING,
-      description: 'A technical summary of the detection process and system understanding. Example: "Detected a primary HVAC control system with 4 temperature control loops, 2 pressure monitoring points, and 3 flow control valves. System architecture indicates a dual-zone temperature control configuration with differential pressure sensing."',
+      description: 'A technical summary of the system detected.',
     },
   },
   required: ['components', 'connections'],

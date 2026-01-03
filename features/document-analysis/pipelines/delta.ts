@@ -4,7 +4,7 @@
  */
 
 import { getAIClient } from '../../../lib/ai/client';
-import { DetectedComponent, Connection } from '../types';
+import { DetectedComponent, Connection } from '@/features/document-analysis/types';
 import { calculateIoU } from '../../../lib/utils/math';
 
 export interface DeltaResult {

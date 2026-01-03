@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateThinkingResponse } from '../services/geminiService';
-import { ChatMessage } from '../types';
+import { ChatMessage } from '@/features/document-analysis/types';
 import { Send, Bot, User, Sparkles, Loader2, StopCircle } from 'lucide-react';
 
 const Copilot: React.FC = () => {
