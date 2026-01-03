@@ -12,7 +12,7 @@ const serverImpl = async () => {
   // Use dynamic import/require so bundlers don't include server-only deps in the client
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { GoogleGenAI } = require('@google/genai');
-  const { COPILOT_SYSTEM_INSTRUCTION } = require('../lib/prompt-engine/pid-analyst');
+  const { COPILOT_SYSTEM_INSTRUCTION } = require('../features/document-analysis/prompts/visual/detect-pid');
   const { analyzePID } = require('./gemini-prompt-engine/pid-analysis');
 
   // Accept multiple env variable names for backwards compatibility with .env files

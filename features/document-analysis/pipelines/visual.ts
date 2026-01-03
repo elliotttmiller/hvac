@@ -109,7 +109,7 @@ Return ONLY "HVAC" if it contains ductwork and VAV boxes.
       prompt: detectionPrompt,
       options: {
         systemInstruction: 'You are an engineering classifier.',
-        temperature: 0.1,
+        // Temperature intentionally omitted to match legacy behavior
       },
     });
     const cleaned = response.trim().toUpperCase();
@@ -123,14 +123,19 @@ async function analyzeStandard(imageData: string, blueprintType: BlueprintType):
   const client = getAIClient();
   const { systemInstruction, prompt, schema } = getPromptsForBlueprintType(blueprintType);
   
+  // Legacy configuration: No explicit temperature for vision analysis
+  // This allows the model to use its natural temperature setting
+  // Use vision-specific model if configured (e.g., Pro model for complex P&ID)
   const responseText = await client.generateVision({
     imageData,
     prompt,
     options: {
+      model: config.ai.visionModel, // Use vision-specific model override if set
       systemInstruction,
       responseMimeType: 'application/json',
       responseSchema: schema,
-      temperature: 0.1, // Strict for JSON
+      // Temperature intentionally omitted to match legacy behavior
+      // Legacy code did not set temperature, letting model use defaults
     },
   });
 
@@ -151,10 +156,11 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
         imageData: tile.data,
         prompt,
         options: {
+          model: config.ai.visionModel, // Use vision-specific model override if set
           systemInstruction,
           responseMimeType: 'application/json',
           responseSchema: schema,
-          temperature: 0.1,
+          // Temperature intentionally omitted to match legacy behavior
         },
       });
       const tileResult = parseVisualResponse(responseText);
@@ -223,10 +229,11 @@ async function refineWithFullImage(
     imageData: fullImageData,
     prompt: refinePrompt,
     options: {
+      model: config.ai.visionModel, // Use vision-specific model override if set
       systemInstruction: 'You are a QA Auditor. Fix the JSON.',
       responseMimeType: 'application/json',
       responseSchema: blueprintType === 'PID' ? PID_ANALYSIS_SCHEMA : VISUAL_ANALYSIS_SCHEMA,
-      temperature: 0.1,
+      // Temperature intentionally omitted to match legacy behavior
     },
   });
   
