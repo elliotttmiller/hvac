@@ -4,7 +4,7 @@ import {
   PID_ANALYSIS_SYSTEM_INSTRUCTION, 
   PID_ANALYSIS_SCHEMA,
   PID_USER_PROMPT 
-} from '../../lib/prompt-engine/pid-analyst';
+} from '../../features/document-analysis/prompts/visual/detect-pid';
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
