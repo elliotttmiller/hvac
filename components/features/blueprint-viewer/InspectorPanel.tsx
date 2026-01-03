@@ -12,14 +12,14 @@ import {
    Plus,
    Copy
 } from 'lucide-react';
-import { ValidationIssue, DetectedObject } from '@/features/document-analysis/types';
+import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '../../../app/config';
 
 interface InspectorPanelProps {
   analysis: string;
   executiveSummary: string;
   inventory: any[];
-  detectedBoxes: DetectedObject[];
+   detectedBoxes: DetectedComponent[];
   validationIssues: ValidationIssue[];
   selectedBoxId: string | null;
   onSelectBox: (id: string | null) => void;

@@ -55,8 +55,8 @@ export async function analyzeDocument(
       cache_hit: false,
     };
 
-    // Attach pipeline-specific results
-    if (classification.type === 'BLUEPRINT' && analysisResult) {
+    // Attach pipeline-specific results (treat SCHEMATIC same as BLUEPRINT)
+    if ((classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && analysisResult) {
       result.visual = analysisResult;
     } else if (classification.type === 'SPEC_SHEET' && analysisResult) {
       result.textual = analysisResult;

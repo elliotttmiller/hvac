@@ -24,6 +24,13 @@ export function routeToPipeline(documentType: DocumentType): RouteResult {
         handler: analyzeVisual,
       };
 
+    case 'SCHEMATIC':
+      // Treat schematics (P&IDs) as visual documents and route to the visual pipeline
+      return {
+        pipeline: 'visual',
+        handler: analyzeVisual,
+      };
+
     case 'SPEC_SHEET':
       return {
         pipeline: 'textual',

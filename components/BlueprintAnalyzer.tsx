@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileSearch, CheckCircle, AlertOctagon, Layers, Type, Scan, Eye, Server, X } from 'lucide-react';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../services/geminiService';
-import { DetectedObject } from '@/features/document-analysis/types';
+import { DetectedComponent } from '@/features/document-analysis/types';
 
 const BlueprintAnalyzer: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -13,7 +13,7 @@ const BlueprintAnalyzer: React.FC = () => {
   
   const [analysis, setAnalysis] = useState<string>("");
   const [inventory, setInventory] = useState<any[]>([]);
-  const [detectedBoxes, setDetectedBoxes] = useState<DetectedObject[]>([]);
+    const [detectedBoxes, setDetectedBoxes] = useState<DetectedComponent[]>([]);
   
   // Layer Toggles
   const [showOBB, setShowOBB] = useState(true);
@@ -39,31 +39,32 @@ const BlueprintAnalyzer: React.FC = () => {
     }
   };
 
-  const convertRayEntitiesToBoxes = (entities: any[], imgWidth: number, imgHeight: number): DetectedObject[] => {
+  const convertRayEntitiesToBoxes = (entities: any[], imgWidth: number, imgHeight: number): DetectedComponent[] => {
     return entities.map((entity, idx) => {
-        // inference_graph.py returns [x1, y1, x2, y2]
+        // inference_graph.py returns [x1, y1, x2, y2] in pixel coords
         const [x1, y1, x2, y2] = entity.bbox;
-        const w = x2 - x1;
-        const h = y2 - y1;
+        // Convert to normalized [ymin, xmin, ymax, xmax]
+        const xmin = x1 / imgWidth;
+        const ymin = y1 / imgHeight;
+        const xmax = x2 / imgWidth;
+        const ymax = y2 / imgHeight;
 
-        // Determine type based on backend label
         const isText = entity.label === 'tag_number' || entity.label === 'id_letters';
 
-        return {
-            id: `ray-${idx}`,
-            label: entity.tag || entity.label,
+        const comp: DetectedComponent = {
+            id: entity.id || `ray-${idx}`,
+            label: entity.tag || entity.label || '',
             confidence: entity.confidence || 0.9,
-            x: (x1 / imgWidth) * 100,
-            y: (y1 / imgHeight) * 100,
-            width: (w / imgWidth) * 100,
-            height: (h / imgHeight) * 100,
-            rotation: 0, // Ray backend currently returns axis-aligned boxes in this version
+            bbox: [ymin, xmin, ymax, xmax],
+            rotation: 0,
             type: isText ? 'text' : 'component',
             meta: {
                 tag: entity.tag,
                 description: entity.description
             }
         };
+
+        return comp;
     });
   };
 
@@ -86,7 +87,7 @@ const BlueprintAnalyzer: React.FC = () => {
             setAnalysis(parsed.executive_summary || JSON.stringify(parsed, null, 2));
 
             // Inventory
-            if (parsed.entities) {
+                if (parsed.entities) {
                 const counts: Record<string, number> = {};
                 parsed.entities.forEach((e: any) => {
                     const key = e.functional_desc || e.label || e.description || 'unknown';
@@ -95,19 +96,22 @@ const BlueprintAnalyzer: React.FC = () => {
                 setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
 
                 // Map entities to detectedBoxes for visualization
-                const boxes = parsed.entities.map((e: any, idx: number) => ({
-                    id: e.id || `gem-${idx}`,
-                    label: e.tag || e.label || e.functional_desc || '',
-                    confidence: e.confidence || 0.9,
-                    x: (e.bbox_2d?.[1] ?? 0) / 10,
-                    y: (e.bbox_2d?.[0] ?? 0) / 10,
-                    width: (((e.bbox_2d?.[3] ?? 0) - (e.bbox_2d?.[1] ?? 0)) / 1000) * 100,
-                    height: (((e.bbox_2d?.[2] ?? 0) - (e.bbox_2d?.[0] ?? 0)) / 1000) * 100,
-                    rotation: e.rotation || 0,
-                    type: e.instrument_type === 'Computer' ? 'text' : 'component',
-                    meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
-                }));
-                setDetectedBoxes(boxes as any[]);
+                const boxes: DetectedComponent[] = parsed.entities.map((e: any, idx: number) => {
+                    const xmin = (e.bbox_2d?.[1] ?? 0) / (e.image_width || 1);
+                    const ymin = (e.bbox_2d?.[0] ?? 0) / (e.image_height || 1);
+                    const xmax = (e.bbox_2d?.[3] ?? 0) / (e.image_width || 1);
+                    const ymax = (e.bbox_2d?.[2] ?? 0) / (e.image_height || 1);
+                    return {
+                        id: e.id || `gem-${idx}`,
+                        label: e.tag || e.label || e.functional_desc || '',
+                        confidence: e.confidence || 0.9,
+                        bbox: [ymin, xmin, ymax, xmax],
+                        rotation: e.rotation || 0,
+                        type: e.instrument_type === 'Computer' ? 'text' : 'component',
+                        meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
+                    } as DetectedComponent;
+                });
+                setDetectedBoxes(boxes);
             } else {
                 setDetectedBoxes([]);
             }
@@ -204,6 +208,13 @@ const BlueprintAnalyzer: React.FC = () => {
                     
                     {/* Render Bounding Boxes */}
                     {detectedBoxes.map(box => {
+                        if (!Array.isArray(box.bbox) || box.bbox.length < 4) return null;
+                        const [ymin, xmin, ymax, xmax] = box.bbox;
+                        const x = xmin * 100;
+                        const y = ymin * 100;
+                        const width = (xmax - xmin) * 100;
+                        const height = (ymax - ymin) * 100;
+
                         const isText = box.type === 'text';
                         const isVisible = (isText && showOCR) || (!isText && showOBB);
                         
@@ -214,10 +225,10 @@ const BlueprintAnalyzer: React.FC = () => {
                                 key={box.id}
                                 className={`absolute border-2 flex items-start justify-start group cursor-pointer ${isText ? 'border-purple-400 bg-purple-400/10' : 'border-cyan-400 bg-cyan-400/10'}`}
                                 style={{
-                                    left: `${box.x}%`,
-                                    top: `${box.y}%`,
-                                    width: `${box.width}%`,
-                                    height: `${box.height}%`,
+                                    left: `${x}%`,
+                                    top: `${y}%`,
+                                    width: `${width}%`,
+                                    height: `${height}%`,
                                     transform: `rotate(${box.rotation || 0}deg)`,
                                     transformOrigin: 'center center'
                                 }}

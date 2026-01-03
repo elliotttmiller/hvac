@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from '../../../components/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeDocument } from '@/features/document-analysis/orchestrator';
-import { DetectedComponent, ValidationIssue, DetectedObject } from '@/features/document-analysis/types';
+import { DetectedComponent, ValidationIssue} from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '../../../ui/feedback/ProcessingOverlay';
 
 const BlueprintWorkspace: React.FC<{
@@ -17,7 +17,7 @@ const BlueprintWorkspace: React.FC<{
   const [analysisRaw, setAnalysisRaw] = useState<string>("");
   const [executiveSummary, setExecutiveSummary] = useState<string>("");
   const [inventory, setInventory] = useState<any[]>([]);
-  const [detectedBoxes, setDetectedBoxes] = useState<DetectedObject[]>([]);
+  const [detectedBoxes, setDetectedBoxes] = useState<DetectedComponent[]>([]);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   
   // Interactivity State
@@ -67,23 +67,8 @@ const BlueprintWorkspace: React.FC<{
       setProcessingPhase('refining');
       
       if (result.visual && result.visual.components) {
-        // Map the API response to the format InteractiveViewer expects
-        const boxes: DetectedObject[] = result.visual.components.map((comp: DetectedComponent) => {
-          const [ymin, xmin, ymax, xmax] = comp.bbox;
-          return {
-            id: comp.id,
-            label: comp.label || comp.type,
-            confidence: comp.confidence,
-            x: xmin * 100,
-            y: ymin * 100,
-            width: (xmax - xmin) * 100,
-            height: (ymax - ymin) * 100,
-            rotation: comp.rotation,
-            type: comp.type as 'component' | 'text' | 'symbol',
-            meta: comp.meta,
-          };
-        });
-        setDetectedBoxes(boxes);
+        // Keep canonical DetectedComponent objects from the analysis pipeline
+        setDetectedBoxes(result.visual.components);
 
         // Generate inventory
         const counts: Record<string, number> = {};

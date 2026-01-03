@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
-import { DetectedObject } from '@/features/document-analysis/types';
+import { DetectedComponent } from '@/features/document-analysis/types';
 interface InteractiveViewerProps {
   imageUrl: string | null;
-  detectedBoxes: DetectedObject[];
+  detectedBoxes: DetectedComponent[];
   isProcessing: boolean;
   selectedBoxId?: string | null;
   onSelectBox?: (id: string | null) => void;
@@ -127,29 +127,36 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
             {/* The Overlay Layer */}
             <div className="absolute inset-0 pointer-events-none">
               {detectedBoxes.map((box) => {
-                if (!box || typeof box.x !== 'number') return null; // Defensive check
-                const isText = box.type === 'text';
-                const isVisible = (isText && showOCR) || (!isText && showOBB);
-                if (!isVisible) return null;
+                  // Expecting DetectedComponent with bbox: [ymin, xmin, ymax, xmax]
+                  if (!box || !Array.isArray(box.bbox) || box.bbox.length < 4) return null;
+                  const [ymin, xmin, ymax, xmax] = box.bbox;
+                  const x = xmin * 100;
+                  const y = ymin * 100;
+                  const width = (xmax - xmin) * 100;
+                  const height = (ymax - ymin) * 100;
 
-                const style = {
-                  left: `${box.x}%`,
-                  top: `${box.y}%`,
-                  width: `${box.width}%`,
-                  height: `${box.height}%`
-                };
+                  const isText = box.type === 'text';
+                  const isVisible = (isText && showOCR) || (!isText && showOBB);
+                  if (!isVisible) return null;
 
-                return (
-                  <div 
-                    key={box.id}
-                    className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
-                      ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                      hover:border-opacity-100 hover:bg-opacity-20
-                    `}
-                    style={style}
-                    onMouseEnter={() => setActiveBoxId(box.id)}
-                    onMouseLeave={() => setActiveBoxId(null)}
-                  >
+                  const style = {
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    width: `${width}%`,
+                    height: `${height}%`
+                  };
+
+                  return (
+                    <div 
+                      key={box.id}
+                      className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
+                        ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
+                        hover:border-opacity-100 hover:bg-opacity-20
+                      `}
+                      style={style}
+                      onMouseEnter={() => setActiveBoxId(box.id)}
+                      onMouseLeave={() => setActiveBoxId(null)}
+                    >
                     {/* Hover Card */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">

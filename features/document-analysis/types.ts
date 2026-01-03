@@ -55,20 +55,6 @@ export interface RayServeResponse {
   };
 }
 
-// Canonical UI-facing detected object (percent coordinates)
-export interface DetectedObject {
-  id: string;
-  label: string;
-  confidence: number;
-  x: number; // percentage 0-100
-  y: number; // percentage 0-100
-  width: number; // percentage 0-100
-  height: number; // percentage 0-100
-  rotation?: number;
-  type?: 'component' | 'text' | 'symbol';
-  meta?: Record<string, any>;
-}
-
 export type DocumentType = 'BLUEPRINT' | 'SCHEMATIC' | 'SPEC_SHEET' | 'SCHEDULE' | 'UNKNOWN';
 
 export interface ClassificationResult {
