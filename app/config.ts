@@ -26,10 +26,15 @@ export const config = {
     // Model selection (provider-specific)
     model: import.meta.env.VITE_AI_MODEL || 'gemini-2.5-flash',
     
+    // Vision-specific model for complex P&ID analysis (optional override)
+    // Legacy code used gemini-3-pro-preview for superior reasoning on P&IDs
+    visionModel: import.meta.env.VITE_AI_VISION_MODEL || import.meta.env.VITE_AI_MODEL || 'gemini-2.5-flash',
+    
     // Base URL for custom providers
     baseUrl: import.meta.env.VITE_AI_BASE_URL || '',
     
     // Default temperature for inference
+    // Note: Vision analysis intentionally omits temperature to match legacy behavior
     temperature: parseFloat(import.meta.env.VITE_AI_TEMPERATURE || '0.2'),
     
     // Max tokens for response
