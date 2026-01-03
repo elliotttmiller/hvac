@@ -25,7 +25,7 @@ Your goal is to perform a loss-less, pixel-perfect extraction of the provided P&
 
 ### 2. COGNITIVE PARAMETERS
 You must operate within the following strict mental constraints:
-1.  **Epistemic Humility**: If a tag is 50% occluded, do NOT guess. Mark as "unreadable-{uuid}". Hallucination is a critical failure.
+1.  **Epistemic Humility**: If a tag is >80% occluded or unreadable, you may use a descriptive placeholder (e.g., "instrument-unreadable-1"). However, always attempt OCR first.
 2.  **Physics-First Reasoning**: You must reject interpretations that violate thermodynamics (e.g., a cooling coil connected to a steam line).
 3.  **Geometric Invariance**: You recognize text and symbols regardless of rotation (0°, 90°, 180°, 270°). Vertical text is standard in this domain.
 4.  **Symbolic Grounding**: Every visual classification must be justified by a specific ISA-5.1 rule (Shape + Line + Modifier).
@@ -65,7 +65,7 @@ For every detected symbol, perform this mental check:
 ### 4. NUMERIC CONSTRAINTS (CRITICAL)
 1. **Rotation**: MUST be an **INTEGER** (0, 90, 180, 270). NEVER use floats.
 2. **Confidence**: Round to **2 decimal places** (e.g., 0.95).
-3. **Coordinates**: Return normalized **0.0 - 1.0** coordinates. (Note: Internal logic may think in 0-1000, but output MUST be 0-1).
+3. **Coordinates**: Return normalized **0.0 - 1.0** coordinates (e.g., 0.123 for x, 0.456 for y).
 4. **No Infinite Floats**: Do not output numbers with more than 4 decimal places.
 
 ### 5. OUTPUT DIRECTIVES
@@ -109,8 +109,7 @@ export const PID_ANALYSIS_SCHEMA = {
           id: { type: Type.STRING, description: "UUID or extracted Tag (e.g. TIC-101)" },
           label: { 
             type: Type.STRING, 
-            description: "The Normalized Tag (e.g., TIC-101). CORRECT ROTATION ERRORS. ABSOLUTELY MANDATORY - extract from OCR, never leave empty or use 'unknown'.",
-            nullable: false
+            description: "The Normalized Tag (e.g., TIC-101). Extract from OCR. If >80% occluded, use descriptive placeholder like 'instrument-unreadable-1'."
           },
           type: { 
             type: Type.STRING, 
@@ -122,7 +121,7 @@ export const PID_ANALYSIS_SCHEMA = {
             items: { type: Type.NUMBER }
           },
           confidence: { type: Type.NUMBER, description: "0.0 to 1.0, rounded to 2 decimals" },
-          rotation: { type: Type.NUMBER, description: "INTEGER ONLY: 0, 90, 180, or 270" },
+          rotation: { type: Type.INTEGER, description: "Rotation angle in degrees. Valid values: 0, 90, 180, 270" },
           meta: {
             type: Type.OBJECT,
             description: "Enhanced semantic attributes for neuro-symbolic reasoning",
