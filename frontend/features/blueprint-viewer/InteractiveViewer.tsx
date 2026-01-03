@@ -31,8 +31,10 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
 
   // --- Hover Card Positioning Thresholds ---
-  const CARD_POSITION_BOTTOM_THRESHOLD = 0.6; // Position above if box center is in bottom 40%
-  const CARD_POSITION_RIGHT_THRESHOLD = 0.7;  // Position left if box center is in right 30%
+  // If box center Y > 0.6 (in bottom 40% of image), position card above
+  const CARD_POSITION_BOTTOM_THRESHOLD = 0.6;
+  // If box center X > 0.7 (in right 30% of image), position card to left
+  const CARD_POSITION_RIGHT_THRESHOLD = 0.7;
 
   // --- Geometry Engine ---
   const containerRef = useRef<HTMLDivElement>(null);
