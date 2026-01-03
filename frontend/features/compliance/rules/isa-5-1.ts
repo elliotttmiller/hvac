@@ -1,4 +1,4 @@
-// File: hvac/features/compliance/rules/isa-5-1.ts
+// File: frontend/features/compliance/rules/isa-5-1.ts
 
 /**
  * ISA-5.1 - Instrumentation Symbols and Identification
