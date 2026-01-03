@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
     const corsEnabled = env.VITE_CORS ? env.VITE_CORS === 'true' : true;
 
     return {
+      root: 'frontend',
+      
       server: {
         port: devPort,
         host: '0.0.0.0', // CRITICAL: Binds to all network interfaces for container access
@@ -53,7 +55,7 @@ export default defineConfig(({ mode }) => {
       
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve(__dirname, 'frontend'),
         }
       },
       
