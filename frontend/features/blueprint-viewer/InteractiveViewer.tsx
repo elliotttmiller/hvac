@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
-import { DetectedComponent } from '@/features/document-analysis/types';
+import { Scan, Type, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
+import { DetectedComponent } from '@/features/document-analysis/types'; // Correct Import
+
 interface InteractiveViewerProps {
   imageUrl: string | null;
-  detectedBoxes: DetectedComponent[];
+  detectedBoxes: DetectedComponent[]; // Use the correct type from the API
   isProcessing: boolean;
   selectedBoxId?: string | null;
   onSelectBox?: (id: string | null) => void;
@@ -14,7 +15,7 @@ interface InteractiveViewerProps {
 
 const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   imageUrl,
-  detectedBoxes,
+  detectedBoxes, // This prop receives the raw API components
   isProcessing,
   selectedBoxId,
   onSelectBox,
@@ -29,7 +30,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [zoom, setZoom] = useState(1);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
 
-  // --- Geometry Engine (Drift Fix Logic) ---
+  // --- Geometry Engine ---
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [metrics, setMetrics] = useState({ w: 0, h: 0, top: 0, left: 0 });
@@ -57,10 +58,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
     window.addEventListener('resize', updateMetrics);
     const observer = new ResizeObserver(updateMetrics);
     if (containerRef.current) observer.observe(containerRef.current);
-    
-    // Initial calculation after mount
     requestAnimationFrame(updateMetrics);
-    
     return () => { 
       window.removeEventListener('resize', updateMetrics); 
       observer.disconnect(); 
@@ -127,43 +125,51 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
             {/* The Overlay Layer */}
             <div className="absolute inset-0 pointer-events-none">
               {detectedBoxes.map((box) => {
-                  // Expecting DetectedComponent with bbox: [ymin, xmin, ymax, xmax]
-                  if (!box || !Array.isArray(box.bbox) || box.bbox.length < 4) return null;
-                  const [ymin, xmin, ymax, xmax] = box.bbox;
-                  const x = xmin * 100;
-                  const y = ymin * 100;
-                  const width = (xmax - xmin) * 100;
-                  const height = (ymax - ymin) * 100;
+                // Defensive check: Ensure we have a valid bbox array
+                if (!box || !Array.isArray(box.bbox) || box.bbox.length < 4) return null;
+                
+                const isText = box.type === 'text';
+                const isVisible = (isText && showOCR) || (!isText && showOBB);
+                if (!isVisible) return null;
 
-                  const isText = box.type === 'text';
-                  const isVisible = (isText && showOCR) || (!isText && showOBB);
-                  if (!isVisible) return null;
+                // --- CRITICAL FIX: Direct BBox Mapping ---
+                // API sends: [ymin, xmin, ymax, xmax] (Normalized 0-1)
+                const [ymin, xmin, ymax, xmax] = box.bbox;
+                
+                // Convert to CSS Percentages
+                const style = {
+                  left: `${xmin * 100}%`,
+                  top: `${ymin * 100}%`,
+                  width: `${(xmax - xmin) * 100}%`,
+                  height: `${(ymax - ymin) * 100}%`
+                };
 
-                  const style = {
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    width: `${width}%`,
-                    height: `${height}%`
-                  };
-
-                  return (
-                    <div 
-                      key={box.id}
-                      className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
-                        ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                        hover:border-opacity-100 hover:bg-opacity-20
-                      `}
-                      style={style}
-                      onMouseEnter={() => setActiveBoxId(box.id)}
-                      onMouseLeave={() => setActiveBoxId(null)}
-                    >
+                return (
+                  <div 
+                    key={box.id}
+                    className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
+                      ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
+                      hover:border-opacity-100 hover:bg-opacity-20
+                    `}
+                    style={style}
+                    onMouseEnter={() => setActiveBoxId(box.id)}
+                    onMouseLeave={() => setActiveBoxId(null)}
+                  >
                     {/* Hover Card */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
                         <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-cyan-600'}`} />
                         <div className="p-3 text-left">
-                          <h4 className="text-xs font-bold text-slate-100 uppercase">{box.label || box.id}</h4>
-                          <div className="text-[10px] text-slate-400 capitalize">{box.type}</div>
+                          <div className="flex justify-between items-center mb-1">
+                            <h4 className="text-xs font-bold text-slate-100 uppercase truncate pr-2">{box.label || box.id}</h4>
+                            <span className="text-[10px] text-cyan-400 font-mono">{Math.round((box.confidence || 0) * 100)}%</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 capitalize mb-2">{box.type}</div>
+                          {box.meta?.description && (
+                            <div className="text-[9px] text-slate-500 border-t border-slate-800 pt-2 leading-relaxed">
+                              {box.meta.description}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

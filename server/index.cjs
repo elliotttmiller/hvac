@@ -19,7 +19,9 @@ const PORT = process.env.PORT || 4000;
 // AI Configuration
 const AI_PROVIDER = process.env.AI_PROVIDER || 'gemini';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_AI_API_KEY;
-const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || 'gemini-1.5-flash';
+// Prefer explicit AI_MODEL_DEFAULT, then Vite's VITE_AI_MODEL (used across frontend),
+// and fall back to the recommended model (gemini-2.5-flash).
+const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MODEL || 'gemini-2.5-flash';
 
 const app = express();
 app.use(cors());
