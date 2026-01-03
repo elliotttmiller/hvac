@@ -30,6 +30,10 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [zoom, setZoom] = useState(1);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
 
+  // --- Hover Card Positioning Thresholds ---
+  const CARD_POSITION_BOTTOM_THRESHOLD = 0.6; // Position above if box center is in bottom 40%
+  const CARD_POSITION_RIGHT_THRESHOLD = 0.7;  // Position left if box center is in right 30%
+
   // --- Geometry Engine ---
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -119,7 +123,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               src={imageUrl} 
               alt="Blueprint" 
               className={`w-full h-full block`}
-              style={{ objectFit: 'fill' }}
+              style={{ objectFit: 'contain' }}
               onLoad={updateMetrics}
             />
 
@@ -149,8 +153,8 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                 // Position card based on available space
                 const boxCenterY = (ymin + ymax) / 2;
                 const boxCenterX = (xmin + xmax) / 2;
-                const shouldPositionAbove = boxCenterY > 0.6; // If in bottom 40%, position above
-                const shouldPositionLeft = boxCenterX > 0.7; // If in right 30%, position left
+                const shouldPositionAbove = boxCenterY > CARD_POSITION_BOTTOM_THRESHOLD;
+                const shouldPositionLeft = boxCenterX > CARD_POSITION_RIGHT_THRESHOLD;
 
                 return (
                   <div 
