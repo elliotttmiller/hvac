@@ -131,7 +131,22 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                 </div>
               </div>
               
-              <button className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 hover:text-white text-sm transition-colors">
+              <button 
+                className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 hover:text-white text-sm transition-colors"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '*/*';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      const event = new CustomEvent('file-upload', { detail: file });
+                      window.dispatchEvent(event);
+                    }
+                  };
+                  input.click();
+                }}
+              >
                 + Add Document
               </button>
             </div>

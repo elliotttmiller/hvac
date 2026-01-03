@@ -295,7 +295,22 @@ const LeftSidebar: React.FC<{
         />
         
         {/* Empty State / Drop Zone */}
-        <div className="mt-4 mx-3 border border-dashed border-zinc-800 rounded-lg p-4 flex flex-col items-center justify-center text-center hover:border-zinc-700 hover:bg-white/5 transition-all cursor-pointer group">
+        <div 
+          className="mt-4 mx-3 border border-dashed border-zinc-800 rounded-lg p-4 flex flex-col items-center justify-center text-center hover:border-zinc-700 hover:bg-white/5 transition-all cursor-pointer group"
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '*/*';
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) {
+                const event = new CustomEvent('file-upload', { detail: file });
+                window.dispatchEvent(event);
+              }
+            };
+            input.click();
+          }}
+        >
             <Plus size={16} className="text-zinc-600 group-hover:text-zinc-400 mb-2" />
             <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400">Add New Document</span>
         </div>

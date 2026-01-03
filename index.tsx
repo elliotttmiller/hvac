@@ -11,7 +11,7 @@ if (!rootElement) {
 // window.__RUNTIME_CONFIG__ synchronously from `app/config.ts` if available.
 async function bootstrap() {
   try {
-    const resp = await fetch('/api/runtime-config');
+    const resp = await fetch('http://localhost:4000/api/runtime-config');
     if (resp.ok) {
       (window as any).__RUNTIME_CONFIG__ = await resp.json();
     } else {

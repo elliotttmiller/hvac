@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  Layers, 
-  Search,
-  ChevronDown,
-  DollarSign,
-  FileText,
-  Box,
-  ShoppingCart,
-  Send,
-  MoreHorizontal,
-  Plus
+import {
+   Layers, 
+   Search,
+   ChevronDown,
+   DollarSign,
+   FileText,
+   Box,
+   ShoppingCart,
+   Send,
+   MoreHorizontal,
+   Plus,
+   Copy
 } from 'lucide-react';
 import { ValidationIssue, DetectedObject } from '../../../types';
 import { config } from '../../../app/config';
@@ -37,6 +38,26 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
+   const [copied, setCopied] = useState(false);
+
+   const copyProcessLog = async () => {
+      try {
+         if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(analysis || '');
+         } else {
+            const ta = document.createElement('textarea');
+            ta.value = analysis || '';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+         }
+         setCopied(true);
+         setTimeout(() => setCopied(false), 1500);
+      } catch (e) {
+         console.warn('Copy failed', e);
+      }
+   };
 
   // Derived state for filtered components
   const filteredBoxes = useMemo(() => {
@@ -75,97 +96,109 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const totalProjectCost = pricingData.reduce((sum, item) => sum + item.totalPrice, 0);
 
   const renderComponentsTab = () => (
-    <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="px-3 pb-3">
-        <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500" size={12} />
-            <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter detected assets..." 
-                className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-zinc-600"
-            />
-        </div>
-      </div>
+      <div className="flex flex-col h-full">
+         {/* Scrollable content area */}
+         <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-3">
+            {/* Search */}
+            <div className="px-0 pb-0">
+               <div className="relative">
+                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500" size={12} />
+                     <input 
+                           type="text" 
+                           value={searchQuery}
+                           onChange={(e) => setSearchQuery(e.target.value)}
+                           placeholder="Filter detected assets..." 
+                           className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-zinc-600"
+                     />
+               </div>
+            </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-1">
-        {filteredBoxes.length > 0 ? (
-          filteredBoxes.map((box) => (
-            <div 
-              key={box.id}
-              onClick={() => onSelectBox(box.id)}
-              className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
-                selectedBoxId === box.id 
-                  ? 'bg-cyan-500/10 border border-cyan-500/30' 
-                  : 'hover:bg-white/5 border border-transparent'
-              }`}
-            >
-               <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                  selectedBoxId === box.id ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-               }`}>
-                  <Box size={14} />
-               </div>
-               <div className="flex-1 min-w-0">
-                  <div className={`text-xs font-semibold truncate ${selectedBoxId === box.id ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                    {box.label}
+            {/* Components List */}
+            <div className="space-y-1">
+               {filteredBoxes.length > 0 ? (
+                  filteredBoxes.map((box) => (
+                     <div 
+                        key={box.id}
+                        onClick={() => onSelectBox(box.id)}
+                        className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
+                           selectedBoxId === box.id 
+                              ? 'bg-cyan-500/10 border border-cyan-500/30' 
+                              : 'hover:bg-white/5 border border-transparent'
+                        }`}
+                     >
+                         <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
+                              selectedBoxId === box.id ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                         }`}>
+                              <Box size={14} />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold truncate ${selectedBoxId === box.id ? 'text-cyan-100' : 'text-zinc-300'}`}>
+                                 {box.label}
+                              </div>
+                              <div className="text-[10px] text-zinc-500 truncate">
+                                 {box.meta?.description || 'No description'}
+                              </div>
+                         </div>
+                         {selectedBoxId === box.id && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                         )}
+                     </div>
+                  ))
+               ) : (
+                  <div className="p-4 text-center text-zinc-500 text-xs italic">
+                     No components found.
                   </div>
-                  <div className="text-[10px] text-zinc-500 truncate">
-                    {box.meta?.description || 'No description'}
-                  </div>
-               </div>
-               {selectedBoxId === box.id && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
                )}
             </div>
-          ))
-        ) : (
-          <div className="p-4 text-center text-zinc-500 text-xs italic">
-            No components found.
-          </div>
-        )}
+
+            {/* Selected Item Details */}
+            {selectedBoxId && (
+               <div className="border-t border-white/5 p-3 bg-[#1a1a1a]">
+                   <div className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Selected Properties</div>
+                   {(() => {
+                        const selected = detectedBoxes.find(b => b.id === selectedBoxId);
+                        if (!selected) return null;
+                        return (
+                           <div className="space-y-2">
+                                 <div className="flex justify-between">
+                                       <span className="text-xs text-zinc-400">Confidence</span>
+                                       <span className="text-xs text-emerald-400 font-mono">{(selected.confidence * 100).toFixed(1)}%</span>
+                                 </div>
+                                 <div className="flex justify-between">
+                                       <span className="text-xs text-zinc-400">Tag ID</span>
+                                       <span className="text-xs text-zinc-200 font-mono">{selected.meta?.tag || 'N/A'}</span>
+                                 </div>
+                           </div>
+                        );
+                   })()}
+               </div>
+            )}
+
+            {/* Process Log */}
+                  {analysis && (
+                     <div>
+                        <div className="flex items-center justify-between mb-2 relative">
+                           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-0 pt-1">Process Log</div>
+                           <div className="relative">
+                             <button onClick={copyProcessLog} aria-label="Copy process log" title="Copy process log" className="text-zinc-400 hover:text-white p-2 rounded-md">
+                                <Copy size={14} />
+                             </button>
+                                           {copied && (
+                                              <div className="absolute flex items-center" style={{ right: '100%', marginRight: '6px', top: '50%', transform: 'translateY(-50%)' }}>
+                                                 <div className="bg-emerald-600/95 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap flex items-center gap-2" style={{ minHeight: '20px' }}>
+                                                    <span className="text-[10px]">Process log copied</span>
+                                                 </div>
+                                              </div>
+                                           )}
+                           </div>
+                        </div>
+                        <div className="text-xs text-zinc-400 leading-relaxed font-mono p-3 bg-[#0a0a0a] rounded border border-white/5 whitespace-pre-wrap" style={{ userSelect: 'text' }}>
+                           {analysis}
+                        </div>
+                     </div>
+                  )}
+         </div>
       </div>
-
-      {/* Selected Item Details Footer */}
-      {selectedBoxId && (
-        <div className="mt-auto border-t border-white/5 p-3 bg-[#1a1a1a]">
-           <div className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Selected Properties</div>
-           {(() => {
-              const selected = detectedBoxes.find(b => b.id === selectedBoxId);
-              if (!selected) return null;
-              return (
-                <div className="space-y-2">
-                    <div className="flex justify-between">
-                        <span className="text-xs text-zinc-400">Confidence</span>
-                        <span className="text-xs text-emerald-400 font-mono">{(selected.confidence * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-xs text-zinc-400">Tag ID</span>
-                        <span className="text-xs text-zinc-200 font-mono">{selected.meta?.tag || 'N/A'}</span>
-                    </div>
-                </div>
-              );
-           })()}
-        </div>
-      )}
-
-      {/* Process Log Section - Enhanced for Responsiveness and Usability */}
-      {analysis && (
-        <div className="mt-auto border-t border-white/5 bg-[#1a1a1a] flex flex-col" style={{ flex: '1 1 auto', overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 px-3 pt-3">Process Log</div>
-          <div
-            className="text-xs text-zinc-400 leading-relaxed font-mono p-2.5 bg-[#0a0a0a] rounded border border-white/5 overflow-y-auto whitespace-pre-wrap scrollbar-thin"
-            style={{ flex: '1 1 auto', resize: 'none' }}
-            contentEditable
-            suppressContentEditableWarning
-          >
-            {analysis}
-          </div>
-        </div>
-      )}
-    </div>
   );
 
   const renderPricingTab = () => (
@@ -264,11 +297,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          </button>
       </div>
 
-      <div className="flex-1 overflow-hidden relative bg-[#121212]">
-         {activeTab === 'COMPONENTS' && renderComponentsTab()}
-         {activeTab === 'PRICING' && renderPricingTab()}
-         {activeTab === 'QUOTE' && renderQuoteTab()}
-      </div>
+         <div className="flex-1 overflow-hidden relative bg-[#121212]">
+             {activeTab === 'COMPONENTS' && renderComponentsTab()}
+             {activeTab === 'PRICING' && renderPricingTab()}
+             {activeTab === 'QUOTE' && renderQuoteTab()}
+         </div>
 
       {/* Footer Info */}
       <div className="h-8 border-t border-white/5 bg-[#1e1e1e] flex items-center justify-between px-3 text-[10px] text-zinc-500">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import InteractiveViewer from './InteractiveViewer';
+import InteractiveViewer from '../../../components/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeBlueprintImage, generateInventoryFromAnalysis } from '../../../services/geminiService';
 import { analyzeDocument } from '../../../features/document-analysis/orchestrator';
@@ -129,6 +129,7 @@ const BlueprintWorkspace: React.FC<{
       setImageFile(file);
       const url = URL.createObjectURL(file);
       setImageUrl(url);
+      console.debug('[BlueprintWorkspace] handleFileUpload: received file', { name: file.name, size: file.size, type: file.type });
       
       // Reset State
       setAnalysisRaw("");
@@ -183,7 +184,9 @@ const BlueprintWorkspace: React.FC<{
   };
 
   const runAnalysisInternal = async (file: File, url: string) => {
+    console.debug('[BlueprintWorkspace] runAnalysisInternal: starting', { fileName: file?.name, urlPreview: url?.slice(0,50) });
     setIsProcessing(true);
+    console.debug('[BlueprintWorkspace] runAnalysisInternal: setIsProcessing(true)');
     setProcessingPhase('uploading');
     setProcessingProgress(10);
     setAnalysisRaw("Initializing analysis pipeline...");

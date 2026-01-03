@@ -85,6 +85,14 @@ app.get('/api/files/content', (req, res) => {
   });
 });
 
+// Add runtime-config endpoint
+app.get('/api/runtime-config', (req, res) => {
+  res.json({
+    apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:4000',
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
 // Watch for file changes and broadcast minimal events
 const watcher = chokidar.watch(ROOT, { ignored: /node_modules|\.git|dist|logs/, ignoreInitial: true, depth: 5 });
 watcher
