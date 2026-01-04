@@ -99,12 +99,20 @@ const BlueprintAnalyzer: React.FC = () => {
                 const boxes: DetectedComponent[] = parsed.entities.map((e: any, idx: number) => {
                     // The bbox from the visual pipeline is already in canonical format [xmin, ymin, xmax, ymax]
                     // normalized to 0-1 range, so we can use it directly without coordinate swapping
-                    const bbox = e.bbox || [0, 0, 0, 0];
+                    const bbox = Array.isArray(e.bbox) && e.bbox.length === 4 
+                        ? e.bbox 
+                        : [0, 0, 0, 0]; // Fallback for malformed/missing bbox (zero-area box, will be filtered)
+                    
                     return {
                         id: e.id || `gem-${idx}`,
                         label: e.tag || e.label || e.functional_desc || '',
                         confidence: e.confidence || 0.9,
-                        bbox: bbox as [number, number, number, number],
+                        bbox: [
+                            Number(bbox[0]) || 0,
+                            Number(bbox[1]) || 0,
+                            Number(bbox[2]) || 0,
+                            Number(bbox[3]) || 0
+                        ] as [number, number, number, number],
                         rotation: e.rotation || 0,
                         type: e.instrument_type === 'Computer' ? 'text' : 'component',
                         meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
