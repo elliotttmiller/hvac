@@ -225,8 +225,7 @@ app.post('/api/ai/generateVision', async (req, res) => {
         console.error('AI Vision Error: Invalid JSON response:', responseText.substring(0, 500));
         return res.status(500).json({ 
           error: 'Invalid JSON response from AI model',
-          details: 'The AI model returned a response that is not valid JSON.',
-          raw_response: responseText.substring(0, 500)
+          details: 'The AI model returned a response that is not valid JSON. This may indicate a model configuration issue.',
         });
       }
     }

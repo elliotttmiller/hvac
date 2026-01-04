@@ -6,8 +6,15 @@
 import { getAIClient } from '@/lib/ai/client';
 import { getSemanticCache } from '@/lib/ai/cache';
 import { config } from '@/app/config';
-import { ClassificationResult, CLASSIFICATION_SCHEMA } from '@/features/document-analysis/types';
+import { ClassificationResult, CLASSIFICATION_SCHEMA, VALID_CLASSIFICATION_TYPES } from '@/features/document-analysis/types';
 import { CLASSIFY_SYSTEM_INSTRUCTION, CLASSIFY_PROMPT } from '../prompts/classify';
+
+/**
+ * Generate a consistent cache key for classification requests
+ */
+function getClassificationCacheKey(fileName: string, imageData: string): string {
+  return `classify:${fileName}:${imageData.substring(0, 100)}`;
+}
 
 export async function classifyDocument(
   imageData: string,
@@ -16,7 +23,7 @@ export async function classifyDocument(
   try {
     // Check cache first
     const cache = getSemanticCache();
-    const cacheKey = `classify:${fileName}:${imageData.substring(0, 100)}`;
+    const cacheKey = getClassificationCacheKey(fileName, imageData);
     
     if (config.features.semanticCache) {
       const cached = await cache.get<ClassificationResult>(cacheKey);
@@ -78,7 +85,7 @@ export async function classifyDocument(
  */
 export async function clearClassificationCache(fileName: string, imageData: string): Promise<void> {
   const cache = getSemanticCache();
-  const cacheKey = `classify:${fileName}:${imageData.substring(0, 100)}`;
+  const cacheKey = getClassificationCacheKey(fileName, imageData);
   await cache.delete(cacheKey);
   console.log('[Classifier] Cache cleared for:', fileName);
 }
@@ -110,8 +117,7 @@ function parseClassificationResponse(responseText: string): ClassificationResult
     }
 
     // Validate document type - include all known DocumentType values
-    const validTypes = ['BLUEPRINT', 'SCHEMATIC', 'SPEC_SHEET', 'SCHEDULE'];
-    if (!validTypes.includes(parsed.type)) {
+    if (!VALID_CLASSIFICATION_TYPES.includes(parsed.type as any)) {
       console.warn(`Invalid document type: ${parsed.type}, defaulting to UNKNOWN`);
       return {
         type: 'UNKNOWN',
