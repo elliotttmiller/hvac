@@ -28,6 +28,9 @@ interface InspectorPanelProps {
 
 type Tab = 'COMPONENTS' | 'PRICING' | 'QUOTE';
 
+// Constant for underscore replacement to avoid regex recompilation
+const UNDERSCORE_REGEX = /_/g;
+
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ 
    analysis, 
    executiveSummary, 
@@ -145,6 +148,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return { className: 'text-zinc-300', prefix: '' };
   };
 
+  // Memoize parsed log lines for performance
+  const parsedLogLines = useMemo(() => {
+    return streamingLog.split('\n').map((line, index) => ({
+      line,
+      index,
+      ...parseLogLine(line)
+    }));
+  }, [streamingLog]);
+
   const renderComponentsTab = () => (
       <div className="flex flex-col h-full">
          {/* Scrollable content area */}
@@ -252,7 +264,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                           {box.meta?.hvac_subsystem && (
                                              <div>
                                                 <span className="text-zinc-500 text-[10px] uppercase tracking-wide">HVAC Subsystem</span>
-                                                <div className="text-zinc-200 mt-0.5 capitalize">{box.meta.hvac_subsystem.replace(/_/g, ' ')}</div>
+                                                <div className="text-zinc-200 mt-0.5 capitalize">{box.meta.hvac_subsystem.replace(UNDERSCORE_REGEX, ' ')}</div>
                                              </div>
                                           )}
                                           {box.meta?.detection_quality && (
@@ -395,18 +407,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         </div>
                         <div className="bg-gradient-to-br from-[#0d0d0d] to-[#151515] rounded-lg p-4 border border-white/10 shadow-lg">
                            <div className="text-[11px] text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto scrollbar-thin" style={{ userSelect: 'text' }}>
-                              {streamingLog.split('\n').map((line, index) => {
-                                 const { className, prefix } = parseLogLine(line);
-                                 // Use index as primary key since log lines are append-only
-                                 // and their order is stable
-                                 const lineKey = `log-line-${index}`;
-                                 
-                                 return (
-                                    <div key={lineKey} className={`${className} py-0.5`}>
-                                       {prefix}{line}
-                                    </div>
-                                 );
-                              })}
+                              {parsedLogLines.map(({ line, index, className, prefix }) => (
+                                 <div key={`log-line-${index}`} className={`${className} py-0.5`}>
+                                    {prefix}{line}
+                                 </div>
+                              ))}
                            </div>
                         </div>
                      </div>
