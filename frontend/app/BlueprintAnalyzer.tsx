@@ -43,7 +43,7 @@ const BlueprintAnalyzer: React.FC = () => {
     return entities.map((entity, idx) => {
         // inference_graph.py returns [x1, y1, x2, y2] in pixel coords
         const [x1, y1, x2, y2] = entity.bbox;
-        // Convert to normalized [ymin, xmin, ymax, xmax]
+        // Convert from pixel coords to normalized canonical format [xmin, ymin, xmax, ymax] in 0-1 range
         const xmin = x1 / imgWidth;
         const ymin = y1 / imgHeight;
         const xmax = x2 / imgWidth;
@@ -96,21 +96,44 @@ const BlueprintAnalyzer: React.FC = () => {
                 setInventory(Object.entries(counts).map(([name, count]) => ({ name, count })));
 
                 // Map entities to detectedBoxes for visualization
-                const boxes: DetectedComponent[] = parsed.entities.map((e: any, idx: number) => {
-                    const xmin = (e.bbox_2d?.[1] ?? 0) / (e.image_width || 1);
-                    const ymin = (e.bbox_2d?.[0] ?? 0) / (e.image_height || 1);
-                    const xmax = (e.bbox_2d?.[3] ?? 0) / (e.image_width || 1);
-                    const ymax = (e.bbox_2d?.[2] ?? 0) / (e.image_height || 1);
-                    return {
-                        id: e.id || `gem-${idx}`,
-                        label: e.tag || e.label || e.functional_desc || '',
-                        confidence: e.confidence || 0.9,
-                        bbox: [xmin, ymin, xmax, ymax],
-                        rotation: e.rotation || 0,
-                        type: e.instrument_type === 'Computer' ? 'text' : 'component',
-                        meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
-                    } as DetectedComponent;
-                });
+                const boxes: DetectedComponent[] = parsed.entities
+                    .map((e: any, idx: number) => {
+                        // The bbox from the visual pipeline is already in canonical format [xmin, ymin, xmax, ymax]
+                        // normalized to 0-1 range, so we can use it directly without coordinate swapping
+                        
+                        // Validate bbox structure and numeric values
+                        if (!Array.isArray(e.bbox) || e.bbox.length !== 4) {
+                            console.warn(`Entity ${e.id || idx} has invalid bbox structure, skipping`);
+                            return null;
+                        }
+                        
+                        // Validate all coordinates are valid numbers
+                        const hasValidCoords = e.bbox.every((coord: any) => {
+                            const num = Number(coord);
+                            return !Number.isNaN(num) && Number.isFinite(num);
+                        });
+                        
+                        if (!hasValidCoords) {
+                            console.warn(`Entity ${e.id || idx} has non-numeric bbox coordinates, skipping`);
+                            return null;
+                        }
+                        
+                        return {
+                            id: e.id || `gem-${idx}`,
+                            label: e.tag || e.label || e.functional_desc || '',
+                            confidence: e.confidence || 0.9,
+                            bbox: [
+                                Number(e.bbox[0]),
+                                Number(e.bbox[1]),
+                                Number(e.bbox[2]),
+                                Number(e.bbox[3])
+                            ] as [number, number, number, number],
+                            rotation: e.rotation || 0,
+                            type: e.instrument_type === 'Computer' ? 'text' : 'component',
+                            meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
+                        } as DetectedComponent;
+                    })
+                    .filter((box): box is DetectedComponent => box !== null);
                 setDetectedBoxes(boxes);
             } else {
                 setDetectedBoxes([]);
