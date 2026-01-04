@@ -117,7 +117,7 @@ export const PID_ANALYSIS_SCHEMA = {
           },
           bbox: {
             type: Type.ARRAY,
-            description: "[ymin, xmin, ymax, xmax] (Normalized 0-1)",
+            description: "[xmin, ymin, xmax, ymax] (Normalized 0-1)",
             items: { type: Type.NUMBER }
           },
           confidence: { type: Type.NUMBER, description: "0.0 to 1.0, rounded to 2 decimals" },

@@ -52,6 +52,10 @@ export const config = {
     complianceEngine: import.meta.env.VITE_FEATURE_COMPLIANCE === 'true',
     safetyEngine: import.meta.env.VITE_FEATURE_SAFETY === 'true',
     pricingEngine: import.meta.env.VITE_FEATURE_PRICING === 'true',
+    // Debug overlay for QA: set VITE_FEATURE_DEBUG_OVERLAY=true to enable small on-box badges and extra debug visuals
+    debugOverlay: import.meta.env.VITE_FEATURE_DEBUG_OVERLAY === 'true',
+    // Precision debug: set VITE_FEATURE_PRECISION_DEBUG=true to enable structured IoU and precision logs
+    precisionDebug: import.meta.env.VITE_FEATURE_PRECISION_DEBUG === 'true',
   },
 
   // Rate Limiting

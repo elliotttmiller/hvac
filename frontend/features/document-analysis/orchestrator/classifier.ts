@@ -39,6 +39,18 @@ export async function classifyDocument(
       },
     });
 
+    // Diagnostic: surface raw AI response to the frontend console to aid debugging
+    console.log('[Classifier] Raw AI response:', responseText);
+
+    if (!responseText || responseText.trim().length === 0) {
+      console.warn('[Classifier] Empty response from AI client');
+      return {
+        type: 'UNKNOWN',
+        confidence: 0,
+        reasoning: 'Empty response from AI proxy',
+      };
+    }
+
     // Parse response
     const result = parseClassificationResponse(responseText);
 

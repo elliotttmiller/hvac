@@ -1,0 +1,363 @@
+{
+  "meta": {
+    "system": "HVAC AI Platform",
+    "version": "v2.4.0-ray-dist",
+    "timestamp": "2026-01-04T06:13:27.290Z",
+    "report_type": "Geometry Pipeline Debugger & Analysis Export",
+    "environment": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+      "resolution": "1469x769"
+    }
+  },
+  "pipeline_config": {
+    "backend": "RAY",
+    "isa_5_1_logic": "ENABLED",
+    "geometric_correction": "AUTO"
+  },
+  "summary": {
+    "total_detections": 14,
+    "components": 14,
+    "ocr_regions": 0,
+    "analysis_text_length": 187
+  },
+  "inventory_summary": [
+    {
+      "name": "Solenoid Valve",
+      "count": 5
+    },
+    {
+      "name": "Valve Position Switch (Closed)",
+      "count": 1
+    },
+    {
+      "name": "Flow Control Valve",
+      "count": 2
+    },
+    {
+      "name": "Pressure Transmitter",
+      "count": 2
+    },
+    {
+      "name": "Temperature Transmitter",
+      "count": 2
+    },
+    {
+      "name": "Ball Valve",
+      "count": 1
+    },
+    {
+      "name": "4-inch Control Valve (Fail Closed)",
+      "count": 1
+    }
+  ],
+  "detections_trace": [
+    {
+      "id": "SOV-301202",
+      "label": "SOV-301202",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "SOV-301202",
+        "description": "Solenoid Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 12.3,
+        "y_percent": 25.2,
+        "width_percent": 2.8,
+        "height_percent": 3.3,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.123, 0.252, 0.151, 0.285] (Norm 0-1)",
+        "transformation_logic": "x: 0.123 * 100 = 12.3%"
+      }
+    },
+    {
+      "id": "SOV-301203A",
+      "label": "SOV-301203A",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "SOV-301203A",
+        "description": "Solenoid Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 6.5,
+        "y_percent": 47.6,
+        "width_percent": 4.6,
+        "height_percent": 8.7,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.065, 0.476, 0.111, 0.563] (Norm 0-1)",
+        "transformation_logic": "x: 0.065 * 100 = 6.5%"
+      }
+    },
+    {
+      "id": "SOV-291201A",
+      "label": "SOV-291201A",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "SOV-291201A",
+        "description": "Solenoid Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 13.6,
+        "y_percent": 47.6,
+        "width_percent": 4.4,
+        "height_percent": 8.7,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.136, 0.476, 0.18, 0.563] (Norm 0-1)",
+        "transformation_logic": "x: 0.136 * 100 = 13.600000000000001%"
+      }
+    },
+    {
+      "id": "SOV-301203B",
+      "label": "SOV-301203B",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "SOV-301203B",
+        "description": "Solenoid Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 20.7,
+        "y_percent": 47.7,
+        "width_percent": 4.8,
+        "height_percent": 8.4,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.207, 0.477, 0.255, 0.561] (Norm 0-1)",
+        "transformation_logic": "x: 0.207 * 100 = 20.7%"
+      }
+    },
+    {
+      "id": "ZSC-301201",
+      "label": "ZSC-301201",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "ZSC-301201",
+        "description": "Valve Position Switch (Closed)"
+      },
+      "final_render_geometry": {
+        "x_percent": 10,
+        "y_percent": 55,
+        "width_percent": 4.5,
+        "height_percent": 8.3,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.1, 0.55, 0.145, 0.633] (Norm 0-1)",
+        "transformation_logic": "x: 0.1 * 100 = 10%"
+      }
+    },
+    {
+      "id": "SOV-291201B",
+      "label": "SOV-291201B",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "SOV-291201B",
+        "description": "Solenoid Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 17.2,
+        "y_percent": 55.2,
+        "width_percent": 4.1,
+        "height_percent": 7.9,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.172, 0.552, 0.213, 0.631] (Norm 0-1)",
+        "transformation_logic": "x: 0.172 * 100 = 17.2%"
+      }
+    },
+    {
+      "id": "FCV-302317",
+      "label": "FCV-302317",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "FCV-302317",
+        "description": "Flow Control Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 3,
+        "y_percent": 55.4,
+        "width_percent": 4.2,
+        "height_percent": 7.6,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.03, 0.554, 0.072, 0.63] (Norm 0-1)",
+        "transformation_logic": "x: 0.03 * 100 = 3%"
+      }
+    },
+    {
+      "id": "PT-302318",
+      "label": "PT-302318",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "PT-302318",
+        "description": "Pressure Transmitter"
+      },
+      "final_render_geometry": {
+        "x_percent": 38.1,
+        "y_percent": 58,
+        "width_percent": 4.3,
+        "height_percent": 8.2,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.381, 0.58, 0.424, 0.662] (Norm 0-1)",
+        "transformation_logic": "x: 0.381 * 100 = 38.1%"
+      }
+    },
+    {
+      "id": "TT-302319",
+      "label": "TT-302319",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "TT-302319",
+        "description": "Temperature Transmitter"
+      },
+      "final_render_geometry": {
+        "x_percent": 68.5,
+        "y_percent": 58.1,
+        "width_percent": 4.6,
+        "height_percent": 8.5,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.685, 0.581, 0.731, 0.666] (Norm 0-1)",
+        "transformation_logic": "x: 0.685 * 100 = 68.5%"
+      }
+    },
+    {
+      "id": "FCV-302320",
+      "label": "FCV-302320",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "FCV-302320",
+        "description": "Flow Control Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 44.5,
+        "y_percent": 58.2,
+        "width_percent": 4.2,
+        "height_percent": 7.8,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.445, 0.582, 0.487, 0.66] (Norm 0-1)",
+        "transformation_logic": "x: 0.445 * 100 = 44.5%"
+      }
+    },
+    {
+      "id": "BV-302321",
+      "label": "BV-302321",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "BV-302321",
+        "description": "Ball Valve"
+      },
+      "final_render_geometry": {
+        "x_percent": 48.7,
+        "y_percent": 58.2,
+        "width_percent": 4.2,
+        "height_percent": 8,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.487, 0.582, 0.529, 0.662] (Norm 0-1)",
+        "transformation_logic": "x: 0.487 * 100 = 48.699999999999996%"
+      }
+    },
+    {
+      "id": "PT-302322",
+      "label": "PT-302322",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "PT-302322",
+        "description": "Pressure Transmitter"
+      },
+      "final_render_geometry": {
+        "x_percent": 83.5,
+        "y_percent": 58.2,
+        "width_percent": 4.4,
+        "height_percent": 8.2,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.835, 0.582, 0.879, 0.664] (Norm 0-1)",
+        "transformation_logic": "x: 0.835 * 100 = 83.5%"
+      }
+    },
+    {
+      "id": "TT-302323",
+      "label": "TT-302323",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "TT-302323",
+        "description": "Temperature Transmitter"
+      },
+      "final_render_geometry": {
+        "x_percent": 87.8,
+        "y_percent": 58.2,
+        "width_percent": 4.3,
+        "height_percent": 8,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.878, 0.582, 0.921, 0.662] (Norm 0-1)",
+        "transformation_logic": "x: 0.878 * 100 = 87.8%"
+      }
+    },
+    {
+      "id": "valve-4-fc",
+      "label": "4\" FC",
+      "confidence": 0.95,
+      "type": "component",
+      "semantic_metadata": {
+        "tag": "4\" FC",
+        "description": "4-inch Control Valve (Fail Closed)"
+      },
+      "final_render_geometry": {
+        "x_percent": 79.2,
+        "y_percent": 63.3,
+        "width_percent": 4.5,
+        "height_percent": 8.1,
+        "rotation": 0
+      },
+      "pipeline_debug_log": {
+        "source": "MOCK",
+        "raw_input_vector": "[0.792, 0.633, 0.837, 0.714] (Norm 0-1)",
+        "transformation_logic": "x: 0.792 * 100 = 79.2%"
+      }
+    }
+  ]
+}

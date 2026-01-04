@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, FileSearch, Scan, Type, Layers, X, Eye, Server, Info, Maximize2 } from 'lucide-react';
+import { Upload, FileSearch, Scan, Type, Layers, X, Eye, Server } from 'lucide-react';
 import { DetectedObject } from '../../../types';
 
 interface InteractiveViewerProps {
@@ -11,6 +11,7 @@ interface InteractiveViewerProps {
   onClearImage: () => void;
   onRunAnalysis: () => void;
   onSetBackendType: (type: 'RAY' | 'GEMINI') => void;
+  onBoxHover?: (box: DetectedObject | null) => void;
 }
 
 const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
@@ -21,12 +22,23 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   onFileUpload,
   onClearImage,
   onRunAnalysis,
-  onSetBackendType
+  onSetBackendType,
+  onBoxHover
 }) => {
   const [showOBB, setShowOBB] = useState(true);
   const [showOCR, setShowOCR] = useState(false);
   const [showGeo, setShowGeo] = useState(false);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
+
+  const handleMouseEnter = (box: DetectedObject) => {
+      setActiveBoxId(box.id);
+      if (onBoxHover) onBoxHover(box);
+  };
+
+  const handleMouseLeave = () => {
+      setActiveBoxId(null);
+      if (onBoxHover) onBoxHover(null);
+  }
 
   return (
     <div className="flex-1 relative bg-slate-900 border-r border-slate-800 flex flex-col">
@@ -100,11 +112,12 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
           </div>
         ) : (
           <div className="relative w-full h-full flex items-center justify-center">
-              <div className="relative inline-block max-w-full max-h-full shadow-2xl ring-1 ring-slate-800 rounded-sm">
+              {/* Changed from inline-block to inline-flex to eliminate ghost whitespace drift */}
+              <div className="relative inline-flex max-w-full max-h-full shadow-2xl ring-1 ring-slate-800 rounded-sm">
                   <img 
                     src={imageUrl} 
                     alt="Blueprint" 
-                    className={`max-w-full max-h-full object-contain transition-all duration-700 ease-out ${showGeo ? 'perspective-correction' : ''}`} 
+                    className={`block max-w-full max-h-full object-contain transition-all duration-700 ease-out ${showGeo ? 'perspective-correction' : ''}`} 
                     style={showGeo ? {transform: 'perspective(1500px) rotateX(10deg) rotateY(-5deg) scale(0.9) translateY(-20px)'} : {}} 
                   />
                   
@@ -130,8 +143,8 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                                   transform: `rotate(${box.rotation || 0}deg)`,
                                   transformOrigin: 'center center'
                               }}
-                              onMouseEnter={() => setActiveBoxId(box.id)}
-                              onMouseLeave={() => setActiveBoxId(null)}
+                              onMouseEnter={() => handleMouseEnter(box)}
+                              onMouseLeave={() => handleMouseLeave()}
                           >
                               {/* Corner Markers for Tech Feel */}
                               <div className="absolute -top-[1px] -left-[1px] w-1.5 h-1.5 border-t-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>

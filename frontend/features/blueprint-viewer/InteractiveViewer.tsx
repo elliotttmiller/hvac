@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { convertNormalizedToDisplay, NormBBox } from '../../lib/geometry';
 import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
 import { DetectedComponent } from '@/features/document-analysis/types';
 
@@ -11,6 +12,7 @@ interface InteractiveViewerProps {
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
   onRunAnalysis: () => void;
+  debugMode?: boolean; // show debug visuals (QA) when true
 }
 
 const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
@@ -22,6 +24,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   onFileUpload,
   onClearImage,
   onRunAnalysis,
+  debugMode = false,
 }) => {
   // --- UI State ---
   const [showOBB, setShowOBB] = useState(true);
@@ -125,26 +128,34 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               onLoad={updateMetrics}
             />
 
-            {/* The Overlay Layer */}
+            {/* The Overlay Layer - measured (pixel-anchored) */}
+            {/* Use measured metrics to render boxes in pixels to avoid object-fit / letterbox drift. */}
             <div className="absolute inset-0 pointer-events-none">
               {components.map((box) => {
                 if (!box || !Array.isArray(box.bbox) || box.bbox.length < 4) return null;
+                // Ensure metrics are available before rendering boxes
+                if (!metrics || metrics.w === 0 || metrics.h === 0) return null;
+
                 const isText = box.type === 'text';
                 const isVisible = (isText && showOCR) || (!isText && showOBB);
                 if (!isVisible) return null;
 
-                // API: [ymin, xmin, ymax, xmax]
-                const [ymin, xmin, ymax, xmax] = box.bbox;
+                // Assume canonical bbox: [xmin, ymin, xmax, ymax] normalized 0-1
+                const bbox = box.bbox as NormBBox;
 
-                const style = {
-                  left: `${xmin * 100}%`,
-                  top: `${ymin * 100}%`,
-                  width: `${(xmax - xmin) * 100}%`,
-                  height: `${(ymax - ymin) * 100}%`
+                const origSize = { width: Number(imageRef.current?.naturalWidth || 1), height: Number(imageRef.current?.naturalHeight || 1) };
+                const displaySize = { width: metrics.w, height: metrics.h };
+                const { x, y, w, h } = convertNormalizedToDisplay(bbox, origSize, displaySize, true);
+
+                const style: React.CSSProperties = {
+                  left: `${Math.round(x)}px`,
+                  top: `${Math.round(y)}px`,
+                  width: `${Math.max(1, Math.round(w))}px`,
+                  height: `${Math.max(1, Math.round(h))}px`
                 };
 
                 return (
-                  <div 
+                  <div
                     key={box.id}
                     className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
                       ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
@@ -154,6 +165,13 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                     onMouseEnter={() => setActiveBoxId(box.id)}
                     onMouseLeave={() => setActiveBoxId(null)}
                   >
+                    {/* Always-visible tiny debug badge for easier QA (mock mode) */}
+                    {debugMode && (
+                      <div className="absolute left-1 top-1 bg-slate-900/90 text-[9px] text-slate-200 px-1 rounded font-mono z-40 pointer-events-none truncate max-w-[70%]">
+                        {box.label || box.id}
+                      </div>
+                    )}
+
                     {/* Hover Card */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">

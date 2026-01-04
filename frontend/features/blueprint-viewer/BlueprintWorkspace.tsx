@@ -159,6 +159,7 @@ const BlueprintWorkspace: React.FC<{
             });
           }
         }}
+        debugMode={config.features.debugOverlay}
       />
 
       {/* Resizable Right Panel */}

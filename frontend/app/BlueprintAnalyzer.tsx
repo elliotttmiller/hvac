@@ -55,7 +55,7 @@ const BlueprintAnalyzer: React.FC = () => {
             id: entity.id || `ray-${idx}`,
             label: entity.tag || entity.label || '',
             confidence: entity.confidence || 0.9,
-            bbox: [ymin, xmin, ymax, xmax],
+            bbox: [xmin, ymin, xmax, ymax],
             rotation: 0,
             type: isText ? 'text' : 'component',
             meta: {
@@ -105,7 +105,7 @@ const BlueprintAnalyzer: React.FC = () => {
                         id: e.id || `gem-${idx}`,
                         label: e.tag || e.label || e.functional_desc || '',
                         confidence: e.confidence || 0.9,
-                        bbox: [ymin, xmin, ymax, xmax],
+                        bbox: [xmin, ymin, xmax, ymax],
                         rotation: e.rotation || 0,
                         type: e.instrument_type === 'Computer' ? 'text' : 'component',
                         meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
@@ -209,7 +209,7 @@ const BlueprintAnalyzer: React.FC = () => {
                     {/* Render Bounding Boxes */}
                     {detectedBoxes.map(box => {
                         if (!Array.isArray(box.bbox) || box.bbox.length < 4) return null;
-                        const [ymin, xmin, ymax, xmax] = box.bbox;
+                        const [xmin, ymin, xmax, ymax] = box.bbox;
                         const x = xmin * 100;
                         const y = ymin * 100;
                         const width = (xmax - xmin) * 100;

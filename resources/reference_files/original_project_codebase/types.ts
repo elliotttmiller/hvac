@@ -41,7 +41,12 @@ export interface DetectedObject {
   meta?: {
     tag?: string;
     description?: string;
-  }
+  };
+  debugLog?: {
+    source: 'MOCK' | 'RAY' | 'GEMINI';
+    rawInput: string;
+    transformation: string;
+  };
 }
 
 export interface AnalysisResult {

@@ -1,15 +1,17 @@
 import React from 'react';
-import { Layers, AlertOctagon, CheckCircle, Server, Eye } from 'lucide-react';
+import { Layers, AlertOctagon, CheckCircle, Server, Eye, Ruler } from 'lucide-react';
+import { DetectedObject } from '../../../types';
 
 interface InspectorPanelProps {
   analysis: string;
   inventory: any[];
   backendType: 'RAY' | 'GEMINI';
+  activeBox?: DetectedObject | null;
 }
 
-const InspectorPanel: React.FC<InspectorPanelProps> = ({ analysis, inventory, backendType }) => {
+const InspectorPanel: React.FC<InspectorPanelProps> = ({ analysis, inventory, backendType, activeBox }) => {
   return (
-    <div className="w-96 bg-slate-950 border-l border-slate-800 flex flex-col shrink-0">
+    <div className="w-96 bg-slate-950 border-l border-slate-800 flex flex-col shrink-0 transition-all duration-300">
       <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur">
           <h2 className="font-semibold text-slate-200">Analysis Results</h2>
           <div className="flex items-center gap-2 mt-1">
@@ -19,6 +21,39 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ analysis, inventory, ba
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-800">
+          
+          {/* Debug Geometry Card - Appears when hovering a box */}
+          {activeBox && activeBox.debugLog && (
+              <div className="bg-slate-900 border border-amber-500/30 rounded-lg p-3 shadow-lg shadow-amber-900/10 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <div className="flex items-center gap-2 mb-3 border-b border-slate-800 pb-2">
+                      <Ruler size={14} className="text-amber-500"/>
+                      <span className="text-xs font-bold text-amber-500 uppercase tracking-widest">Geometry Debugger</span>
+                  </div>
+                  <div className="space-y-2 text-[10px] font-mono text-slate-400">
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-slate-500">Source:</span>
+                          <span className="col-span-2 text-slate-200">{activeBox.debugLog.source}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-slate-500">Raw Input:</span>
+                          <span className="col-span-2 text-cyan-400 break-all">{activeBox.debugLog.rawInput}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-slate-500">Transform:</span>
+                          <span className="col-span-2 text-purple-400 break-all">{activeBox.debugLog.transformation}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-800">
+                          <span className="text-slate-500">Render X:</span>
+                          <span className="col-span-2 text-slate-200">{activeBox.x.toFixed(2)}%</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                          <span className="text-slate-500">Render Y:</span>
+                          <span className="col-span-2 text-slate-200">{activeBox.y.toFixed(2)}%</span>
+                      </div>
+                  </div>
+              </div>
+          )}
+
           {!analysis ? (
               <div className="text-center text-slate-600 mt-10">
                   <Layers className="mx-auto mb-4 opacity-50" size={32}/>

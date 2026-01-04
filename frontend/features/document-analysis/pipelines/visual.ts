@@ -18,6 +18,7 @@ import {
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
 import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
 import { mergeComponents, localToGlobal, calculateIoU } from '../../../lib/utils/math';
+import { normalizeBackendBBox } from '../../../lib/geometry';
 import { generateId } from '../../../lib/utils';
 
 type BlueprintType = 'PID' | 'HVAC';
@@ -196,22 +197,40 @@ function mergeTileResults(
   tileAnalyses: Array<{ tile: any; result: VisualAnalysisResult }>,
   tileData: TileResult
 ): VisualAnalysisResult {
+  console.log('[Visual Pipeline][Merge] mergeTileResults called - tiles:', tileAnalyses.length);
+  console.debug('[Visual Pipeline][Merge] tileData.metadata:', tileData.metadata);
+
   const allComponents: DetectedComponent[] = [];
   const allConnections: Connection[] = [];
   
   for (const { tile, result } of tileAnalyses) {
     for (const component of result.components) {
       // Transform local to global
-      const globalBbox = localToGlobal(component.bbox, tile.bbox);
-      
-      allComponents.push({
-        ...component,
-        bbox: globalBbox,
-        meta: {
-          ...component.meta,
-          source_tile: tile.position,
-        },
-      });
+      try {
+        const globalBbox = localToGlobal(component.bbox, tile.bbox);
+        console.debug('[Visual Pipeline][Merge] tile:', tile.position, 'local bbox:', component.bbox, '-> global bbox:', globalBbox);
+
+        allComponents.push({
+          ...component,
+          bbox: globalBbox,
+          meta: {
+            ...component.meta,
+            source_tile: tile.position,
+          },
+        });
+      } catch (err) {
+        console.error('[Visual Pipeline][Merge] Failed to transform bbox for component', component.id, 'error:', err);
+        // Push component with original bbox so it's visible for debugging
+        allComponents.push({
+          ...component,
+          bbox: component.bbox,
+          meta: {
+            ...component.meta,
+            source_tile: tile.position,
+            transform_error: String(err)
+          },
+        });
+      }
     }
     
     allConnections.push(...result.connections);
@@ -257,6 +276,7 @@ async function refineWithFullImage(
   // --- CRITICAL FIX: PRESERVE TILED COORDINATES ---
   // Map high-precision BBoxes from 'mergedResult' back onto 'refinedResult'
   const finalComponents = refinedResult.components.map(refinedComp => {
+    console.debug('[Visual Pipeline][Refine] refinedComp:', refinedComp.id, 'bbox:', refinedComp.bbox);
     // 1. Try Exact ID Match
     let match = mergedResult.components.find(c => c.id === refinedComp.id);
     
@@ -267,10 +287,20 @@ async function refineWithFullImage(
     
     // 3. Try Spatial Match (IoU > 0.5)
     if (!match) {
-      match = mergedResult.components.find(c => calculateIoU(c.bbox, refinedComp.bbox) > 0.5);
+      // compute IoU values for debugging
+      let best: { c: any; iou: number } | null = null;
+      for (const c of mergedResult.components) {
+        const iou = calculateIoU(c.bbox, refinedComp.bbox);
+        if (!best || iou > best.iou) best = { c, iou };
+      }
+      if (best) {
+        console.debug('[Visual Pipeline][Refine] Best spatial match for', refinedComp.id, 'is', best.c.id, 'iou=', best.iou);
+        if (best.iou > 0.5) match = best.c;
+      }
     }
 
     if (match) {
+      console.debug('[Visual Pipeline][Refine] Mapping refined', refinedComp.id, '-> matched', match.id, 'using bbox:', match.bbox);
       // Use the Tiled BBox (High Precision) instead of the Refined BBox (Low Precision)
       return {
         ...refinedComp,
@@ -329,19 +359,40 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
     const components = Array.isArray(parsed.components) ? parsed.components : (parsed.entities || []);
     const connections = Array.isArray(parsed.connections) ? parsed.connections : [];
 
-    // Ensure all components have required fields
-    const validatedComponents = components.map((comp: any) => ({
-      id: comp.id || generateId(),
-      type: comp.type || 'unknown',
-      label: comp.label || comp.tag || 'unknown',
-      bbox: validateBBox(comp.bbox || comp.bbox_2d),
-      confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
-      rotation: typeof comp.rotation === 'number' ? Math.round(comp.rotation) : 0,
-      meta: comp.meta || { 
+    // Ensure all components have required fields and record normalization metadata
+    const validatedComponents = components.map((comp: any) => {
+      const rawBBox = comp.bbox || comp.bbox_2d || null;
+      const normalizedBBox = validateBBox(rawBBox);
+
+      const baseMeta = comp.meta || {
         description: comp.description || comp.functional_desc,
-        reasoning: comp.reasoning 
-      },
-    }));
+        reasoning: comp.reasoning
+      };
+
+      const transformHistory = Array.isArray(baseMeta?.transform_history) ? [...baseMeta.transform_history] : [];
+      transformHistory.push({
+        timestamp: new Date().toISOString(),
+        operation: 'normalize_bbox',
+        details: {
+          original_bbox: rawBBox,
+          normalized_bbox: normalizedBBox
+        }
+      });
+
+      return {
+        id: comp.id || generateId(),
+        type: comp.type || 'unknown',
+        label: comp.label || comp.tag || 'unknown',
+        bbox: normalizedBBox,
+        confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
+        rotation: typeof comp.rotation === 'number' ? Math.round(comp.rotation) : 0,
+        meta: {
+          ...baseMeta,
+          raw_backend_output: rawBBox,
+          transform_history: transformHistory
+        },
+      } as any;
+    });
 
     // Ensure all connections have required fields
     const validatedConnections = connections.map((conn: any) => ({
@@ -379,12 +430,17 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
 
 function validateBBox(bbox: any): [number, number, number, number] {
   if (!Array.isArray(bbox) || bbox.length !== 4) return [0,0,0,0];
-  
-  // Check if legacy 0-1000 scale is used
-  const maxVal = Math.max(...bbox);
-  if (maxVal > 1.0) {
-    return bbox.map(v => v / 1000) as [number, number, number, number];
+  try {
+    // Use geometry heuristic to normalize and canonicalize various backend bbox formats
+    const normalized = normalizeBackendBBox(bbox as number[]);
+    return normalized as [number, number, number, number];
+  } catch (err) {
+    console.warn('[Visual Pipeline] validateBBox failed to normalize bbox', bbox, err);
+    // Fallback: attempt simple scaling
+    const maxVal = Math.max(...bbox);
+    if (maxVal > 1.0) {
+      return bbox.map((v: number) => v / 1000) as [number, number, number, number];
+    }
+    return bbox as [number, number, number, number];
   }
-  
-  return bbox as [number, number, number, number];
 }

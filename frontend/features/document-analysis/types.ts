@@ -72,7 +72,10 @@ export interface DetectedComponent {
   type: string; // 'valve', 'instrument', 'duct', 'vav', etc.
   label: string; // The OCR text extracted (e.g., "PDI-1401")
   
-  // CRITICAL: Gemini Native Coordinates are [ymin, xmin, ymax, xmax]
+  // Canonical normalized bbox format used across the system:
+  // [xmin, ymin, xmax, ymax] with values in the 0-1 range (floating point)
+  // Ingest pipelines should normalize backend outputs to this format and
+  // store the original backend output in meta.raw_backend_output for auditing.
   bbox: [number, number, number, number]; 
   
   confidence: number;
@@ -85,6 +88,16 @@ export interface DetectedComponent {
     mounting?: string;
     instrument_type?: string;
     source_tile?: string;
+    // Optional transform history for traceability
+    transform_history?: Array<{
+      timestamp: string;
+      operation: string;
+      original_size?: [number, number];
+      new_size?: [number, number];
+      maintained_aspect_ratio?: boolean;
+      padding?: { top?: number; right?: number; bottom?: number; left?: number };
+      details?: any;
+    }>;
     [key: string]: any;
   };
 }
@@ -103,7 +116,10 @@ export interface VisualAnalysisResult {
   metadata?: {
     total_components: number;
     total_connections: number;
+    // Original high-resolution image dimensions (pixels) when available
     image_dimensions?: { width: number; height: number };
+    // Optionally store original image size field for clarity
+    original_image_dimensions?: { width: number; height: number };
     process_log?: string; // AI reasoning trace for user transparency
     parse_error?: string; // Capture parsing errors
     error?: string; // Add error property for additional error details
@@ -117,7 +133,7 @@ export interface VisualAnalysisResult {
 export interface TextBlock {
   id: string;
   text: string;
-  bbox: [number, number, number, number]; // [ymin, xmin, ymax, xmax]
+  bbox: [number, number, number, number]; // [xmin, ymin, xmax, ymax]
   confidence?: number;
   rotation?: number;
   font_size?: number;
@@ -260,7 +276,7 @@ export const VISUAL_ANALYSIS_SCHEMA = {
           },
           bbox: {
             type: Type.ARRAY,
-            description: "Normalized coordinates [ymin, xmin, ymax, xmax]. MANDATORY.",
+            description: "Normalized coordinates [xmin, ymin, xmax, ymax]. MANDATORY.",
             items: { type: Type.NUMBER },
           },
           confidence: { type: Type.NUMBER },
