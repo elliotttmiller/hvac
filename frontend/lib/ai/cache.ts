@@ -111,6 +111,19 @@ export class SemanticCache {
   }
 
   /**
+   * Delete a specific cache entry by input key
+   */
+  async delete(input: string): Promise<boolean> {
+    const hash = await this.generateHash(input);
+    const existed = this.cache.has(hash);
+    if (existed) {
+      this.cache.delete(hash);
+      this.saveToStorage();
+    }
+    return existed;
+  }
+
+  /**
    * Remove expired entries
    */
   cleanup(): void {

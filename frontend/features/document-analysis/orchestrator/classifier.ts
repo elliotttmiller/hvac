@@ -54,8 +54,9 @@ export async function classifyDocument(
     // Parse response
     const result = parseClassificationResponse(responseText);
 
-    // Cache the result
-    if (config.features.semanticCache) {
+    // Cache the result only if it's a valid classification (not UNKNOWN with 0 confidence)
+    // This prevents caching of failed classifications
+    if (config.features.semanticCache && !(result.type === 'UNKNOWN' && result.confidence === 0)) {
       await cache.set(cacheKey, result);
     }
 
@@ -70,6 +71,16 @@ export async function classifyDocument(
       reasoning: `Classification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
+}
+
+/**
+ * Clear classification cache for a specific file (useful for debugging)
+ */
+export async function clearClassificationCache(fileName: string, imageData: string): Promise<void> {
+  const cache = getSemanticCache();
+  const cacheKey = `classify:${fileName}:${imageData.substring(0, 100)}`;
+  await cache.delete(cacheKey);
+  console.log('[Classifier] Cache cleared for:', fileName);
 }
 
 /**
@@ -90,7 +101,12 @@ function parseClassificationResponse(responseText: string): ClassificationResult
 
     // Validate required fields
     if (!parsed.type || typeof parsed.confidence !== 'number') {
-      throw new Error('Invalid classification response format');
+      console.error('Invalid classification format - missing required fields:', { 
+        hasType: !!parsed.type, 
+        hasConfidence: typeof parsed.confidence === 'number',
+        parsed 
+      });
+      throw new Error('Invalid classification response format: missing type or confidence');
     }
 
     // Validate document type - include all known DocumentType values
@@ -100,7 +116,7 @@ function parseClassificationResponse(responseText: string): ClassificationResult
       return {
         type: 'UNKNOWN',
         confidence: 0,
-        reasoning: 'Invalid document type returned from model',
+        reasoning: `Invalid document type returned from model: ${parsed.type}`,
       };
     }
 
@@ -111,10 +127,11 @@ function parseClassificationResponse(responseText: string): ClassificationResult
     };
   } catch (error) {
     console.error('Failed to parse classification response:', error);
+    console.error('Raw response text:', responseText);
     return {
       type: 'UNKNOWN',
       confidence: 0,
-      reasoning: 'Failed to parse model response',
+      reasoning: `Failed to parse model response: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }
