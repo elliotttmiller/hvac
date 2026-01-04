@@ -121,7 +121,33 @@ app.post('/api/ai/generateVision', async (req, res) => {
   // MOCK MODE INTERCEPTION (Zero-Cost Debugging)
   // ============================================================================
   if (MOCK_MODE_ENABLED) {
-    console.warn('⚠️  MOCK MODE ACTIVE: Bypassing AI provider, returning static golden-record.json');
+    const { prompt } = req.body;
+    
+    // Detect request type based on prompt content
+    const isClassificationRequest = prompt && (
+      prompt.includes('Classify') || 
+      prompt.includes('document type') ||
+      prompt.includes('BLUEPRINT') && prompt.includes('SCHEMATIC') && prompt.includes('SPEC_SHEET')
+    );
+    
+    if (isClassificationRequest) {
+      // Return mock classification response for P&ID/Schematic
+      console.log('⚠️  MOCK MODE: Returning mock classification (SCHEMATIC)');
+      const classificationResponse = {
+        type: 'SCHEMATIC',
+        confidence: 0.95,
+        reasoning: 'Mock classification: Detected P&ID diagram with instrumentation symbols and process flow lines'
+      };
+      
+      if (MOCK_MODE_DELAY_MS > 0) {
+        await new Promise(resolve => setTimeout(resolve, MOCK_MODE_DELAY_MS));
+      }
+      
+      return res.json({ text: JSON.stringify(classificationResponse) });
+    }
+    
+    // Otherwise, return visual analysis from golden-record.json
+    console.warn('⚠️  MOCK MODE: Returning static golden-record.json for visual analysis');
     
     try {
       // Read the golden record JSON file
