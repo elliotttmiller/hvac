@@ -11,7 +11,8 @@ import {
    Send,
    MoreHorizontal,
    Plus,
-   Copy
+   Copy,
+   ClipboardList
 } from 'lucide-react';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
@@ -26,7 +27,7 @@ interface InspectorPanelProps {
   onSelectBox: (id: string | null) => void;
 }
 
-type Tab = 'COMPONENTS' | 'PRICING' | 'QUOTE';
+type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
 
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
@@ -156,6 +157,39 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       ...parseLogLine(line)
     }));
   }, [streamingLog]);
+
+  // Memoize component analysis data
+  const componentsByType = useMemo(() => {
+    const groups: Record<string, DetectedComponent[]> = {};
+    detectedBoxes.forEach(comp => {
+      const type = comp.meta?.equipment_type || comp.type || 'Other';
+      if (!groups[type]) groups[type] = [];
+      groups[type].push(comp);
+    });
+    return groups;
+  }, [detectedBoxes]);
+
+  const componentStats = useMemo(() => {
+    const stats = {
+      total: detectedBoxes.length,
+      bySubsystem: {} as Record<string, number>,
+      avgConfidence: 0,
+      excellentQuality: 0,
+      isaCompliant: 0
+    };
+    
+    let confidenceSum = 0;
+    detectedBoxes.forEach(comp => {
+      confidenceSum += comp.confidence;
+      const subsystem = comp.meta?.hvac_subsystem || 'other';
+      stats.bySubsystem[subsystem] = (stats.bySubsystem[subsystem] || 0) + 1;
+      if (comp.meta?.detection_quality === 'excellent') stats.excellentQuality++;
+      if (comp.meta?.isa_function) stats.isaCompliant++;
+    });
+    
+    stats.avgConfidence = detectedBoxes.length > 0 ? confidenceSum / detectedBoxes.length : 0;
+    return stats;
+  }, [detectedBoxes]);
 
   const renderComponentsTab = () => (
       <div className="flex flex-col h-full">
@@ -420,6 +454,214 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       </div>
   );
 
+  const renderAnalysisTab = () => {
+    const hasData = detectedBoxes.length > 0;
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+          {!hasData ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <ClipboardList size={48} className="text-zinc-600 mb-4" />
+              <div className="text-sm font-semibold text-zinc-400 mb-2">No Analysis Available</div>
+              <div className="text-xs text-zinc-500">Run document analysis to generate a comprehensive report</div>
+            </div>
+          ) : (
+            <>
+              {/* Executive Summary */}
+              <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
+                  <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Executive Summary</h3>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {executiveSummary || 'Analysis complete. Document contains detected HVAC components and systems.'}
+                </p>
+              </div>
+
+              {/* Key Metrics */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-5 bg-emerald-500 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Key Metrics</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Total Components</div>
+                    <div className="text-xl font-bold text-cyan-400">{componentStats.total}</div>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Avg Confidence</div>
+                    <div className="text-xl font-bold text-emerald-400">{(componentStats.avgConfidence * 100).toFixed(1)}%</div>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Excellent Quality</div>
+                    <div className="text-xl font-bold text-purple-400">{componentStats.excellentQuality}</div>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">ISA Compliant</div>
+                    <div className="text-xl font-bold text-amber-400">{componentStats.isaCompliant}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Distribution */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-5 bg-purple-500 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">System Distribution</h3>
+                </div>
+                <div className="space-y-2">
+                  {Object.entries(componentStats.bySubsystem).map(([subsystem, count]) => {
+                    const percentage = (count / componentStats.total) * 100;
+                    return (
+                      <div key={subsystem} className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs text-zinc-300 capitalize">{subsystem.replace(UNDERSCORE_REGEX, ' ')}</span>
+                          <span className="text-xs font-mono text-cyan-400">{count} ({percentage.toFixed(0)}%)</span>
+                        </div>
+                        <div className="w-full bg-zinc-800 rounded-full h-1.5">
+                          <div 
+                            className="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full transition-all"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Component Breakdown by Type */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-5 bg-amber-500 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Component Breakdown</h3>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(componentsByType).map(([type, components]) => (
+                    <div key={type} className="bg-[#1a1a1a] rounded-lg border border-white/5 overflow-hidden">
+                      <div className="bg-gradient-to-r from-amber-500/10 to-transparent p-3 border-b border-white/5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-zinc-200">{type}</span>
+                          <span className="text-xs text-amber-400 font-mono">{components.length} units</span>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        {components.slice(0, 3).map(comp => (
+                          <div key={comp.id} className="flex items-center justify-between text-[10px]">
+                            <span className="text-zinc-400 truncate flex-1">{comp.label}</span>
+                            <span className="text-emerald-400 font-mono ml-2">{(comp.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                        ))}
+                        {components.length > 3 && (
+                          <div className="text-[10px] text-zinc-500 italic">
+                            +{components.length - 3} more...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Insights */}
+              {detectedBoxes.some(c => c.meta?.reasoning) && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-purple-500 rounded-full"></div>
+                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">AI Detection Insights</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-purple-500/20">
+                    <div className="space-y-3">
+                      {detectedBoxes
+                        .filter(c => c.meta?.reasoning)
+                        .slice(0, 5)
+                        .map(comp => (
+                          <div key={comp.id} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
+                            <div className="text-xs font-semibold text-purple-400 mb-1">{comp.label}</div>
+                            <div className="text-[10px] text-zinc-400 leading-relaxed">{comp.meta?.reasoning}</div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Issues */}
+              {validationIssues.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-red-500 rounded-full"></div>
+                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Issues & Recommendations</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {validationIssues.map((issue, idx) => (
+                      <div 
+                        key={issue.id || idx}
+                        className={`rounded-lg p-3 border ${
+                          issue.severity === 'CRITICAL' ? 'bg-red-500/10 border-red-500/30' :
+                          issue.severity === 'WARNING' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                          'bg-blue-500/10 border-blue-500/30'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className={`text-xs font-bold uppercase ${
+                            issue.severity === 'CRITICAL' ? 'text-red-400' :
+                            issue.severity === 'WARNING' ? 'text-yellow-400' :
+                            'text-blue-400'
+                          }`}>
+                            {issue.severity}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-zinc-300 mb-1">{issue.issue}</div>
+                            {issue.recommendation && (
+                              <div className="text-[10px] text-zinc-500 italic">→ {issue.recommendation}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Conclusions */}
+              <div className="bg-gradient-to-br from-[#0d0d0d] to-[#151515] rounded-xl p-4 border border-white/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-5 bg-cyan-500 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Analysis Conclusions</h3>
+                </div>
+                <div className="space-y-2 text-xs text-zinc-300 leading-relaxed">
+                  <p>
+                    • Detected <span className="text-cyan-400 font-semibold">{componentStats.total} components</span> across {Object.keys(componentStats.bySubsystem).length} HVAC subsystems
+                  </p>
+                  <p>
+                    • Average detection confidence of <span className="text-emerald-400 font-semibold">{(componentStats.avgConfidence * 100).toFixed(1)}%</span> indicates {componentStats.avgConfidence > 0.9 ? 'excellent' : componentStats.avgConfidence > 0.7 ? 'good' : 'moderate'} model certainty
+                  </p>
+                  {componentStats.isaCompliant > 0 && (
+                    <p>
+                      • <span className="text-amber-400 font-semibold">{componentStats.isaCompliant} components</span> conform to ISA standards for instrumentation naming
+                    </p>
+                  )}
+                  {validationIssues.length > 0 && (
+                    <p className="text-yellow-400">
+                      • <span className="font-semibold">{validationIssues.length} validation issues</span> require attention for compliance
+                    </p>
+                  )}
+                  <p className="pt-2 text-zinc-400 text-[10px]">
+                    This automated analysis provides comprehensive insights into the document's HVAC system components, 
+                    their classifications, and conformance to industry standards. Review individual components for detailed specifications.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderPricingTab = () => (
     <div className="flex flex-col h-full">
        <div className="px-4 py-3 bg-gradient-to-br from-emerald-900/10 to-transparent border-b border-emerald-500/10 mb-2">
@@ -498,26 +740,33 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <div className="h-12 border-b border-white/5 flex items-center px-1">
          <button 
             onClick={() => setActiveTab('COMPONENTS')}
-            className={`flex-1 h-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <Layers size={12} /> Components
+            <Layers size={11} /> <span className="hidden sm:inline">Components</span>
+         </button>
+         <button 
+            onClick={() => setActiveTab('ANALYSIS')}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+         >
+            <ClipboardList size={11} /> <span className="hidden sm:inline">Analysis</span>
          </button>
          <button 
             onClick={() => setActiveTab('PRICING')}
-            className={`flex-1 h-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <DollarSign size={12} /> Pricing
+            <DollarSign size={11} /> <span className="hidden sm:inline">Pricing</span>
          </button>
          <button 
             onClick={() => setActiveTab('QUOTE')}
-            className={`flex-1 h-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <FileText size={12} /> Quote
+            <FileText size={11} /> <span className="hidden sm:inline">Quote</span>
          </button>
       </div>
 
          <div className="flex-1 overflow-hidden relative bg-[#121212]">
              {activeTab === 'COMPONENTS' && renderComponentsTab()}
+             {activeTab === 'ANALYSIS' && renderAnalysisTab()}
              {activeTab === 'PRICING' && renderPricingTab()}
              {activeTab === 'QUOTE' && renderQuoteTab()}
          </div>
