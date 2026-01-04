@@ -91,16 +91,22 @@ export function normalizeCoordinates(
   
   if ('x1' in tile && 'y1' in tile && 'x2' in tile && 'y2' in tile) {
     // Bounding box format from tiling.ts
-    tileX1 = tile.x1;
-    tileY1 = tile.y1;
-    tileWidth = tile.x2 - tile.x1;
-    tileHeight = tile.y2 - tile.y1;
-  } else {
+    const bboxTile = tile as { x1: number; y1: number; x2: number; y2: number };
+    tileX1 = bboxTile.x1;
+    tileY1 = bboxTile.y1;
+    tileWidth = bboxTile.x2 - bboxTile.x1;
+    tileHeight = bboxTile.y2 - bboxTile.y1;
+  } else if ('xOffset' in tile && 'yOffset' in tile && 'width' in tile && 'height' in tile) {
     // Legacy format with explicit offset and dimensions
-    tileX1 = tile.xOffset;
-    tileY1 = tile.yOffset;
-    tileWidth = tile.width;
-    tileHeight = tile.height;
+    const legacyTile = tile as { xOffset: number; yOffset: number; width: number; height: number };
+    tileX1 = legacyTile.xOffset;
+    tileY1 = legacyTile.yOffset;
+    tileWidth = legacyTile.width;
+    tileHeight = legacyTile.height;
+  } else {
+    // Malformed tile object - this should never happen in production
+    console.error('Invalid tile format:', tile);
+    throw new Error('Tile object must have either {x1, y1, x2, y2} or {xOffset, yOffset, width, height} properties');
   }
 
   // Transform: global = tileOffset + (local * tileDimension)
