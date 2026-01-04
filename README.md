@@ -211,6 +211,47 @@ See `.env.example` for complete list of configuration options.
 | Safety Check | 2-3s | $0.001 | AI-assisted |
 | Natural Language Query | 2-3s | $0.001 | Context-aware |
 
+## 🔧 Troubleshooting
+
+### Document Classification Issues
+
+If you're experiencing "Failed to parse model response" errors or documents being classified as "UNKNOWN":
+
+1. **Clear Browser Cache**
+   - Open browser developer console (F12)
+   - Type: `localStorage.removeItem('gemini-cache')`
+   - Refresh the page and try again
+
+2. **Check AI Configuration**
+   - Verify your API key is set correctly in `.env`
+   - Ensure `GEMINI_API_KEY` or `VITE_AI_API_KEY` is valid
+   - Check server logs for detailed error messages
+
+3. **Enable Mock Mode for Testing**
+   ```bash
+   # In .env file
+   MOCK_MODE_ENABLED=true
+   ```
+   This bypasses the AI service and uses mock data for zero-cost debugging
+
+4. **Check Server Logs**
+   - The server now logs detailed AI response information
+   - Look for "AI Vision Response:" messages
+   - Check for validation errors or empty responses
+
+5. **Common Issues**
+   - **Empty AI responses**: The AI model may be rate-limited or experiencing issues
+   - **Invalid JSON**: The AI returned malformed JSON (now validated server-side)
+   - **Cached failures**: Old failed classifications were being cached (now fixed)
+
+### Recent Fixes (v2.1)
+
+- ✅ Server-side validation for empty/invalid AI responses
+- ✅ Improved error logging for debugging
+- ✅ Prevention of caching failed classifications
+- ✅ Fixed prompt-schema mismatch for SCHEMATIC type
+- ✅ Better error messages throughout the pipeline
+
 ## 📝 Documentation
 
 Comprehensive documentation is available in the `/docs` directory:

@@ -6,8 +6,15 @@
 import { getAIClient } from '@/lib/ai/client';
 import { getSemanticCache } from '@/lib/ai/cache';
 import { config } from '@/app/config';
-import { ClassificationResult, CLASSIFICATION_SCHEMA } from '@/features/document-analysis/types';
+import { ClassificationResult, CLASSIFICATION_SCHEMA, VALID_CLASSIFICATION_TYPES } from '@/features/document-analysis/types';
 import { CLASSIFY_SYSTEM_INSTRUCTION, CLASSIFY_PROMPT } from '../prompts/classify';
+
+/**
+ * Generate a consistent cache key for classification requests
+ */
+function getClassificationCacheKey(fileName: string, imageData: string): string {
+  return `classify:${fileName}:${imageData.substring(0, 100)}`;
+}
 
 export async function classifyDocument(
   imageData: string,
@@ -16,7 +23,7 @@ export async function classifyDocument(
   try {
     // Check cache first
     const cache = getSemanticCache();
-    const cacheKey = `classify:${fileName}:${imageData.substring(0, 100)}`;
+    const cacheKey = getClassificationCacheKey(fileName, imageData);
     
     if (config.features.semanticCache) {
       const cached = await cache.get<ClassificationResult>(cacheKey);
@@ -54,8 +61,9 @@ export async function classifyDocument(
     // Parse response
     const result = parseClassificationResponse(responseText);
 
-    // Cache the result
-    if (config.features.semanticCache) {
+    // Cache the result only if it's a valid classification (not UNKNOWN with 0 confidence)
+    // This prevents caching of failed classifications
+    if (config.features.semanticCache && !(result.type === 'UNKNOWN' && result.confidence === 0)) {
       await cache.set(cacheKey, result);
     }
 
@@ -70,6 +78,16 @@ export async function classifyDocument(
       reasoning: `Classification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
+}
+
+/**
+ * Clear classification cache for a specific file (useful for debugging)
+ */
+export async function clearClassificationCache(fileName: string, imageData: string): Promise<void> {
+  const cache = getSemanticCache();
+  const cacheKey = getClassificationCacheKey(fileName, imageData);
+  await cache.delete(cacheKey);
+  console.log('[Classifier] Cache cleared for:', fileName);
 }
 
 /**
@@ -90,17 +108,21 @@ function parseClassificationResponse(responseText: string): ClassificationResult
 
     // Validate required fields
     if (!parsed.type || typeof parsed.confidence !== 'number') {
-      throw new Error('Invalid classification response format');
+      console.error('Invalid classification format - missing required fields:', { 
+        hasType: !!parsed.type, 
+        hasConfidence: typeof parsed.confidence === 'number',
+        parsed 
+      });
+      throw new Error('Invalid classification response format: missing type or confidence');
     }
 
     // Validate document type - include all known DocumentType values
-    const validTypes = ['BLUEPRINT', 'SCHEMATIC', 'SPEC_SHEET', 'SCHEDULE'];
-    if (!validTypes.includes(parsed.type)) {
+    if (!VALID_CLASSIFICATION_TYPES.includes(parsed.type as any)) {
       console.warn(`Invalid document type: ${parsed.type}, defaulting to UNKNOWN`);
       return {
         type: 'UNKNOWN',
         confidence: 0,
-        reasoning: 'Invalid document type returned from model',
+        reasoning: `Invalid document type returned from model: ${parsed.type}`,
       };
     }
 
@@ -111,10 +133,11 @@ function parseClassificationResponse(responseText: string): ClassificationResult
     };
   } catch (error) {
     console.error('Failed to parse classification response:', error);
+    console.error('Raw response text:', responseText);
     return {
       type: 'UNKNOWN',
       confidence: 0,
-      reasoning: 'Failed to parse model response',
+      reasoning: `Failed to parse model response: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

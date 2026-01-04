@@ -78,12 +78,27 @@ export class AIClient {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Proxy API error: ${errorData.details || response.statusText}`);
+      let errorDetails = response.statusText;
+      try {
+        const errorData = await response.json();
+        errorDetails = errorData.details || errorData.error || response.statusText;
+        console.error('AI Proxy Error Response:', errorData);
+      } catch (e) {
+        // If we can't parse error response, use status text
+      }
+      throw new Error(`AI Proxy Error: ${errorDetails}`);
     }
 
     const data = await response.json();
-    return data.text || '';
+    const text = data.text || '';
+    
+    // Validate we got a non-empty response
+    if (!text || text.trim().length === 0) {
+      console.error('Empty response from AI proxy');
+      throw new Error('Empty response from AI service');
+    }
+    
+    return text;
   }
 }
 

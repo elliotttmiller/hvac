@@ -57,6 +57,14 @@ export interface RayServeResponse {
 
 export type DocumentType = 'BLUEPRINT' | 'SCHEMATIC' | 'SPEC_SHEET' | 'SCHEDULE' | 'UNKNOWN';
 
+// Valid document types that can be returned by the classifier (excludes UNKNOWN)
+export const VALID_CLASSIFICATION_TYPES: ReadonlyArray<Exclude<DocumentType, 'UNKNOWN'>> = [
+  'BLUEPRINT',
+  'SCHEMATIC', 
+  'SPEC_SHEET',
+  'SCHEDULE'
+] as const;
+
 export interface ClassificationResult {
   type: DocumentType;
   confidence: number;

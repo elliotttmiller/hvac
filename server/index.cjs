@@ -202,10 +202,42 @@ app.post('/api/ai/generateVision', async (req, res) => {
       { inlineData: { data: imageData, mimeType: mimeType || 'image/png' } }
     ]);
     
-    res.json({ text: result.response.text() });
+    const responseText = result.response.text();
+    
+    // Validate response is not empty
+    if (!responseText || responseText.trim().length === 0) {
+      console.error('AI Vision Error: Empty response from Gemini API');
+      return res.status(500).json({ 
+        error: 'Empty response from AI model',
+        details: 'The AI model returned an empty response. Please try again.'
+      });
+    }
+    
+    // Log response for debugging (first 200 chars)
+    console.log('AI Vision Response:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+    
+    // For JSON responses, validate they're parseable
+    if (options?.responseMimeType === 'application/json') {
+      try {
+        // Try to parse to validate it's valid JSON
+        JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('AI Vision Error: Invalid JSON response:', responseText.substring(0, 500));
+        return res.status(500).json({ 
+          error: 'Invalid JSON response from AI model',
+          details: 'The AI model returned a response that is not valid JSON. This may indicate a model configuration issue.',
+        });
+      }
+    }
+    
+    res.json({ text: responseText });
   } catch (error) {
     console.error('AI Vision Error:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('Full error details:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: 'An error occurred while processing the AI request. Check server logs for details.'
+    });
   }
 });
 
