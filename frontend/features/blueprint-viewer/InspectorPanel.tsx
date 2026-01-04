@@ -397,8 +397,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            <div className="text-[11px] text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto scrollbar-thin" style={{ userSelect: 'text' }}>
                               {streamingLog.split('\n').map((line, index) => {
                                  const { className, prefix } = parseLogLine(line);
-                                 // Use combination of index and truncated line for stable key
-                                 const lineKey = `log-${index}-${line.substring(0, 10)}`;
+                                 // Use index as primary key since log lines are append-only
+                                 // and their order is stable
+                                 const lineKey = `log-line-${index}`;
                                  
                                  return (
                                     <div key={lineKey} className={`${className} py-0.5`}>
