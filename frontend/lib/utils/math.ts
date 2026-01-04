@@ -73,17 +73,47 @@ export function mergeComponents(
 
 /**
  * Transform local tile coordinates to global image coordinates
+ * 
+ * @param localBox - Bounding box in local tile coordinates [ymin, xmin, ymax, xmax] (0-1 normalized within tile)
+ * @param tile - Tile information, supports both formats:
+ *               1. { xOffset, yOffset, width, height } - offset and dimensions in normalized coordinates
+ *               2. { x1, y1, x2, y2 } - bounding box format from tiling.ts
+ * @returns Global bounding box [ymin, xmin, ymax, xmax] in full image coordinates (0-1 normalized)
  */
 export function normalizeCoordinates(
   localBox: [number, number, number, number],
-  tile: { xOffset: number; yOffset: number; width: number; height: number }
+  tile: { xOffset: number; yOffset: number; width: number; height: number } | { x1: number; y1: number; x2: number; y2: number }
 ): [number, number, number, number] {
   const [ymin, xmin, ymax, xmax] = localBox;
 
-  const globalYmin = tile.yOffset + (ymin * tile.height);
-  const globalXmin = tile.xOffset + (xmin * tile.width);
-  const globalYmax = tile.yOffset + (ymax * tile.height);
-  const globalXmax = tile.xOffset + (xmax * tile.width);
+  // Support both tile formats: { x1, y1, x2, y2 } and { xOffset, yOffset, width, height }
+  let tileX1: number, tileY1: number, tileWidth: number, tileHeight: number;
+  
+  if ('x1' in tile && 'y1' in tile && 'x2' in tile && 'y2' in tile) {
+    // Bounding box format from tiling.ts
+    const bboxTile = tile as { x1: number; y1: number; x2: number; y2: number };
+    tileX1 = bboxTile.x1;
+    tileY1 = bboxTile.y1;
+    tileWidth = bboxTile.x2 - bboxTile.x1;
+    tileHeight = bboxTile.y2 - bboxTile.y1;
+  } else if ('xOffset' in tile && 'yOffset' in tile && 'width' in tile && 'height' in tile) {
+    // Legacy format with explicit offset and dimensions
+    const legacyTile = tile as { xOffset: number; yOffset: number; width: number; height: number };
+    tileX1 = legacyTile.xOffset;
+    tileY1 = legacyTile.yOffset;
+    tileWidth = legacyTile.width;
+    tileHeight = legacyTile.height;
+  } else {
+    // Malformed tile object - this should never happen in production
+    console.error('Invalid tile format:', tile);
+    throw new Error('Tile object must have either {x1, y1, x2, y2} or {xOffset, yOffset, width, height} properties');
+  }
+
+  // Transform: global = tileOffset + (local * tileDimension)
+  const globalYmin = tileY1 + (ymin * tileHeight);
+  const globalXmin = tileX1 + (xmin * tileWidth);
+  const globalYmax = tileY1 + (ymax * tileHeight);
+  const globalXmax = tileX1 + (xmax * tileWidth);
 
   return [globalYmin, globalXmin, globalYmax, globalXmax];
 }
