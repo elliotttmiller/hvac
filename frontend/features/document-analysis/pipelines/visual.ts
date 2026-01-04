@@ -2,6 +2,13 @@
  * Visual Pipeline - Blueprint Analysis (SOTA Implementation)
  * Implements Visual Grid Tiling + Map-Reduce + Self-Correction
  * Detects HVAC components and connections using configured AI provider
+ * 
+ * ENHANCEMENTS:
+ * - ISA-5.1 function detection for improved tag recognition
+ * - Connection inference and validation
+ * - Control loop detection
+ * - Optimized parallel processing
+ * - Quality metrics calculation
  */
 
 import { getAIClient } from '../../../lib/ai/client';
@@ -20,6 +27,7 @@ import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-proces
 import { mergeComponents, localToGlobal, calculateIoU } from '../../../lib/utils/math';
 import { normalizeBackendBBox } from '../../../lib/geometry';
 import { generateId } from '../../../lib/utils';
+import { enhanceVisualAnalysis, optimizedTileProcessing, calculateQualityMetrics } from './visual-enhancements';
 
 type BlueprintType = 'PID' | 'HVAC';
 
@@ -85,7 +93,24 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
       result = await analyzeStandard(imageData, blueprintType);
     }
 
-    // Cache the result
+    // ENHANCEMENT: Apply post-processing enhancements
+    console.log('[Visual Pipeline] Applying enhancements...');
+    result = await enhanceVisualAnalysis(result, {
+      enableISADetection: true,
+      enableConnectionInference: true,
+      enableLoopDetection: true,
+      enableValidation: true
+    });
+    
+    // Calculate quality metrics
+    const qualityMetrics = calculateQualityMetrics(result);
+    console.log('[Visual Pipeline] Quality Score:', qualityMetrics.overall_score.toFixed(2));
+    result.metadata = {
+      ...result.metadata,
+      quality_metrics: qualityMetrics
+    };
+
+    // Cache the enhanced result
     if (config.features.semanticCache) {
       await cache.set(cacheKey, result);
     }
@@ -159,11 +184,15 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
   const { systemInstruction, prompt, schema } = getPromptsForBlueprintType(blueprintType);
   
   // 1. Tile
+  console.log('[Visual Pipeline] Creating image tiles...');
   const tileResult = await tileImage(imageData, 'image/png', 10);
+  console.log(`[Visual Pipeline] Created ${tileResult.tiles.length} tiles`);
   
-  // 2. Map (Parallel)
-  const tileAnalyses = await Promise.all(
-    tileResult.tiles.map(async (tile) => {
+  // 2. Map (Optimized Parallel Processing)
+  console.log('[Visual Pipeline] Processing tiles in parallel...');
+  const tileAnalyses = await optimizedTileProcessing(
+    tileResult.tiles,
+    async (tile, index) => {
       const responseText = await client.generateVision({
         imageData: tile.data,
         prompt,
@@ -177,13 +206,21 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
       
       const tileResult = parseVisualResponse(responseText);
       return { tile, result: tileResult };
-    })
+    },
+    {
+      maxConcurrency: 4, // Process 4 tiles at a time
+      onProgress: (completed, total) => {
+        console.log(`[Visual Pipeline] Tile progress: ${completed}/${total}`);
+      }
+    }
   );
   
   // 3. Reduce (Merge)
+  console.log('[Visual Pipeline] Merging tile results...');
   const mergedResult = mergeTileResults(tileAnalyses, tileResult);
   
   // 4. Refine (Full Image)
+  console.log('[Visual Pipeline] Refining with full image context...');
   const refinedResult = await refineWithFullImage(
     mergedResult,
     tileResult.fullImage.data,
