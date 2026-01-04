@@ -73,17 +73,41 @@ export function mergeComponents(
 
 /**
  * Transform local tile coordinates to global image coordinates
+ * 
+ * @param localBox - Bounding box in local tile coordinates [ymin, xmin, ymax, xmax] (0-1 normalized within tile)
+ * @param tile - Tile information, supports both formats:
+ *               1. { xOffset, yOffset, width, height } - offset and dimensions in normalized coordinates
+ *               2. { x1, y1, x2, y2 } - bounding box format from tiling.ts
+ * @returns Global bounding box [ymin, xmin, ymax, xmax] in full image coordinates (0-1 normalized)
  */
 export function normalizeCoordinates(
   localBox: [number, number, number, number],
-  tile: { xOffset: number; yOffset: number; width: number; height: number }
+  tile: { xOffset: number; yOffset: number; width: number; height: number } | { x1: number; y1: number; x2: number; y2: number }
 ): [number, number, number, number] {
   const [ymin, xmin, ymax, xmax] = localBox;
 
-  const globalYmin = tile.yOffset + (ymin * tile.height);
-  const globalXmin = tile.xOffset + (xmin * tile.width);
-  const globalYmax = tile.yOffset + (ymax * tile.height);
-  const globalXmax = tile.xOffset + (xmax * tile.width);
+  // Support both tile formats: { x1, y1, x2, y2 } and { xOffset, yOffset, width, height }
+  let tileX1: number, tileY1: number, tileWidth: number, tileHeight: number;
+  
+  if ('x1' in tile && 'y1' in tile && 'x2' in tile && 'y2' in tile) {
+    // Bounding box format from tiling.ts
+    tileX1 = tile.x1;
+    tileY1 = tile.y1;
+    tileWidth = tile.x2 - tile.x1;
+    tileHeight = tile.y2 - tile.y1;
+  } else {
+    // Legacy format with explicit offset and dimensions
+    tileX1 = tile.xOffset;
+    tileY1 = tile.yOffset;
+    tileWidth = tile.width;
+    tileHeight = tile.height;
+  }
+
+  // Transform: global = tileOffset + (local * tileDimension)
+  const globalYmin = tileY1 + (ymin * tileHeight);
+  const globalXmin = tileX1 + (xmin * tileWidth);
+  const globalYmax = tileY1 + (ymax * tileHeight);
+  const globalXmax = tileX1 + (xmax * tileWidth);
 
   return [globalYmin, globalXmin, globalYmax, globalXmax];
 }
