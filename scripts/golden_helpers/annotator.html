@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Golden Record Annotator</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:0;padding:0;display:flex;height:100vh}
+    #left{width:60%;border-right:1px solid #ddd;position:relative}
+    #right{width:40%;padding:12px;overflow:auto}
+    canvas{width:100%;height:100%;display:block}
+    .box-item{padding:6px;border-bottom:1px solid #eee}
+    .selected{background:#f0f8ff}
+    label{display:block;margin-top:8px}
+    input[type=text], textarea{width:100%;box-sizing:border-box}
+    button{margin-top:8px}
+  </style>
+</head>
+<body>
+  <div id="left">
+    <div style="position:absolute;left:8px;top:8px;z-index:10;background:rgba(255,255,255,0.9);padding:6px;border-radius:6px">
+      <input id="imgFile" type="file" accept="image/*" />
+      <input id="jsonFile" type="file" accept="application/json" />
+      <button id="loadBtn">Load</button>
+      <button id="exportBtn">Export mapping JSON</button>
+    </div>
+    <canvas id="cv"></canvas>
+  </div>
+  <div id="right">
+    <h2>Boxes</h2>
+    <div id="list"></div>
+    <hr />
+    <div id="editor">
+      <h3>Edit Selected</h3>
+      <div id="noSelection">Select a box from the left or list</div>
+      <div id="form" style="display:none">
+        <label>Original id: <span id="origId"></span></label>
+        <label>Target id<input id="f_id" type="text" /></label>
+        <label>Type<input id="f_type" type="text" /></label>
+        <label>Label<input id="f_label" type="text" /></label>
+        <label>Confidence<input id="f_conf" type="text" value="0.95" /></label>
+        <label>Meta.tag<input id="f_tag" type="text" /></label>
+        <label>Meta.description<textarea id="f_desc" rows="3"></textarea></label>
+        <label>Meta.reasoning<textarea id="f_reason" rows="3"></textarea></label>
+        <button id="saveBtn">Save for this box</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let img = null; let data = null; let canvas=null, ctx=null; let scale=1;
+    const cv = document.getElementById('cv');
+    canvas = cv; ctx = canvas.getContext('2d');
+
+    window.addEventListener('resize', resizeCanvas);
+    function resizeCanvas(){
+      canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; draw();
+    }
+
+    document.getElementById('loadBtn').onclick = async ()=>{
+      const imgFile = document.getElementById('imgFile').files[0];
+      const jsonFile = document.getElementById('jsonFile').files[0];
+      if(!imgFile || !jsonFile){alert('Choose image and converted JSON file first');return}
+      img = await loadImage(URL.createObjectURL(imgFile));
+      const text = await jsonFile.text(); data = JSON.parse(text);
+      // normalize canvas size
+      resizeCanvas();
+      // compute scale to map normalized bboxes
+      draw();
+      populateList();
+    }
+
+    function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+
+    function draw(){
+      if(!canvas) return; ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(!img) return;
+      // draw image fitted inside canvas
+      const cw = canvas.width, ch = canvas.height; const iw = img.width, ih = img.height;
+      const scaleFit = Math.min(cw/iw, ch/ih);
+      const dw = iw*scaleFit, dh = ih*scaleFit; const ox=(cw-dw)/2, oy=(ch-dh)/2;
+      ctx.drawImage(img, ox, oy, dw, dh);
+      scale = scaleFit; ctx.lineWidth=2; ctx.strokeStyle='rgba(0,200,0,0.9)'; ctx.font='12px Arial';
+      if(data && data.components){
+        data.components.forEach(c=>{
+          const [ymin,xmin,ymax,xmax] = c.bbox;
+          const x = ox + xmin*dw; const y = oy + ymin*dh; const w = (xmax-xmin)*dw; const h = (ymax-ymin)*dh;
+          ctx.strokeStyle='rgba(0,200,0,0.9)'; ctx.strokeRect(x,y,w,h);
+          ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillText(c.id||c.meta?.original_id||'', x+4, y+12);
+        })
+      }
+    }
+
+    function populateList(){
+      const list = document.getElementById('list'); list.innerHTML='';
+      data.components.forEach((c,idx)=>{
+        const div = document.createElement('div'); div.className='box-item'; div.textContent=(c.meta?.original_id||c.id)+' — '+(c.label||c.type||'');
+        div.onclick = ()=>selectIndex(idx);
+        list.appendChild(div);
+      })
+    }
+
+    let selectedIndex = -1;
+    function selectIndex(i){ selectedIndex=i; renderSelection(); }
+
+    function renderSelection(){
+      const list = document.getElementById('list'); Array.from(list.children).forEach((ch,idx)=>{ch.className = 'box-item'+(idx===selectedIndex? ' selected':'')});
+      const noSel = document.getElementById('noSelection'); const form = document.getElementById('form');
+      if(selectedIndex<0){ noSel.style.display='block'; form.style.display='none'; return }
+      noSel.style.display='none'; form.style.display='block';
+      const c = data.components[selectedIndex]; document.getElementById('origId').textContent = c.meta?.original_id || c.id;
+      document.getElementById('f_id').value = c.id||''; document.getElementById('f_type').value=c.type||''; document.getElementById('f_label').value=c.label||'';
+      document.getElementById('f_conf').value = c.confidence||0.95; document.getElementById('f_tag').value=c.meta?.tag||'';
+      document.getElementById('f_desc').value = c.meta?.description||''; document.getElementById('f_reason').value=c.meta?.reasoning||'';
+      draw(); // highlight selected with red box
+      highlightSelected();
+    }
+
+    function highlightSelected(){ if(selectedIndex<0) return; const c=data.components[selectedIndex]; const cw=canvas.width,ch=canvas.height; const iw=img.width,ih=img.height; const scaleFit=Math.min(cw/iw,ch/ih); const dw=iw*scaleFit, dh=ih*scaleFit; const ox=(cw-dw)/2, oy=(ch-dh)/2; const [ymin,xmin,ymax,xmax]=c.bbox; const x=ox + xmin*dw; const y=oy + ymin*dh; const w=(xmax-xmin)*dw; const h=(ymax-ymin)*dh; ctx.strokeStyle='rgba(255,0,0,0.95)'; ctx.lineWidth=3; ctx.strokeRect(x,y,w,h); }
+
+    document.getElementById('saveBtn').onclick = ()=>{
+      if(selectedIndex<0) return alert('Select a box');
+      const c = data.components[selectedIndex]; c.id = document.getElementById('f_id').value || c.id; c.type = document.getElementById('f_type').value || c.type; c.label = document.getElementById('f_label').value || c.label; c.confidence = Number(document.getElementById('f_conf').value || c.confidence || 0.95);
+      c.meta = c.meta || {}; c.meta.tag = document.getElementById('f_tag').value; c.meta.description = document.getElementById('f_desc').value; c.meta.reasoning = document.getElementById('f_reason').value;
+      populateList(); renderSelection();
+    }
+
+    document.getElementById('exportBtn').onclick = ()=>{
+      if(!data) return alert('Load files first');
+      // build mapping where key is original_id
+      const map = {};
+      data.components.forEach(c=>{
+        const orig = c.meta?.original_id || c.id; map[orig] = { id: c.id, type: c.type, label: c.label, confidence: c.confidence, rotation: c.rotation||0, meta: { tag: c.meta?.tag||'', description: c.meta?.description||'', reasoning: c.meta?.reasoning||'' } }
+      });
+      const blob = new Blob([JSON.stringify(map,null,4)], {type:'application/json'});
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='golden_mapping.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // allow clicking canvas to select nearest box
+    canvas.addEventListener('click', (ev)=>{
+      if(!data || !img) return; const rect = canvas.getBoundingClientRect(); const x = ev.clientX - rect.left; const y = ev.clientY - rect.top; // find nearest box center
+      const cw=canvas.width,ch=canvas.height, iw=img.width, ih=img.height; const scaleFit=Math.min(cw/iw,ch/ih); const dw=iw*scaleFit, dh=ih*scaleFit; const ox=(cw-dw)/2, oy=(ch-dh)/2;
+      let best=-1; let bestd=Infinity; data.components.forEach((c,idx)=>{ const [ymin,xmin,ymax,xmax]=c.bbox; const bx = ox + xmin*dw + (xmax-xmin)*dw/2; const by = oy + ymin*dh + (ymax-ymin)*dh/2; const d = Math.hypot(bx-x,by-y); if(d<bestd){bestd=d;best=idx;} }); if(best>=0) selectIndex(best);
+    });
+
+    resizeCanvas();
+  </script>
+</body>
+</html>
