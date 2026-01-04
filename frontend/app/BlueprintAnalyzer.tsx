@@ -43,7 +43,7 @@ const BlueprintAnalyzer: React.FC = () => {
     return entities.map((entity, idx) => {
         // inference_graph.py returns [x1, y1, x2, y2] in pixel coords
         const [x1, y1, x2, y2] = entity.bbox;
-        // Convert to normalized canonical format [xmin, ymin, xmax, ymax] in 0-1 range
+        // Convert from pixel coords to normalized canonical format [xmin, ymin, xmax, ymax] in 0-1 range
         const xmin = x1 / imgWidth;
         const ymin = y1 / imgHeight;
         const xmax = x2 / imgWidth;
