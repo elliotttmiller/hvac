@@ -1,6 +1,27 @@
 /**
  * Geometry utilities for converting normalized bboxes to display pixels
  * and normalizing backend bbox formats.
+ * 
+ * BBOX FORMAT CONVENTIONS:
+ * =======================
+ * 
+ * **Canonical Format (Internal Standard):**
+ * - Format: [xmin, ymin, xmax, ymax]
+ * - Values: normalized 0.0 to 1.0 (floating point)
+ * - Used throughout the application internally
+ * - Used in mock data (golden-record.json)
+ * - Used in stored annotations
+ * - Used in InteractiveViewer rendering
+ * 
+ * **Alternative Formats (External APIs):**
+ * - Gemini API: [ymin, xmin, ymax, xmax] (requires conversion)
+ * - Pixel coordinates: absolute pixel values (requires normalization)
+ * - 0-1000 normalized: scaled integers (requires scaling)
+ * 
+ * **IMPORTANT:** Always assume canonical format unless explicitly specified
+ * via the `order` parameter. The previous heuristic-based auto-detection
+ * was removed because it caused false positives on wide images where
+ * x coordinates are naturally larger than y coordinates.
  */
 export type NormBBox = [number, number, number, number]; // [xmin, ymin, xmax, ymax]
 
@@ -30,14 +51,20 @@ export function normalizeBackendBBox(raw: number[], options?: { space?: 'pixels'
     }
   }
 
-  // Heuristic order detection: if first value seems like a y coordinate
-  // (i.e., typically smaller than second), detect [ymin,xmin,ymax,xmax]
+  // Order detection: only swap if explicitly specified
+  // Default: assume canonical [xmin, ymin, xmax, ymax] format
+  // This is the standard format used by most vision APIs including our golden records
   let xmin, ymin, xmax, ymax;
-  if (order === 'ymin_xmin_ymax_xmax' || (a[0] > a[1] && a[2] > a[3])) {
+  if (order === 'ymin_xmin_ymax_xmax') {
+    // Explicitly specified [ymin, xmin, ymax, xmax] format (e.g., Gemini API)
     // [ymin, xmin, ymax, xmax] -> map to [xmin,ymin,xmax,ymax]
     ymin = a[0]; xmin = a[1]; ymax = a[2]; xmax = a[3];
   } else {
-    // Assume [xmin,ymin,xmax,ymax]
+    // Default: assume canonical [xmin,ymin,xmax,ymax] format
+    // This applies to:
+    // - Our golden record mock data
+    // - Most standard bbox formats (COCO, Pascal VOC, etc.)
+    // - Normalized coordinates from our own pipeline
     xmin = a[0]; ymin = a[1]; xmax = a[2]; ymax = a[3];
   }
 
