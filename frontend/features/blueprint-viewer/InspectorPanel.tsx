@@ -129,6 +129,22 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   const totalProjectCost = pricingData.reduce((sum, item) => sum + item.totalPrice, 0);
 
+  // Log line parser for syntax highlighting
+  const parseLogLine = (line: string): { className: string; prefix: string } => {
+    if (line.includes('Step')) {
+      return { className: 'text-cyan-400 font-semibold', prefix: '▶ ' };
+    } else if (line.includes('Error') || line.includes('error')) {
+      return { className: 'text-red-400', prefix: '✖ ' };
+    } else if (line.includes('complete') || line.includes('Complete')) {
+      return { className: 'text-emerald-400', prefix: '✓ ' };
+    } else if (line.startsWith('[') || line.startsWith('{')) {
+      return { className: 'text-purple-300', prefix: '' };
+    } else if (line.includes('result:') || line.includes('Selected')) {
+      return { className: 'text-amber-300', prefix: '' };
+    }
+    return { className: 'text-zinc-300', prefix: '' };
+  };
+
   const renderComponentsTab = () => (
       <div className="flex flex-col h-full">
          {/* Scrollable content area */}
@@ -380,27 +396,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <div className="bg-gradient-to-br from-[#0d0d0d] to-[#151515] rounded-lg p-4 border border-white/10 shadow-lg">
                            <div className="text-[11px] text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto scrollbar-thin" style={{ userSelect: 'text' }}>
                               {streamingLog.split('\n').map((line, index) => {
-                                 // Style different types of log lines
-                                 let lineClass = 'text-zinc-300';
-                                 let prefix = '';
-                                 
-                                 if (line.includes('Step')) {
-                                    lineClass = 'text-cyan-400 font-semibold';
-                                    prefix = '▶ ';
-                                 } else if (line.includes('Error') || line.includes('error')) {
-                                    lineClass = 'text-red-400';
-                                    prefix = '✖ ';
-                                 } else if (line.includes('complete') || line.includes('Complete')) {
-                                    lineClass = 'text-emerald-400';
-                                    prefix = '✓ ';
-                                 } else if (line.startsWith('[') || line.startsWith('{')) {
-                                    lineClass = 'text-purple-300';
-                                 } else if (line.includes('result:') || line.includes('Selected')) {
-                                    lineClass = 'text-amber-300';
-                                 }
+                                 const { className, prefix } = parseLogLine(line);
+                                 // Use combination of index and line content hash for more stable key
+                                 const lineKey = `log-${index}-${line.substring(0, 20)}`;
                                  
                                  return (
-                                    <div key={index} className={`${lineClass} py-0.5`}>
+                                    <div key={lineKey} className={`${className} py-0.5`}>
                                        {prefix}{line}
                                     </div>
                                  );
