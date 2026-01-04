@@ -1,15 +1,37 @@
 /**
  * Math Utilities for HVAC Analysis
- * Box merging, IoU calculation, and coordinate transformations
+ * Box merging, IoU calculation, and coordinate transformations with precision handling
  */
 
 export interface BoundingBox {
   x1: number; y1: number; x2: number; y2: number;
 }
 
+export interface ImageDimensions {
+  width: number;
+  height: number;
+  aspectRatio: number;
+}
+
+export interface TransformRecord {
+  timestamp: string;
+  operation: 'resize' | 'crop' | 'rotate' | 'normalize';
+  originalSize: { width: number; height: number };
+  newSize: { width: number; height: number };
+  maintainedAspectRatio?: boolean;
+  padding?: { top: number; right: number; bottom: number; left: number };
+}
+
 export interface Component {
   id: string;
   bbox: [number, number, number, number]; // [xmin, ymin, xmax, ymax] (canonical)
+  confidence?: number;
+  type?: string;
+  meta?: {
+    originalDimensions?: { width: number; height: number };
+    transformHistory?: TransformRecord[];
+    [key: string]: any;
+  };
   [key: string]: any;
 }
 
@@ -24,7 +46,67 @@ export const PRECISION_CONFIG = {
 };
 
 /**
- * Calculate Intersection over Union (IoU)
+ * Calculate box area for validation and debugging
+ */
+export function calculateBoxArea(box: [number, number, number, number]): number {
+  const [x1, y1, x2, y2] = box;
+  return Math.max(0, (x2 - x1) * (y2 - y1));
+}
+
+/**
+ * Validate normalized box coordinates (0-1 range)
+ */
+export function validateNormalizedBox(box: [number, number, number, number]): boolean {
+  const [x1, y1, x2, y2] = box;
+  const tolerance = PRECISION_CONFIG.COORDINATE_TOLERANCE;
+  
+  // Check bounds [0, 1] with tolerance
+  if (x1 < -tolerance || x1 > 1 + tolerance || 
+      y1 < -tolerance || y1 > 1 + tolerance ||
+      x2 < -tolerance || x2 > 1 + tolerance ||
+      y2 < -tolerance || y2 > 1 + tolerance) {
+    return false;
+  }
+  
+  // Check logical ordering
+  if (x2 < x1 - tolerance || y2 < y1 - tolerance) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Validate IoU precision to detect floating-point issues
+ */
+export function validateIoUPrecision(
+  box1: [number, number, number, number],
+  box2: [number, number, number, number],
+  iou: number
+): { valid: boolean; warning?: string } {
+  const tolerance = PRECISION_CONFIG.COORDINATE_TOLERANCE;
+  
+  // Check for extreme values
+  if (iou < 0 || iou > 1) {
+    return { valid: false, warning: `IoU out of bounds: ${iou}` };
+  }
+  
+  // Check for very small boxes that might cause precision issues
+  const area1 = calculateBoxArea(box1);
+  const area2 = calculateBoxArea(box2);
+  
+  if (area1 < tolerance || area2 < tolerance) {
+    return { 
+      valid: true, 
+      warning: `Very small boxes detected (area1: ${area1}, area2: ${area2}) - precision may be affected. Consider filtering boxes with area < ${tolerance}` 
+    };
+  }
+  
+  return { valid: true };
+}
+
+/**
+ * Calculate Intersection over Union (IoU) with precision validation
  */
 export function calculateIoU(
   box1: [number, number, number, number],
@@ -35,6 +117,14 @@ export function calculateIoU(
   const [x1_2, y1_2, x2_2, y2_2] = box2;
 
   const epsilon = PRECISION_CONFIG.IOU_EPSILON;
+
+  // Validate coordinates before calculation
+  if (!validateNormalizedBox(box1) || !validateNormalizedBox(box2)) {
+    if (PRECISION_CONFIG.DEBUG_MODE) {
+      console.warn('[Math][IoU] Invalid normalized coordinates detected', { box1, box2 });
+    }
+    return 0;
+  }
 
   const intersectX1 = Math.max(x1_1, x1_2);
   const intersectY1 = Math.max(y1_1, y1_2);
@@ -58,49 +148,87 @@ export function calculateIoU(
   return Math.min(Math.max(iou, 0), 1);
 }
 
-// Debug wrapper: logs IoU calculations when running in dev
-export function debugIoU(box1: [number, number, number, number], box2: [number, number, number, number], label?: string) {
+/**
+ * Debug wrapper: logs IoU calculations with precision validation
+ */
+export function debugIoU(box1: [number, number, number, number], box2: [number, number, number, number], label?: string): number {
   try {
     const iou = calculateIoU(box1, box2);
     if (PRECISION_CONFIG.DEBUG_MODE) {
-      const area1 = Math.max(0, (box1[2] - box1[0])) * Math.max(0, (box1[3] - box1[1]));
-      const area2 = Math.max(0, (box2[2] - box2[0])) * Math.max(0, (box2[3] - box2[1]));
-      console.debug('[Math][IoU]', { label: label || '', box1, box2, iou, area1, area2 });
+      const precisionCheck = validateIoUPrecision(box1, box2, iou);
+      
+      if (!precisionCheck.valid) {
+        console.warn('[Math][IoU][Precision]', label || '', 'Precision warning:', precisionCheck.warning);
+      }
+      
+      console.debug('[Math][IoU]', {
+        label: label || 'unnamed',
+        box1,
+        box2,
+        iou,
+        area1: calculateBoxArea(box1),
+        area2: calculateBoxArea(box2),
+        precisionCheck
+      });
     }
     return iou;
   } catch (err) {
-    console.error('[Math][IoU] failed', err);
+    console.error('[Math][IoU][Error]', label || '', err);
     return 0;
   }
 }
 
 /**
- * Merge duplicate detections (NMS)
+ * Merge duplicate detections (NMS) with optional type-aware processing
  */
 export function mergeComponents(
   components: Component[],
-  iouThreshold: number = 0.5
+  iouThreshold: number = 0.5,
+  config: { typeAware?: boolean } = {}
 ): Component[] {
+  const { typeAware = true } = config;
+  
   if (components.length === 0) return [];
+  if (components.length === 1) return [...components];
 
   const sorted = [...components].sort((a, b) => (b.confidence || 1) - (a.confidence || 1));
   const kept: Component[] = [];
   const suppressed = new Set<string>();
+  const processedCount = { total: components.length, kept: 0, suppressed: 0 };
 
   for (const current of sorted) {
     if (suppressed.has(current.id)) continue;
 
     let shouldKeep = true;
     for (const keptComponent of kept) {
-      if (current.type === keptComponent.type && 
-          calculateIoU(current.bbox, keptComponent.bbox) > iouThreshold) {
+      // Type-aware merging: only merge same-type components
+      if (typeAware && current.type && keptComponent.type && current.type !== keptComponent.type) {
+        continue;
+      }
+      
+      if (calculateIoU(current.bbox, keptComponent.bbox) > iouThreshold) {
         shouldKeep = false;
         suppressed.add(current.id);
+        processedCount.suppressed++;
         break;
       }
     }
 
-    if (shouldKeep) kept.push(current);
+    if (shouldKeep) {
+      kept.push(current);
+      processedCount.kept++;
+    }
+  }
+
+  if (PRECISION_CONFIG.DEBUG_MODE) {
+    console.debug('[Math][NMS]', {
+      total: processedCount.total,
+      kept: processedCount.kept,
+      suppressed: processedCount.suppressed,
+      ratio: (processedCount.kept / processedCount.total * 100).toFixed(1) + '%',
+      iouThreshold,
+      typeAware
+    });
   }
 
   return kept;
@@ -151,15 +279,78 @@ export function normalizeCoordinates(
   const globalXmax = tileX1 + (xmax * tileWidth);
   const globalYmax = tileY1 + (ymax * tileHeight);
 
-  // Debug info for tracing transforms
-  console.debug('[Math][localToGlobal] localBox=', localBox, 'tile=', tile, '=> global=', [globalXmin, globalYmin, globalXmax, globalYmax]);
+  // Helper to clamp coordinate with tolerance
+  const tolerance = PRECISION_CONFIG.COORDINATE_TOLERANCE;
+  const clampCoordinate = (value: number): number => Math.min(Math.max(value, -tolerance), 1 + tolerance);
+  
+  const result: [number, number, number, number] = [
+    clampCoordinate(globalXmin),
+    clampCoordinate(globalYmin),
+    clampCoordinate(globalXmax),
+    clampCoordinate(globalYmax)
+  ];
 
-  return [globalXmin, globalYmin, globalXmax, globalYmax];
+  // Debug info for tracing transforms
+  if (PRECISION_CONFIG.DEBUG_MODE) {
+    console.debug('[Math][normalizeCoordinates]', {
+      localBox,
+      tile,
+      result,
+      precisionCheck: validateNormalizedBox(result)
+    });
+  }
+
+  return result;
 }
 
 // Alias for compatibility
 export const localToGlobal = normalizeCoordinates;
 
-export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
+/**
+ * Generate unique ID with timestamp for traceability
+ */
+export function generateId(prefix: string = 'comp'): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `${prefix}_${timestamp}_${random}`;
+}
+
+/**
+ * Create transform record for metadata tracking
+ */
+export function createTransformRecord(
+  operation: TransformRecord['operation'],
+  originalSize: { width: number; height: number },
+  newSize: { width: number; height: number },
+  options: { maintainedAspectRatio?: boolean; padding?: TransformRecord['padding'] } = {}
+): TransformRecord {
+  return {
+    timestamp: new Date().toISOString(),
+    operation,
+    originalSize,
+    newSize,
+    maintainedAspectRatio: options.maintainedAspectRatio,
+    padding: options.padding
+  };
+}
+
+/**
+ * Get image dimensions from various sources
+ */
+export function getImageDimensions(image: HTMLImageElement | { width: number; height: number }): ImageDimensions {
+  // More robust type guard for HTMLImageElement
+  if (image instanceof HTMLImageElement && image.naturalWidth > 0 && image.naturalHeight > 0) {
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      aspectRatio: image.naturalWidth / image.naturalHeight
+    };
+  } else {
+    const dims = image as { width: number; height: number };
+    return {
+      width: dims.width,
+      height: dims.height,
+      aspectRatio: dims.width / dims.height
+    };
+  }
 }
