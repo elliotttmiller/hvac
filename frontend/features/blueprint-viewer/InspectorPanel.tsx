@@ -252,7 +252,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                           {box.meta?.hvac_subsystem && (
                                              <div>
                                                 <span className="text-zinc-500 text-[10px] uppercase tracking-wide">HVAC Subsystem</span>
-                                                <div className="text-zinc-200 mt-0.5 capitalize">{box.meta.hvac_subsystem.replace('_', ' ')}</div>
+                                                <div className="text-zinc-200 mt-0.5 capitalize">{box.meta.hvac_subsystem.replace(/_/g, ' ')}</div>
                                              </div>
                                           )}
                                           {box.meta?.detection_quality && (
@@ -329,7 +329,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  )}
 
                                  {/* Additional Metadata */}
-                                 {(box.meta?.occlusion_level || box.meta?.text_clarity || box.meta?.functional_desc) && (
+                                 {(box.meta?.occlusion_level || box.meta?.text_clarity || box.meta?.functional_desc || box.rotation !== undefined) && (
                                     <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
                                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                                           <div className="w-1 h-3 bg-zinc-500 rounded-full"></div>
@@ -397,8 +397,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            <div className="text-[11px] text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto scrollbar-thin" style={{ userSelect: 'text' }}>
                               {streamingLog.split('\n').map((line, index) => {
                                  const { className, prefix } = parseLogLine(line);
-                                 // Use combination of index and line content hash for more stable key
-                                 const lineKey = `log-${index}-${line.substring(0, 20)}`;
+                                 // Use combination of index and truncated line for stable key
+                                 const lineKey = `log-${index}-${line.substring(0, 10)}`;
                                  
                                  return (
                                     <div key={lineKey} className={`${className} py-0.5`}>
