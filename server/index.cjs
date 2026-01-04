@@ -23,6 +23,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 // and fall back to the recommended model (gemini-2.5-flash).
 const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MODEL || 'gemini-2.5-flash';
 
+// Mock Mode Configuration (for zero-cost debugging)
+const MOCK_MODE_ENABLED = process.env.MOCK_MODE_ENABLED === 'true';
+const MOCK_DATA_PATH = path.join(__dirname, 'mocks', 'golden-record.json');
+
 const app = express();
 app.use(cors());
 // Increased JSON payload limit for large base64 images (50MB)
@@ -112,6 +116,41 @@ app.get('/api/runtime-config', (req, res) => {
 
 // --- 2. AI Vision Proxy ---
 app.post('/api/ai/generateVision', async (req, res) => {
+  // ============================================================================
+  // MOCK MODE INTERCEPTION (Zero-Cost Debugging)
+  // ============================================================================
+  if (MOCK_MODE_ENABLED) {
+    console.warn('⚠️  MOCK MODE ACTIVE: Bypassing AI provider, returning static golden-record.json');
+    
+    try {
+      // Read the golden record JSON file
+      const mockDataRaw = await fs.readFile(MOCK_DATA_PATH, 'utf-8');
+      const mockData = JSON.parse(mockDataRaw);
+      
+      // Optional: Simulate realistic network latency (500ms)
+      // This helps frontend developers test loading states
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Return mock data as if it came from the AI
+      // The frontend expects { text: string } format
+      return res.json({ text: JSON.stringify(mockData) });
+      
+    } catch (error) {
+      console.error('❌ Mock Mode Error:', error.message);
+      
+      // If mock file is missing or malformed, return 500 error
+      // Do NOT fall back to live API silently (explicit failure is safer)
+      return res.status(500).json({ 
+        error: 'Mock mode enabled but mock data file is missing or invalid',
+        details: error.message,
+        path: MOCK_DATA_PATH
+      });
+    }
+  }
+  
+  // ============================================================================
+  // LIVE AI INFERENCE (Standard Path)
+  // ============================================================================
   if (!genAI) return res.status(503).json({ error: 'AI not configured on server.' });
   
   const { imageData, prompt, mimeType, model, options } = req.body;
@@ -276,4 +315,12 @@ server.listen(PORT, () => {
   console.log(`\n🚀 Server running at http://localhost:${PORT}`);
   console.log(`📂 Data Root: ${ROOT}`);
   console.log(`🤖 AI Provider: ${AI_PROVIDER} (${genAI ? 'Active' : 'Disabled'})`);
+  
+  // Mock Mode Status
+  if (MOCK_MODE_ENABLED) {
+    console.log(`🎭 Mock Mode: ENABLED (using ${MOCK_DATA_PATH})`);
+    console.warn('⚠️  WARNING: Mock mode is active. AI inference is bypassed.');
+  } else {
+    console.log(`🎭 Mock Mode: DISABLED (live AI inference)`);
+  }
 });

@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "id": "PLACEHOLDER-001",
+      "type": "instrument",
+      "label": "PLACEHOLDER-001",
+      "bbox": [0.4, 0.4, 0.6, 0.6],
+      "confidence": 1.0,
+      "rotation": 0,
+      "meta": {
+        "tag": "PLACEHOLDER-001",
+        "description": "Placeholder component - replace with real golden record data",
+        "reasoning": "This is a placeholder. Replace this file with actual P&ID analysis results."
+      }
+    }
+  ],
+  "connections": [],
+  "metadata": {
+    "total_components": 1,
+    "total_connections": 0,
+    "process_log": "PLACEHOLDER: This golden-record.json file should be replaced with real inference data from a successful P&ID analysis. The structure must match the VisualAnalysisResult schema defined in frontend/features/document-analysis/types.ts"
+  }
+}
