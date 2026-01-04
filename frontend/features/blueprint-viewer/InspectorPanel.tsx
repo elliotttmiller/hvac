@@ -32,6 +32,20 @@ type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
 
+// Confidence quality thresholds (matches visual pipeline assessDetectionQuality)
+const CONFIDENCE_THRESHOLDS = {
+  EXCELLENT: 0.9,
+  GOOD: 0.7,
+  MODERATE: 0.5
+} as const;
+
+const getConfidenceQualityLabel = (confidence: number): string => {
+  if (confidence >= CONFIDENCE_THRESHOLDS.EXCELLENT) return 'excellent';
+  if (confidence >= CONFIDENCE_THRESHOLDS.GOOD) return 'good';
+  if (confidence >= CONFIDENCE_THRESHOLDS.MODERATE) return 'moderate';
+  return 'low';
+};
+
 const InspectorPanel: React.FC<InspectorPanelProps> = ({ 
    analysis, 
    executiveSummary, 
@@ -520,7 +534,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           <span className="text-xs text-zinc-300 capitalize">{subsystem.replace(UNDERSCORE_REGEX, ' ')}</span>
                           <span className="text-xs font-mono text-cyan-400">{count} ({percentage.toFixed(0)}%)</span>
                         </div>
-                        <div className="w-full bg-zinc-800 rounded-full h-1.5">
+                        <div 
+                          className="w-full bg-zinc-800 rounded-full h-1.5"
+                          role="progressbar"
+                          aria-valuenow={count}
+                          aria-valuemin={0}
+                          aria-valuemax={componentStats.total}
+                          aria-label={`${subsystem.replace(UNDERSCORE_REGEX, ' ')} subsystem: ${count} components (${percentage.toFixed(0)}%)`}
+                        >
                           <div 
                             className="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full transition-all"
                             style={{ width: `${percentage}%` }}
@@ -637,7 +658,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     • Detected <span className="text-cyan-400 font-semibold">{componentStats.total} components</span> across {Object.keys(componentStats.bySubsystem).length} HVAC subsystems
                   </p>
                   <p>
-                    • Average detection confidence of <span className="text-emerald-400 font-semibold">{(componentStats.avgConfidence * 100).toFixed(1)}%</span> indicates {componentStats.avgConfidence > 0.9 ? 'excellent' : componentStats.avgConfidence > 0.7 ? 'good' : 'moderate'} model certainty
+                    • Average detection confidence of <span className="text-emerald-400 font-semibold">{(componentStats.avgConfidence * 100).toFixed(1)}%</span> indicates {getConfidenceQualityLabel(componentStats.avgConfidence)} model certainty
                   </p>
                   {componentStats.isaCompliant > 0 && (
                     <p>
@@ -737,34 +758,55 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     <div className="w-full h-full flex flex-col bg-[#1e1e1e] border-l border-white/10 select-none">
       
       {/* Header / Tabs */}
-      <div className="h-12 border-b border-white/5 flex items-center px-1">
+      <div className="h-12 border-b border-white/5 flex items-center px-1" role="tablist" aria-label="Inspector panel tabs">
          <button 
             onClick={() => setActiveTab('COMPONENTS')}
+            role="tab"
+            aria-selected={activeTab === 'COMPONENTS'}
+            aria-controls="components-panel"
+            id="components-tab"
             className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <Layers size={11} /> <span className="hidden sm:inline">Components</span>
          </button>
          <button 
             onClick={() => setActiveTab('ANALYSIS')}
+            role="tab"
+            aria-selected={activeTab === 'ANALYSIS'}
+            aria-controls="analysis-panel"
+            id="analysis-tab"
             className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <ClipboardList size={11} /> <span className="hidden sm:inline">Analysis</span>
          </button>
          <button 
             onClick={() => setActiveTab('PRICING')}
+            role="tab"
+            aria-selected={activeTab === 'PRICING'}
+            aria-controls="pricing-panel"
+            id="pricing-tab"
             className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <DollarSign size={11} /> <span className="hidden sm:inline">Pricing</span>
          </button>
          <button 
             onClick={() => setActiveTab('QUOTE')}
+            role="tab"
+            aria-selected={activeTab === 'QUOTE'}
+            aria-controls="quote-panel"
+            id="quote-tab"
             className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <FileText size={11} /> <span className="hidden sm:inline">Quote</span>
          </button>
       </div>
 
-         <div className="flex-1 overflow-hidden relative bg-[#121212]">
+         <div 
+            className="flex-1 overflow-hidden relative bg-[#121212]"
+            role="tabpanel"
+            id={`${activeTab.toLowerCase()}-panel`}
+            aria-labelledby={`${activeTab.toLowerCase()}-tab`}
+         >
              {activeTab === 'COMPONENTS' && renderComponentsTab()}
              {activeTab === 'ANALYSIS' && renderAnalysisTab()}
              {activeTab === 'PRICING' && renderPricingTab()}
