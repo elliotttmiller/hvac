@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Scan, Type, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
-import { DetectedComponent } from '@/features/document-analysis/types'; // Correct Import
+import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
+import { DetectedComponent } from '@/features/document-analysis/types';
 
 interface InteractiveViewerProps {
   imageUrl: string | null;
-  detectedBoxes: DetectedComponent[]; // Use the correct type from the API
+  components: DetectedComponent[]; // <--- CORRECTED PROP NAME
   isProcessing: boolean;
   selectedBoxId?: string | null;
   onSelectBox?: (id: string | null) => void;
@@ -15,7 +15,7 @@ interface InteractiveViewerProps {
 
 const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   imageUrl,
-  detectedBoxes, // This prop receives the raw API components
+  components = [], // <--- ADDED DEFAULT VALUE
   isProcessing,
   selectedBoxId,
   onSelectBox,
@@ -30,13 +30,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [zoom, setZoom] = useState(1);
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
 
-  // --- Hover Card Positioning Thresholds ---
-  // If box center Y > 0.6 (in bottom 40% of image), position card above
-  const CARD_POSITION_BOTTOM_THRESHOLD = 0.6;
-  // If box center X > 0.7 (in right 30% of image), position card to left
-  const CARD_POSITION_RIGHT_THRESHOLD = 0.7;
-
-  // --- Geometry Engine ---
+  // --- Geometry Engine (Drift Fix Logic) ---
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [metrics, setMetrics] = useState({ w: 0, h: 0, top: 0, left: 0 });
@@ -64,7 +58,10 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
     window.addEventListener('resize', updateMetrics);
     const observer = new ResizeObserver(updateMetrics);
     if (containerRef.current) observer.observe(containerRef.current);
+    
+    // Initial calculation after mount
     requestAnimationFrame(updateMetrics);
+    
     return () => { 
       window.removeEventListener('resize', updateMetrics); 
       observer.disconnect(); 
@@ -112,11 +109,11 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
             </div>
         ) : (
           <div 
-            className="relative inline-block shadow-2xl transition-transform duration-200 ease-out origin-center"
+            className="relative shadow-2xl transition-transform duration-200 ease-out origin-center"
             style={{ 
               width: metrics.w, 
               height: metrics.h, 
-              transform: `scale(${zoom})`
+              transform: `scale(${zoom})`,
             }}
           >
             {/* The Image */}
@@ -124,26 +121,21 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               ref={imageRef}
               src={imageUrl} 
               alt="Blueprint" 
-              className={`w-full h-full block`}
-              style={{ objectFit: 'contain' }}
+              className={`w-full h-full object-fill`}
               onLoad={updateMetrics}
             />
 
             {/* The Overlay Layer */}
             <div className="absolute inset-0 pointer-events-none">
-              {detectedBoxes.map((box) => {
-                // Defensive check: Ensure we have a valid bbox array
+              {components.map((box) => {
                 if (!box || !Array.isArray(box.bbox) || box.bbox.length < 4) return null;
-                
                 const isText = box.type === 'text';
                 const isVisible = (isText && showOCR) || (!isText && showOBB);
                 if (!isVisible) return null;
 
-                // --- CRITICAL FIX: Direct BBox Mapping ---
-                // API sends: [ymin, xmin, ymax, xmax] (Normalized 0-1)
+                // API: [ymin, xmin, ymax, xmax]
                 const [ymin, xmin, ymax, xmax] = box.bbox;
-                
-                // Convert to CSS Percentages (relative to the image itself)
+
                 const style = {
                   left: `${xmin * 100}%`,
                   top: `${ymin * 100}%`,
@@ -151,50 +143,24 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                   height: `${(ymax - ymin) * 100}%`
                 };
 
-                // Calculate if hover card would go off-screen
-                // Position card based on available space
-                const boxCenterY = (ymin + ymax) / 2;
-                const boxCenterX = (xmin + xmax) / 2;
-                const shouldPositionAbove = boxCenterY > CARD_POSITION_BOTTOM_THRESHOLD;
-                const shouldPositionLeft = boxCenterX > CARD_POSITION_RIGHT_THRESHOLD;
-
                 return (
                   <div 
                     key={box.id}
                     className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
                       ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                      hover:border-opacity-100 hover:bg-opacity-20 hover:z-50
+                      hover:border-opacity-100 hover:bg-opacity-20
                     `}
                     style={style}
                     onMouseEnter={() => setActiveBoxId(box.id)}
                     onMouseLeave={() => setActiveBoxId(null)}
                   >
-                    {/* Corner Markers */}
-                    <div className="absolute -top-[2px] -left-[2px] w-2 h-2 border-t-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="absolute -top-[2px] -right-[2px] w-2 h-2 border-t-2 border-r-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="absolute -bottom-[2px] -left-[2px] w-2 h-2 border-b-2 border-l-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="absolute -bottom-[2px] -right-[2px] w-2 h-2 border-b-2 border-r-2 border-current opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                    {/* Hover Card with Smart Positioning */}
-                    <div 
-                      className={`absolute w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100
-                        ${shouldPositionAbove ? 'bottom-full mb-3' : 'top-full mt-3'}
-                        ${shouldPositionLeft ? 'right-0' : 'left-1/2 -translate-x-1/2'}
-                      `}
-                    >
+                    {/* Hover Card */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
                         <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-cyan-600'}`} />
                         <div className="p-3 text-left">
-                          <div className="flex justify-between items-center mb-1">
-                            <h4 className="text-xs font-bold text-slate-100 uppercase truncate pr-2">{box.label || box.id}</h4>
-                            <span className="text-[10px] text-cyan-400 font-mono">{Math.round((box.confidence || 0) * 100)}%</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 capitalize mb-2">{box.type}</div>
-                          {box.meta?.description && (
-                            <div className="text-[9px] text-slate-500 border-t border-slate-800 pt-2 leading-relaxed">
-                              {box.meta.description}
-                            </div>
-                          )}
+                          <h4 className="text-xs font-bold text-slate-100 uppercase truncate">{box.label || box.id}</h4>
+                          <div className="text-[10px] text-slate-400 capitalize">{box.type}</div>
                         </div>
                       </div>
                     </div>

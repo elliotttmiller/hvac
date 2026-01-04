@@ -5,8 +5,8 @@
 
 import { classifyDocument } from './classifier';
 import { routeToPipeline } from './router';
-import { UniversalDocumentResult, DocumentType } from '@/features/document-analysis/types';
-import { generateId } from '@/lib/utils';
+import { UniversalDocumentResult, DocumentType } from '../types';
+import { generateId } from '../../../lib/utils';
 
 export interface AnalysisOptions {
   fileName: string;
@@ -18,16 +18,28 @@ export interface AnalysisOptions {
  */
 export async function analyzeDocument(
   imageData: string,
-  options: AnalysisOptions
+  options: AnalysisOptions,
+  forcedType?: DocumentType // Allow manual override
 ): Promise<UniversalDocumentResult> {
   const startTime = Date.now();
   const documentId = generateId();
 
   try {
-    // Step 1: Classify the document
+    // Step 1: Classify (or use override)
     console.log('Step 1: Classifying document...');
-    const classification = await classifyDocument(imageData, options.fileName);
-    console.log('Classification result:', classification);
+    let classification;
+    
+    if (forcedType) {
+      classification = { 
+        type: forcedType, 
+        confidence: 1, 
+        reasoning: 'Manual override by user' 
+      };
+      console.log('Using forced classification:', classification);
+    } else {
+      classification = await classifyDocument(imageData, options.fileName);
+      console.log('Classification result:', classification);
+    }
 
     // Step 2: Route to appropriate pipeline
     console.log('Step 2: Routing to pipeline...');
@@ -52,10 +64,11 @@ export async function analyzeDocument(
       timestamp: Date.now(),
       classification,
       processing_time_ms: Date.now() - startTime,
-      cache_hit: false,
+      cache_hit: (analysisResult as any)?._from_cache || false, // Check for cache flag from pipeline
     };
 
-    // Attach pipeline-specific results (treat SCHEMATIC same as BLUEPRINT)
+    // Attach pipeline-specific results
+    // Treat SCHEMATIC the same as BLUEPRINT for the result structure
     if ((classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && analysisResult) {
       result.visual = analysisResult;
     } else if (classification.type === 'SPEC_SHEET' && analysisResult) {
@@ -68,6 +81,7 @@ export async function analyzeDocument(
       document_id: result.document_id,
       type: result.document_type,
       processing_time_ms: result.processing_time_ms,
+      components: result.visual?.components?.length || 0
     });
 
     return result;

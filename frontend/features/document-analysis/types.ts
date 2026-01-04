@@ -106,6 +106,7 @@ export interface VisualAnalysisResult {
     image_dimensions?: { width: number; height: number };
     process_log?: string; // AI reasoning trace for user transparency
     parse_error?: string; // Capture parsing errors
+    error?: string; // Add error property for additional error details
   };
 }
 

@@ -47,6 +47,8 @@ export const config = {
     fileProcessing: import.meta.env.VITE_FEATURE_FILE_PROCESSING !== 'false',
     // Auto-run analysis on file upload. Set VITE_FEATURE_AUTO_ANALYZE=false to disable automatic analysis.
     autoAnalyze: import.meta.env.VITE_FEATURE_AUTO_ANALYZE !== 'false',
+  // Capture console logs during analysis and stream to UI (dev only). Set VITE_FEATURE_CAPTURE_CONSOLE=true to enable.
+  captureConsole: import.meta.env.VITE_FEATURE_CAPTURE_CONSOLE === 'true',
     complianceEngine: import.meta.env.VITE_FEATURE_COMPLIANCE === 'true',
     safetyEngine: import.meta.env.VITE_FEATURE_SAFETY === 'true',
     pricingEngine: import.meta.env.VITE_FEATURE_PRICING === 'true',

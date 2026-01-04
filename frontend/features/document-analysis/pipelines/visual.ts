@@ -1,12 +1,13 @@
 /**
  * Visual Pipeline - Blueprint Analysis (SOTA Implementation)
  * Implements Visual Grid Tiling + Map-Reduce + Self-Correction
+ * Detects HVAC components and connections using configured AI provider
  */
 
-import { getAIClient } from '@/lib/ai/client';
-import { getSemanticCache } from '@/lib/ai/cache';
-import { config } from '@/app/config';
-import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '@/features/document-analysis/types';
+import { getAIClient } from '../../../lib/ai/client';
+import { getSemanticCache } from '../../../lib/ai/cache';
+import { config } from '../../../app/config';
+import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '../types';
 import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT } from '../prompts/visual/detect';
 import { 
   PID_DETECT_SYSTEM_INSTRUCTION, 
@@ -15,9 +16,9 @@ import {
   generatePIDRefinePrompt 
 } from '../prompts/visual/detect-pid';
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
-import { tileImage, shouldTileImage, TileResult } from '@/lib/file-processing/tiling';
-import { mergeComponents, localToGlobal } from '@/lib/utils/math';
-import { generateId } from '@/lib/utils';
+import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
+import { mergeComponents, localToGlobal } from '../../../lib/utils/math';
+import { generateId } from '../../../lib/utils';
 
 type BlueprintType = 'PID' | 'HVAC';
 
@@ -49,37 +50,42 @@ function getPromptsForBlueprintType(blueprintType: BlueprintType): {
  */
 export async function analyzeVisual(imageData: string): Promise<VisualAnalysisResult> {
   try {
-    // Check cache
+    // Check cache first
     const cache = getSemanticCache();
-    const cacheKey = `visual:${imageData.substring(0, 100)}`;
+    // Use a hash of the image data for the cache key to prevent collisions
+    // Simple string substring is risky for base64 which often has identical headers
+    // In production, use a proper hash. For now, use a longer substring + length
+    const cacheKey = `visual:${imageData.length}:${imageData.substring(imageData.length - 64)}`;
     
     if (config.features.semanticCache) {
       const cached = await cache.get<VisualAnalysisResult>(cacheKey);
       if (cached) {
         console.log('Visual analysis cache hit');
+        // Mark as cached for the orchestrator
+        (cached as any)._from_cache = true;
         return cached;
       }
     }
 
-    // Step 1: Detect blueprint type
-    console.log('Detecting blueprint type...');
+    // Step 1: Detect blueprint type (P&ID vs HVAC)
+    console.log('Detecting blueprint type (P&ID vs HVAC)...');
     const blueprintType = await detectBlueprintType(imageData);
     console.log(`Blueprint type detected: ${blueprintType}`);
 
-    // Step 2: Determine Tiling
+    // Determine if we should use tiling based on image size
     const useTiling = await shouldUseTiling(imageData);
     
     let result: VisualAnalysisResult;
     
     if (useTiling) {
-      console.log('Using SOTA tiling approach');
+      console.log('Using SOTA tiling approach for high-resolution image');
       result = await analyzeWithTiling(imageData, blueprintType);
     } else {
       console.log('Using standard single-pass analysis');
       result = await analyzeStandard(imageData, blueprintType);
     }
 
-    // Cache result
+    // Cache the result
     if (config.features.semanticCache) {
       await cache.set(cacheKey, result);
     }
@@ -87,10 +93,16 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     return result;
   } catch (error) {
     console.error('Visual analysis error:', error);
+    
+    // Return empty result on error
     return {
       components: [],
       connections: [],
-      metadata: { total_components: 0, total_connections: 0 },
+      metadata: {
+        total_components: 0,
+        total_connections: 0,
+        error: error instanceof Error ? error.message : String(error)
+      },
     };
   }
 }
@@ -99,8 +111,8 @@ async function detectBlueprintType(imageData: string): Promise<BlueprintType> {
   const client = getAIClient();
   const detectionPrompt = `
 Analyze this engineering diagram.
-Return ONLY "PID" if it contains instrumentation bubbles (circles with text like PI, TT, FIC).
-Return ONLY "HVAC" if it contains ductwork and VAV boxes.
+Return ONLY "PID" if it contains instrumentation bubbles (circles with text like PI, TT, FIC) and valve symbols.
+Return ONLY "HVAC" if it contains ductwork, VAV boxes, and diffusers.
 `;
 
   try {
@@ -108,13 +120,18 @@ Return ONLY "HVAC" if it contains ductwork and VAV boxes.
       imageData,
       prompt: detectionPrompt,
       options: {
-        systemInstruction: 'You are an engineering classifier.',
-        // Temperature intentionally omitted to match legacy behavior
+        systemInstruction: 'You are an engineering classifier. Respond with ONLY "PID" or "HVAC".',
+        temperature: 0.1,
       },
     });
+
     const cleaned = response.trim().toUpperCase();
-    return (cleaned.includes('PID') || cleaned.includes('INSTRUMENT')) ? 'PID' : 'HVAC';
-  } catch {
+    if (cleaned.includes('PID') || cleaned.includes('INSTRUMENT')) {
+      return 'PID';
+    }
+    return 'HVAC';
+  } catch (error) {
+    console.warn('Blueprint type detection failed, defaulting to HVAC:', error);
     return 'HVAC';
   }
 }
@@ -123,19 +140,14 @@ async function analyzeStandard(imageData: string, blueprintType: BlueprintType):
   const client = getAIClient();
   const { systemInstruction, prompt, schema } = getPromptsForBlueprintType(blueprintType);
   
-  // Legacy configuration: No explicit temperature for vision analysis
-  // This allows the model to use its natural temperature setting
-  // Use vision-specific model if configured (e.g., Pro model for complex P&ID)
   const responseText = await client.generateVision({
     imageData,
     prompt,
     options: {
-      model: config.ai.visionModel, // Use vision-specific model override if set
       systemInstruction,
       responseMimeType: 'application/json',
       responseSchema: schema,
-      // Temperature intentionally omitted to match legacy behavior
-      // Legacy code did not set temperature, letting model use defaults
+      temperature: 0.1, // Strict for JSON
     },
   });
 
@@ -156,13 +168,13 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
         imageData: tile.data,
         prompt,
         options: {
-          model: config.ai.visionModel, // Use vision-specific model override if set
           systemInstruction,
           responseMimeType: 'application/json',
           responseSchema: schema,
-          // Temperature intentionally omitted to match legacy behavior
+          temperature: 0.1,
         },
       });
+      
       const tileResult = parseVisualResponse(responseText);
       return { tile, result: tileResult };
     })
@@ -192,12 +204,17 @@ function mergeTileResults(
     for (const component of result.components) {
       // Transform local to global
       const globalBbox = localToGlobal(component.bbox, tile.bbox);
+      
       allComponents.push({
         ...component,
         bbox: globalBbox,
-        meta: { ...component.meta, source_tile: tile.position },
+        meta: {
+          ...component.meta,
+          source_tile: tile.position,
+        },
       });
     }
+    
     allConnections.push(...result.connections);
   }
   
@@ -229,11 +246,10 @@ async function refineWithFullImage(
     imageData: fullImageData,
     prompt: refinePrompt,
     options: {
-      model: config.ai.visionModel, // Use vision-specific model override if set
       systemInstruction: 'You are a QA Auditor. Fix the JSON.',
       responseMimeType: 'application/json',
       responseSchema: blueprintType === 'PID' ? PID_ANALYSIS_SCHEMA : VISUAL_ANALYSIS_SCHEMA,
-      // Temperature intentionally omitted to match legacy behavior
+      temperature: 0.1,
     },
   });
   
@@ -243,7 +259,8 @@ async function refineWithFullImage(
 async function shouldUseTiling(imageData: string): Promise<boolean> {
   try {
     const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
-    return normalized.length > 500000; // Rough size heuristic (~500KB)
+    // Tiling is expensive. Only use for images > 500KB or very large dimensions.
+    return normalized.length > 500000; 
   } catch {
     return false;
   }
@@ -254,25 +271,32 @@ async function shouldUseTiling(imageData: string): Promise<boolean> {
  */
 function parseVisualResponse(responseText: string): VisualAnalysisResult {
   try {
+    // 1. Clean Markdown
     let cleanText = responseText.trim();
     if (cleanText.startsWith('```')) {
-      cleanText = cleanText.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+      cleanText = cleanText
+        .replace(/^```json\s*/, '')
+        .replace(/^```\s*/, '')
+        .replace(/\s*```$/, '');
     }
 
-    // FIX: Truncate infinite floats (e.g. 0.123456789...) to 4 decimals
+    // 2. Safeguard: Truncate extremely long floating point numbers using Regex
+    // This catches the "0.123456789..." hallucination before JSON.parse chokes
     cleanText = cleanText.replace(/(\d+\.\d{10,})/g, (match) => {
       return parseFloat(match).toFixed(4);
     });
 
     const parsed = JSON.parse(cleanText);
 
+    // Validate structure (Handle both schema formats)
     const components = Array.isArray(parsed.components) ? parsed.components : (parsed.entities || []);
     const connections = Array.isArray(parsed.connections) ? parsed.connections : [];
 
+    // Ensure all components have required fields
     const validatedComponents = components.map((comp: any) => ({
       id: comp.id || generateId(),
       type: comp.type || 'unknown',
-      label: comp.label || comp.tag, // Handle legacy 'tag' field
+      label: comp.label || comp.tag || 'unknown',
       bbox: validateBBox(comp.bbox || comp.bbox_2d),
       confidence: typeof comp.confidence === 'number' ? comp.confidence : 0.5,
       rotation: typeof comp.rotation === 'number' ? Math.round(comp.rotation) : 0,
@@ -282,26 +306,48 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
       },
     }));
 
+    // Ensure all connections have required fields
+    const validatedConnections = connections.map((conn: any) => ({
+      id: conn.id || generateId(),
+      from_id: conn.from_id || '',
+      to_id: conn.to_id || '',
+      type: conn.type || 'unknown',
+      confidence: conn.confidence,
+    }));
+
     return {
       components: validatedComponents,
-      connections: connections,
+      connections: validatedConnections,
       metadata: {
         total_components: validatedComponents.length,
-        total_connections: connections.length,
+        total_connections: validatedConnections.length,
+        process_log: parsed.summary || parsed.process_log
       },
     };
   } catch (error) {
-    console.error('Parse Error:', error);
-    return { components: [], connections: [], metadata: { total_components: 0, total_connections: 0 } };
+    console.error('[Visual Pipeline - Parse] Failed to parse response:', error);
+    console.error('[Visual Pipeline - Parse] Text snippet:', responseText.substring(0, 500) + '...');
+    
+    return {
+      components: [],
+      connections: [],
+      metadata: { 
+        total_components: 0, 
+        total_connections: 0,
+        parse_error: error instanceof Error ? error.message : String(error)
+      },
+    };
   }
 }
 
 function validateBBox(bbox: any): [number, number, number, number] {
   if (!Array.isArray(bbox) || bbox.length !== 4) return [0,0,0,0];
+  
   // Check if legacy 0-1000 scale is used
   const maxVal = Math.max(...bbox);
   if (maxVal > 1.0) {
     return bbox.map(v => v / 1000) as [number, number, number, number];
   }
+  
   return bbox as [number, number, number, number];
 }

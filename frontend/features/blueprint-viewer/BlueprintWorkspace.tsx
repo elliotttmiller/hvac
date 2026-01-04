@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import InteractiveViewer from './InteractiveViewer';
+import InteractiveViewer from '@/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeDocument } from '@/features/document-analysis/orchestrator';
 import { config } from '@/app/config';
@@ -42,10 +42,14 @@ const BlueprintWorkspace: React.FC<{
         setDetectedBoxes([]);
         setInventory([]);
 
-        // Only run analysis automatically when the feature flag is enabled
-        if (config.features.autoAnalyze) {
-          await runAnalysisInternal(file, url);
-        }
+        // AUTO-RUN DISABLED: do not automatically invoke the analysis pipeline when
+        // a file is selected from the sidebar. Loading the image into the viewer
+        // is sufficient — the user must click the "Run" button to start analysis.
+        //
+        // If you need to re-enable automatic analysis, restore the block below:
+        // if (config.features.autoAnalyze) {
+        //   await runAnalysisInternal(file, url);
+        // }
 
         onAnalyzed?.();
       } catch (error) {
@@ -101,8 +105,10 @@ const BlueprintWorkspace: React.FC<{
     if (file) {
       const url = URL.createObjectURL(file);
       setImageUrl(url);
-      // Only auto-run analysis on upload when feature is enabled
-      if (config.features.autoAnalyze) runAnalysisInternal(file, url);
+      // AUTO-RUN DISABLED: do not automatically invoke analysis on direct upload.
+      // Users should click the Run button to start the pipeline.
+      // To re-enable, restore:
+      // if (config.features.autoAnalyze) runAnalysisInternal(file, url);
     }
   };
 
@@ -125,7 +131,7 @@ const BlueprintWorkspace: React.FC<{
       
       <InteractiveViewer 
         imageUrl={imageUrl}
-        detectedBoxes={detectedBoxes}
+        components={detectedBoxes} // <--- CORRECTED PROP NAME
         isProcessing={isProcessing}
         selectedBoxId={selectedBoxId}
         onSelectBox={setSelectedBoxId}
