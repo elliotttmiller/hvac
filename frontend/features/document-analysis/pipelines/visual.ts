@@ -17,7 +17,7 @@ import {
 } from '../prompts/visual/detect-pid';
 import { REFINE_SYSTEM_INSTRUCTION, generateRefinePrompt } from '../prompts/refinement';
 import { tileImage, shouldTileImage, TileResult } from '../../../lib/file-processing/tiling';
-import { mergeComponents, localToGlobal } from '../../../lib/utils/math';
+import { mergeComponents, localToGlobal, calculateIoU } from '../../../lib/utils/math';
 import { generateId } from '../../../lib/utils';
 
 type BlueprintType = 'PID' | 'HVAC';
@@ -53,7 +53,6 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     // Check cache first
     const cache = getSemanticCache();
     // Use a hash of the image data for the cache key to prevent collisions
-    // Simple string substring is risky for base64 which often has identical headers
     // In production, use a proper hash. For now, use a longer substring + length
     const cacheKey = `visual:${imageData.length}:${imageData.substring(imageData.length - 64)}`;
     
@@ -253,7 +252,45 @@ async function refineWithFullImage(
     },
   });
   
-  return parseVisualResponse(responseText);
+  const refinedResult = parseVisualResponse(responseText);
+
+  // --- CRITICAL FIX: PRESERVE TILED COORDINATES ---
+  // Map high-precision BBoxes from 'mergedResult' back onto 'refinedResult'
+  const finalComponents = refinedResult.components.map(refinedComp => {
+    // 1. Try Exact ID Match
+    let match = mergedResult.components.find(c => c.id === refinedComp.id);
+    
+    // 2. Try Label Match (if ID changed but text is same)
+    if (!match && refinedComp.label) {
+      match = mergedResult.components.find(c => c.label === refinedComp.label);
+    }
+    
+    // 3. Try Spatial Match (IoU > 0.5)
+    if (!match) {
+      match = mergedResult.components.find(c => calculateIoU(c.bbox, refinedComp.bbox) > 0.5);
+    }
+
+    if (match) {
+      // Use the Tiled BBox (High Precision) instead of the Refined BBox (Low Precision)
+      return {
+        ...refinedComp,
+        bbox: match.bbox, 
+        confidence: Math.max(refinedComp.confidence, match.confidence)
+      };
+    }
+    
+    return refinedComp; // Keep new items found during refinement
+  });
+
+  return {
+    ...refinedResult,
+    components: finalComponents,
+    connections: refinedResult.connections.length > 0 ? refinedResult.connections : mergedResult.connections,
+    metadata: {
+        ...refinedResult.metadata,
+        total_components: finalComponents.length
+    }
+  };
 }
 
 async function shouldUseTiling(imageData: string): Promise<boolean> {

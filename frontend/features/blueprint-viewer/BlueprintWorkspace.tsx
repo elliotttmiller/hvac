@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InteractiveViewer from '@/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeDocument } from '@/features/document-analysis/orchestrator';
+import startConsoleCapture from '@/lib/consoleCapture';
 import { config } from '@/app/config';
 import { DetectedComponent, ValidationIssue} from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
@@ -65,16 +66,26 @@ const BlueprintWorkspace: React.FC<{
   const runAnalysisInternal = async (file: File, url: string) => {
     setIsProcessing(true);
     setProcessingPhase('classifying');
-    setAnalysisRaw("Step 1: Classifying document...");
+
+    // Append-only log helper for the inspector panel
+    const appendLog = (msg: string) => {
+      setAnalysisRaw((prev) => (prev ? `${prev}\n${msg}` : msg));
+      try { window.dispatchEvent(new CustomEvent('analysis-log', { detail: msg })); } catch(_){}
+    };
+
+    appendLog('Step 1: Classifying document...');
+
+    // Optionally capture console output during analysis (dev flag)
+    const stopCapture = config.features.captureConsole ? startConsoleCapture(appendLog) : () => {};
 
     try {
       const base64Data = url.split(',')[1] || await blobToBase64(file);
       setProcessingPhase('analyzing');
-      const result = await analyzeDocument(base64Data, { fileName: file.name });
+      const result = await analyzeDocument(base64Data, { fileName: file.name, onProgress: appendLog });
       console.log('Analysis result:', result);
-      
+
       setProcessingPhase('refining');
-      
+
       if (result.visual && result.visual.components) {
         // Keep canonical DetectedComponent objects from the analysis pipeline
         setDetectedBoxes(result.visual.components);
@@ -90,13 +101,16 @@ const BlueprintWorkspace: React.FC<{
 
       setExecutiveSummary(result.executive_summary || `Document classified as: ${result.document_type}`);
       setValidationIssues(result.validation_issues || []);
-      setAnalysisRaw(JSON.stringify(result, null, 2));
-      
+      setAnalysisRaw((prev) => `${prev}\n\n${JSON.stringify(result, null, 2)}`);
+
       setTimeout(() => setIsProcessing(false), 500);
     } catch (error) {
         console.error(error);
-        setAnalysisRaw(`Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`);
+        const msg = `Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`;
+        setAnalysisRaw((prev) => (prev ? `${prev}\n${msg}` : msg));
         setIsProcessing(false);
+    } finally {
+      try { stopCapture(); } catch (_) {}
     }
   };
 

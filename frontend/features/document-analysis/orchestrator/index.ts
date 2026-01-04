@@ -11,6 +11,7 @@ import { generateId } from '../../../lib/utils';
 export interface AnalysisOptions {
   fileName: string;
   skipCache?: boolean;
+  onProgress?: (msg: string) => void;
 }
 
 /**
@@ -26,7 +27,17 @@ export async function analyzeDocument(
 
   try {
     // Step 1: Classify (or use override)
-    console.log('Step 1: Classifying document...');
+    const emit = (m: any) => {
+      try {
+        const text = typeof m === 'string' ? m : (typeof m === 'object' ? JSON.stringify(m) : String(m));
+        console.log(text);
+        options.onProgress?.(text);
+      } catch (e) {
+        try { console.log(m); options.onProgress?.(String(m)); } catch { /* ignore */ }
+      }
+    };
+
+    emit('Step 1: Classifying document...');
     let classification;
     
     if (forcedType) {
@@ -35,23 +46,23 @@ export async function analyzeDocument(
         confidence: 1, 
         reasoning: 'Manual override by user' 
       };
-      console.log('Using forced classification:', classification);
+      emit(['Using forced classification:', classification]);
     } else {
       classification = await classifyDocument(imageData, options.fileName);
-      console.log('Classification result:', classification);
+      emit(['Classification result:', classification]);
     }
 
     // Step 2: Route to appropriate pipeline
-    console.log('Step 2: Routing to pipeline...');
-    const route = routeToPipeline(classification.type);
-    console.log('Selected pipeline:', route.pipeline);
+  emit('Step 2: Routing to pipeline...');
+  const route = routeToPipeline(classification.type);
+  emit(['Selected pipeline:', route.pipeline]);
 
     // Step 3: Execute pipeline
     let analysisResult: any = null;
     if (route.handler) {
-      console.log('Step 3: Executing pipeline...');
+      emit('Step 3: Executing pipeline...');
       analysisResult = await route.handler(imageData);
-      console.log('Pipeline execution complete');
+      emit('Pipeline execution complete');
     } else {
       console.warn('No pipeline handler available for document type:', classification.type);
     }
@@ -77,12 +88,12 @@ export async function analyzeDocument(
       result.tabular = analysisResult;
     }
 
-    console.log('Analysis complete:', {
+    emit(['Analysis complete:', {
       document_id: result.document_id,
       type: result.document_type,
       processing_time_ms: result.processing_time_ms,
       components: result.visual?.components?.length || 0
-    });
+    }]);
 
     return result;
   } catch (error) {

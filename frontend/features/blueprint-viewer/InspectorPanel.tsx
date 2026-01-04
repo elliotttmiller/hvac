@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
    Layers, 
    Search,
@@ -38,15 +38,32 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
-   const [copied, setCopied] = useState(false);
+      const [copied, setCopied] = useState(false);
+      // Streaming log state — starts with the prop snapshot and then appends live events
+      const [streamingLog, setStreamingLog] = useState<string>(analysis || '');
+
+      useEffect(() => {
+         // initialize from prop when it changes (e.g., new analysis run)
+         setStreamingLog(analysis || '');
+      }, [analysis]);
+
+      useEffect(() => {
+         const handler = (e: Event) => {
+            const detail = (e as CustomEvent).detail as string;
+            setStreamingLog((prev) => (prev ? `${prev}\n${detail}` : detail));
+         };
+         window.addEventListener('analysis-log', handler as EventListener);
+         return () => window.removeEventListener('analysis-log', handler as EventListener);
+      }, []);
 
    const copyProcessLog = async () => {
       try {
+         const toCopy = streamingLog || '';
          if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(analysis || '');
+            await navigator.clipboard.writeText(toCopy);
          } else {
             const ta = document.createElement('textarea');
-            ta.value = analysis || '';
+            ta.value = toCopy;
             document.body.appendChild(ta);
             ta.select();
             document.execCommand('copy');
@@ -175,7 +192,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             )}
 
             {/* Process Log */}
-                  {analysis && (
+                  {streamingLog && (
                      <div>
                         <div className="flex items-center justify-between mb-2 relative">
                            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-0 pt-1">Process Log</div>
@@ -193,7 +210,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            </div>
                         </div>
                         <div className="text-xs text-zinc-400 leading-relaxed font-mono p-3 bg-[#0a0a0a] rounded border border-white/5 whitespace-pre-wrap" style={{ userSelect: 'text' }}>
-                           {analysis}
+                           {streamingLog}
                         </div>
                      </div>
                   )}

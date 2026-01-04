@@ -102,9 +102,14 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
         setProcessingPhase('refining');
         setProcessingProgress(80);
         
-        // Analyze the document
+        // Analyze the document with live progress streaming
         const result = await analyzeDocument(conversion.data, {
           fileName: file.name,
+          onProgress: (msg: string) => {
+            // Update local UI progress and also emit a global event for other components
+            setProgress(msg);
+            try { window.dispatchEvent(new CustomEvent('analysis-log', { detail: msg })); } catch(_){}
+          }
         });
         
         setProcessingProgress(100);
