@@ -379,7 +379,7 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
         }
       });
 
-      return {
+      const baseComponent = {
         id: comp.id || generateId(),
         type: comp.type || 'unknown',
         label: comp.label || comp.tag || 'unknown',
@@ -392,6 +392,9 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
           transform_history: transformHistory
         },
       } as any;
+      
+      // Apply HVAC-specific enhancements
+      return enhanceHVACComponent(baseComponent);
     });
 
     // Ensure all connections have required fields
@@ -443,4 +446,181 @@ function validateBBox(bbox: any): [number, number, number, number] {
     }
     return bbox as [number, number, number, number];
   }
+}
+
+/**
+ * HVAC-Specific Helper Functions
+ * These functions add HVAC intelligence to component detection
+ */
+
+/**
+ * Normalize HVAC component type based on ISA-5.1 tag prefix
+ */
+function normalizeHVACComponentType(comp: any): any {
+  if (!comp.meta?.tag && !comp.label) return comp;
+  
+  const tag = (comp.meta?.tag || comp.label).toUpperCase();
+  const normalized = { ...comp };
+  
+  // ISA-5.1 prefix-based normalization
+  const isaPrefixes: Record<string, string> = {
+    'TT': 'sensor_temperature',
+    'TI': 'sensor_temperature',
+    'TE': 'sensor_temperature',
+    'TIC': 'instrument_controller',
+    'PT': 'sensor_pressure',
+    'PI': 'sensor_pressure',
+    'PE': 'sensor_pressure',
+    'PIC': 'instrument_controller',
+    'FT': 'sensor_flow',
+    'FI': 'sensor_flow',
+    'FE': 'sensor_flow',
+    'FIC': 'instrument_controller',
+    'LT': 'sensor_level',
+    'LI': 'sensor_level',
+    'LE': 'sensor_level',
+    'LIC': 'instrument_controller',
+    'FV': 'valve_control',
+    'TV': 'valve_control',
+    'PV': 'valve_control',
+    'LV': 'valve_control',
+    'HV': 'valve_control',
+    'SOV': 'valve_solenoid',
+    'BV': 'valve_ball',
+    'CV': 'valve_control',
+    'AHU': 'air_handler',
+    'FCU': 'air_handler',
+    'VAV': 'air_handler',
+    'PUMP': 'pump',
+    'CHILLER': 'chiller',
+    'CT': 'cooling_tower'
+  };
+  
+  // Check for ISA prefix matches
+  for (const [prefix, type] of Object.entries(isaPrefixes)) {
+    if (tag.startsWith(prefix)) {
+      normalized.type = type;
+      break;
+    }
+  }
+  
+  // Equipment-based normalization for common HVAC equipment
+  if (tag.includes('AHU')) normalized.type = 'air_handler';
+  if (tag.includes('PUMP')) normalized.type = 'pump';
+  if (tag.includes('CHILLER')) normalized.type = 'chiller';
+  
+  return normalized;
+}
+
+/**
+ * Determine HVAC subsystem classification for a component
+ */
+function determineHVACSubsystem(comp: any): string {
+  const tag = (comp.meta?.tag || comp.label || '').toUpperCase();
+  
+  // Chilled water system indicators
+  if (tag.includes('CHW') || tag.includes('CHILLED') || 
+      ['CHILLER', 'COOLING_TOWER'].includes(comp.type)) {
+    return 'chilled_water';
+  }
+  
+  // Condenser water system
+  if (tag.includes('CNDW') || tag.includes('CONDENSER')) {
+    return 'condenser_water';
+  }
+  
+  // Air handling system
+  if (tag.includes('AHU') || tag.includes('FCU') || tag.includes('VAV') || 
+      ['air_handler', 'air_handling_unit', 'fan_coil_unit'].includes(comp.type)) {
+    return 'air_handling';
+  }
+  
+  // Refrigeration system
+  if (tag.includes('REF') || tag.includes('REFRIG') || 
+      ['compressor', 'condenser', 'evaporator', 'expansion_valve'].includes(comp.type)) {
+    return 'refrigeration';
+  }
+  
+  // Heating system
+  if (tag.includes('HW') || tag.includes('HEAT') || tag.includes('BOILER')) {
+    return 'heating_water';
+  }
+  
+  // Controls and instrumentation
+  if (['sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level',
+       'instrument_controller', 'valve_control', 'damper'].includes(comp.type)) {
+    return 'controls';
+  }
+  
+  return 'other';
+}
+
+/**
+ * Extract ISA-5.1 function code from tag
+ */
+function extractISAFunction(tag?: string): string | null {
+  if (!tag) return null;
+  
+  // Match ISA-5.1 function codes (1-3 letters followed by dash and numbers)
+  const match = tag.match(/^([A-Z]{1,3})-(\d+)/i);
+  if (match) {
+    return match[1].toUpperCase();
+  }
+  
+  return null;
+}
+
+/**
+ * Enhance component with HVAC-specific metadata
+ */
+function enhanceHVACComponent(comp: any): any {
+  const enhanced = normalizeHVACComponentType(comp);
+  
+  // Add HVAC-specific metadata
+  enhanced.meta = {
+    ...enhanced.meta,
+    hvac_subsystem: enhanced.meta?.hvac_subsystem || determineHVACSubsystem(enhanced),
+    component_category: getHVACComponentCategory(enhanced),
+    isa_function: extractISAFunction(enhanced.meta?.tag || enhanced.label),
+    detection_quality: assessDetectionQuality(enhanced)
+  };
+  
+  return enhanced;
+}
+
+/**
+ * Get HVAC component category for filtering and grouping
+ */
+function getHVACComponentCategory(comp: any): string {
+  const subsystem = comp.meta?.hvac_subsystem || determineHVACSubsystem(comp);
+  
+  if (['chilled_water', 'condenser_water', 'heating_water'].includes(subsystem)) {
+    return 'water_system';
+  }
+  
+  if (subsystem === 'air_handling') {
+    return 'air_system';
+  }
+  
+  if (subsystem === 'refrigeration') {
+    return 'refrigeration';
+  }
+  
+  if (subsystem === 'controls') {
+    return 'controls';
+  }
+  
+  return 'equipment';
+}
+
+/**
+ * Assess detection quality for confidence scoring
+ */
+function assessDetectionQuality(comp: any): string {
+  if (!comp.confidence) return 'unknown';
+  
+  if (comp.confidence >= 0.9) return 'excellent';
+  if (comp.confidence >= 0.7) return 'good';
+  if (comp.confidence >= 0.5) return 'fair';
+  return 'poor';
 }
