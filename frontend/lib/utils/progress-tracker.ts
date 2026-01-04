@@ -228,12 +228,14 @@ export function formatDuration(ms: number): string {
 
 /**
  * Calculate ETA based on current progress
+ * Returns estimated time remaining in milliseconds, or 0 for completed/invalid states
  */
 export function calculateETA(
   startTime: number,
   currentProgress: number
-): number | null {
-  if (currentProgress <= 0 || currentProgress >= 100) return null;
+): number {
+  if (currentProgress <= 0) return 0; // Not started yet
+  if (currentProgress >= 100) return 0; // Already complete
   
   const elapsed = Date.now() - startTime;
   const rate = currentProgress / elapsed;
@@ -244,8 +246,8 @@ export function calculateETA(
 /**
  * Format ETA in human-readable format
  */
-export function formatETA(eta: number | null): string {
-  if (!eta) return 'Calculating...';
+export function formatETA(eta: number): string {
+  if (eta <= 0) return 'Complete';
   return `~${formatDuration(eta)} remaining`;
 }
 

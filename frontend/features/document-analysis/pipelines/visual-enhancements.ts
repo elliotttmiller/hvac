@@ -3,14 +3,14 @@
  * Integrates all optimization and accuracy improvements into the visual analysis pipeline
  */
 
-import { enhanceComponentsWithISA } from '../../lib/utils/isa-detector';
-import { parallelMap, ProgressTracker } from '../../lib/utils/parallel-processor';
+import { enhanceComponentsWithISA } from '../../../lib/utils/isa-detector';
+import { parallelMap, ProgressTracker } from '../../../lib/utils/parallel-processor';
 import {
   inferMissingConnections,
   enhanceConnections,
   validateConnections,
   detectControlLoops
-} from '../../lib/utils/connection-engine';
+} from '../../../lib/utils/connection-engine';
 import type { VisualAnalysisResult, DetectedComponent, Connection } from './types';
 
 /**

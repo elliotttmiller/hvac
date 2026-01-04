@@ -97,6 +97,10 @@ const HVAC_TAG_PATTERNS = [
   { pattern: /^ST-?\d+/, type: 'Speed Transmitter', example: 'ST-101' }
 ];
 
+// Pattern for cleaning/normalizing tag labels
+// Removes underscores and extra spaces, converts to hyphen-separated format
+const TAG_NORMALIZATION_PATTERN = /[_\s]+/g;
+
 /**
  * Extract ISA function from component label/tag
  */
@@ -105,8 +109,8 @@ export function detectISAFunction(
   type: string,
   description?: string
 ): ISAFunctionResult {
-  // Clean the label
-  const cleanLabel = label.trim().toUpperCase().replace(/[_\s]+/g, '-');
+  // Clean the label: remove underscores/spaces and convert to uppercase
+  const cleanLabel = label.trim().toUpperCase().replace(TAG_NORMALIZATION_PATTERN, '-');
   
   // Try direct tag pattern matching first
   for (const { pattern, type: tagType } of HVAC_TAG_PATTERNS) {

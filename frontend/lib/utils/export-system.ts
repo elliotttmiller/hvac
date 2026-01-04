@@ -216,12 +216,19 @@ export class ResultExporter {
   
   /**
    * Escape CSV field
+   * Handles commas, quotes, newlines, and carriage returns
    */
   private static escapeCSV(field: string): string {
-    if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-      return `"${field.replace(/"/g, '""')}"`;
+    // Trim leading/trailing whitespace for cleaner output
+    const trimmed = field.trim();
+    
+    // Check if escaping is needed
+    if (trimmed.includes(',') || trimmed.includes('"') || 
+        trimmed.includes('\n') || trimmed.includes('\r')) {
+      // Escape quotes by doubling them
+      return `"${trimmed.replace(/"/g, '""')}"`;
     }
-    return field;
+    return trimmed;
   }
 }
 

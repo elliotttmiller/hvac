@@ -194,10 +194,14 @@ export class ComponentSearchEngine {
   
   /**
    * Fuzzy matching for typos
+   * Allows for 30% character error rate to account for OCR errors and variations
    */
+  private static readonly FUZZY_MATCH_TOLERANCE = 0.3;
+  
   private static fuzzyMatch(text: string, query: string): boolean {
     const distance = this.levenshteinDistance(text.toLowerCase(), query.toLowerCase());
-    return distance <= Math.floor(query.length * 0.3); // Allow 30% error rate
+    const maxDistance = Math.floor(query.length * this.FUZZY_MATCH_TOLERANCE);
+    return distance <= maxDistance;
   }
   
   /**

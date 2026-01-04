@@ -134,8 +134,13 @@ export async function parallelMap<T, R>(
   maxConcurrency?: number
 ): Promise<R[]> {
   // Auto-detect optimal concurrency based on array size
+  // Safe check for browser environment
+  const hardwareConcurrency = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+    ? navigator.hardwareConcurrency
+    : 4; // Default to 4 for server-side rendering
+  
   const optimalConcurrency = maxConcurrency || Math.min(
-    navigator.hardwareConcurrency || 4,
+    hardwareConcurrency,
     Math.max(2, Math.ceil(items.length / 10))
   );
   

@@ -43,12 +43,37 @@ export class ComponentCache {
   
   /**
    * Generate hash for component region
+   * Uses a combination of image characteristics and bbox to create unique identifier
    */
   private generateHash(imageData: string, bbox: [number, number, number, number]): string {
-    // Simple hash based on image data + bbox
-    const bboxStr = bbox.join(',');
-    const imageHash = imageData.substring(0, 100) + imageData.length;
-    return `${imageHash}-${bboxStr}`;
+    // Create a more robust hash using image data characteristics + bbox
+    const bboxStr = bbox.map(n => n.toFixed(4)).join(',');
+    
+    // Sample multiple points from image data for better distribution
+    const imageLength = imageData.length;
+    const samples = [
+      imageData.substring(0, 50),
+      imageData.substring(Math.floor(imageLength / 4), Math.floor(imageLength / 4) + 50),
+      imageData.substring(Math.floor(imageLength / 2), Math.floor(imageLength / 2) + 50),
+      imageData.substring(Math.floor(imageLength * 3 / 4), Math.floor(imageLength * 3 / 4) + 50),
+      imageData.substring(imageLength - 50)
+    ].join('');
+    
+    // Simple but effective hash combining samples + length + bbox
+    return `${this.simpleHash(samples)}-${imageLength}-${bboxStr}`;
+  }
+  
+  /**
+   * Simple hash function for strings
+   */
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
   
   /**
