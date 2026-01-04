@@ -26,6 +26,7 @@ const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MOD
 // Mock Mode Configuration (for zero-cost debugging)
 const MOCK_MODE_ENABLED = process.env.MOCK_MODE_ENABLED === 'true';
 const MOCK_DATA_PATH = path.join(__dirname, 'mocks', 'golden-record.json');
+const MOCK_MODE_DELAY_MS = parseInt(process.env.MOCK_MODE_DELAY_MS || '500', 10);
 
 const app = express();
 app.use(cors());
@@ -127,9 +128,12 @@ app.post('/api/ai/generateVision', async (req, res) => {
       const mockDataRaw = await fs.readFile(MOCK_DATA_PATH, 'utf-8');
       const mockData = JSON.parse(mockDataRaw);
       
-      // Optional: Simulate realistic network latency (500ms)
+      // Optional: Simulate realistic network latency
       // This helps frontend developers test loading states
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Configurable via MOCK_MODE_DELAY_MS (default: 500ms)
+      if (MOCK_MODE_DELAY_MS > 0) {
+        await new Promise(resolve => setTimeout(resolve, MOCK_MODE_DELAY_MS));
+      }
       
       // Return mock data as if it came from the AI
       // The frontend expects { text: string } format
@@ -319,6 +323,7 @@ server.listen(PORT, () => {
   // Mock Mode Status
   if (MOCK_MODE_ENABLED) {
     console.log(`🎭 Mock Mode: ENABLED (using ${MOCK_DATA_PATH})`);
+    console.log(`   ⏱️  Simulated latency: ${MOCK_MODE_DELAY_MS}ms`);
     console.warn('⚠️  WARNING: Mock mode is active. AI inference is bypassed.');
   } else {
     console.log(`🎭 Mock Mode: DISABLED (live AI inference)`);

@@ -61,6 +61,10 @@ Create `golden-record.json` with a valid `VisualAnalysisResult` structure:
 Add to your `.env` file:
 ```bash
 MOCK_MODE_ENABLED=true
+
+# Optional: Adjust simulated latency (default: 500ms)
+# Set to 0 for instant responses, useful for rapid iteration
+MOCK_MODE_DELAY_MS=500
 ```
 
 ### 3. Restart Server
@@ -72,7 +76,10 @@ npm run dev:api
 You should see:
 ```
 🚀 Server running at http://localhost:4000
-🤖 Mock Mode: ENABLED (using server/mocks/golden-record.json)
+🎭 Mock Mode: ENABLED (using server/mocks/golden-record.json)
+   ⏱️  Simulated latency: 500ms
+⚠️  WARNING: Mock mode is active. AI inference is bypassed.
+```
 ```
 
 ### 4. Test

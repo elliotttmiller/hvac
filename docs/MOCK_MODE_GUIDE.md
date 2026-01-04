@@ -120,7 +120,7 @@ Restart server: `npm run dev:api`
 
 ## Coordinate Format
 
-**CRITICAL:** Bounding boxes must use Gemini's native format:
+**CRITICAL:** Bounding boxes must use the expected coordinate format:
 
 ```
 [ymin, xmin, ymax, xmax]
