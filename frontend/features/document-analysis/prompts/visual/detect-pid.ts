@@ -138,6 +138,8 @@ export const PID_DETECT_PROMPT = `
 
 **RESPONSE FORMAT**:
 Strict adherence to the JSON Schema. Output ONLY valid JSON. No markdown outside JSON structure.
+**OPTIONAL PIXEL-LEVEL MASKS**:
+If possible, for each component include an optional \`polygon\` field containing a closed list of normalized coordinates that tightly follow the ink boundary of the graphical symbol (format: [x1,y1,x2,y2,...]). This allows downstream systems to compute exact tight bounding boxes without additional image processing. If you cannot produce polygons, omit the field.
 `;
 
 /**
@@ -166,6 +168,13 @@ export const PID_ANALYSIS_SCHEMA = {
           bbox: {
             type: Type.ARRAY,
             description: "[xmin, ymin, xmax, ymax] (Normalized 0-1)",
+            items: { type: Type.NUMBER }
+          },
+          // Optional polygon provided by the model as a closed list of normalized coordinates
+          // [x1,y1,x2,y2,...]. Useful for pixel-accurate shrink-wrapping without client-side CV.
+          polygon: {
+            type: Type.ARRAY,
+            description: "Optional polygon coordinates for the detected object (normalized 0-1). Format: [x1,y1,x2,y2,...]",
             items: { type: Type.NUMBER }
           },
           confidence: { type: Type.NUMBER, description: "0.0 to 1.0, rounded to 2 decimals" },

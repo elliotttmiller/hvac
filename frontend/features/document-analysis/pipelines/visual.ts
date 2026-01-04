@@ -362,7 +362,31 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
     // Ensure all components have required fields and record normalization metadata
     const validatedComponents = components.map((comp: any) => {
       const rawBBox = comp.bbox || comp.bbox_2d || null;
-      const normalizedBBox = validateBBox(rawBBox);
+      // If the model provided a polygon, prefer computing a tight bbox from it
+      let normalizedBBox = validateBBox(rawBBox);
+      if (Array.isArray(comp.polygon) && comp.polygon.length >= 6) {
+        try {
+          const pts = comp.polygon;
+          let xs: number[] = [];
+          let ys: number[] = [];
+          for (let i = 0; i < pts.length; i += 2) {
+            const x = Number(pts[i]);
+            const y = Number(pts[i+1]);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+            xs.push(x);
+            ys.push(y);
+          }
+          if (xs.length > 0 && ys.length > 0) {
+            const minX = Math.max(0, Math.min(...xs));
+            const minY = Math.max(0, Math.min(...ys));
+            const maxX = Math.min(1, Math.max(...xs));
+            const maxY = Math.min(1, Math.max(...ys));
+            normalizedBBox = [minX, minY, maxX, maxY] as [number, number, number, number];
+          }
+        } catch (e) {
+          console.warn('[Visual Pipeline] Failed to compute bbox from polygon:', e);
+        }
+      }
 
       const baseMeta = comp.meta || {
         description: comp.description || comp.functional_desc,
@@ -392,6 +416,11 @@ function parseVisualResponse(responseText: string): VisualAnalysisResult {
           transform_history: transformHistory
         },
       } as any;
+      // If the model provided a polygon, include it in meta for downstream use
+      if (Array.isArray(comp.polygon)) {
+        baseComponent.meta.polygon = comp.polygon;
+        baseComponent.meta.polygon_source = 'model_polygon';
+      }
       
       // Apply HVAC-specific enhancements
       return enhanceHVACComponent(baseComponent);
