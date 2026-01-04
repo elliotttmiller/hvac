@@ -100,30 +100,33 @@ const BlueprintAnalyzer: React.FC = () => {
                     .map((e: any, idx: number) => {
                         // The bbox from the visual pipeline is already in canonical format [xmin, ymin, xmax, ymax]
                         // normalized to 0-1 range, so we can use it directly without coordinate swapping
-                        const bbox = Array.isArray(e.bbox) && e.bbox.length === 4 
-                            ? e.bbox 
-                            : null; // Invalid bbox, will be filtered out
                         
-                        if (!bbox) {
-                            console.warn(`Entity ${e.id || idx} has invalid bbox, skipping`);
+                        // Validate bbox structure and numeric values
+                        if (!Array.isArray(e.bbox) || e.bbox.length !== 4) {
+                            console.warn(`Entity ${e.id || idx} has invalid bbox structure, skipping`);
                             return null;
                         }
                         
-                        // Safely convert to numbers, preserving valid zero coordinates
-                        const safeNum = (val: any): number => {
-                            const num = Number(val);
-                            return Number.isNaN(num) ? 0 : num;
-                        };
+                        // Validate all coordinates are valid numbers
+                        const hasValidCoords = e.bbox.every((coord: any) => {
+                            const num = Number(coord);
+                            return !Number.isNaN(num) && Number.isFinite(num);
+                        });
+                        
+                        if (!hasValidCoords) {
+                            console.warn(`Entity ${e.id || idx} has non-numeric bbox coordinates, skipping`);
+                            return null;
+                        }
                         
                         return {
                             id: e.id || `gem-${idx}`,
                             label: e.tag || e.label || e.functional_desc || '',
                             confidence: e.confidence || 0.9,
                             bbox: [
-                                safeNum(bbox[0]),
-                                safeNum(bbox[1]),
-                                safeNum(bbox[2]),
-                                safeNum(bbox[3])
+                                Number(e.bbox[0]),
+                                Number(e.bbox[1]),
+                                Number(e.bbox[2]),
+                                Number(e.bbox[3])
                             ] as [number, number, number, number],
                             rotation: e.rotation || 0,
                             type: e.instrument_type === 'Computer' ? 'text' : 'component',
