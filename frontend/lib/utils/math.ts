@@ -98,7 +98,7 @@ export function validateIoUPrecision(
   if (area1 < tolerance || area2 < tolerance) {
     return { 
       valid: true, 
-      warning: `Very small boxes detected (area1: ${area1}, area2: ${area2}) - precision may be affected` 
+      warning: `Very small boxes detected (area1: ${area1}, area2: ${area2}) - precision may be affected. Consider filtering boxes with area < ${tolerance}` 
     };
   }
   
@@ -279,13 +279,15 @@ export function normalizeCoordinates(
   const globalXmax = tileX1 + (xmax * tileWidth);
   const globalYmax = tileY1 + (ymax * tileHeight);
 
-  // Clamp to [0, 1] range with tolerance for precision
+  // Helper to clamp coordinate with tolerance
   const tolerance = PRECISION_CONFIG.COORDINATE_TOLERANCE;
+  const clampCoordinate = (value: number): number => Math.min(Math.max(value, -tolerance), 1 + tolerance);
+  
   const result: [number, number, number, number] = [
-    Math.min(Math.max(globalXmin, -tolerance), 1 + tolerance),
-    Math.min(Math.max(globalYmin, -tolerance), 1 + tolerance),
-    Math.min(Math.max(globalXmax, -tolerance), 1 + tolerance),
-    Math.min(Math.max(globalYmax, -tolerance), 1 + tolerance)
+    clampCoordinate(globalXmin),
+    clampCoordinate(globalYmin),
+    clampCoordinate(globalXmax),
+    clampCoordinate(globalYmax)
   ];
 
   // Debug info for tracing transforms
@@ -336,17 +338,19 @@ export function createTransformRecord(
  * Get image dimensions from various sources
  */
 export function getImageDimensions(image: HTMLImageElement | { width: number; height: number }): ImageDimensions {
-  if ('naturalWidth' in image) {
+  // More robust type guard for HTMLImageElement
+  if (image instanceof HTMLImageElement && image.naturalWidth > 0 && image.naturalHeight > 0) {
     return {
       width: image.naturalWidth,
       height: image.naturalHeight,
       aspectRatio: image.naturalWidth / image.naturalHeight
     };
   } else {
+    const dims = image as { width: number; height: number };
     return {
-      width: image.width,
-      height: image.height,
-      aspectRatio: image.width / image.height
+      width: dims.width,
+      height: dims.height,
+      aspectRatio: dims.width / dims.height
     };
   }
 }
