@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
    Layers, 
    Search,
@@ -41,11 +41,24 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       const [copied, setCopied] = useState(false);
       // Streaming log state — starts with the prop snapshot and then appends live events
       const [streamingLog, setStreamingLog] = useState<string>(analysis || '');
+      
+      // Ref for scrolling to selected component
+      const selectedRowRef = useRef<HTMLDivElement>(null);
 
       useEffect(() => {
          // initialize from prop when it changes (e.g., new analysis run)
          setStreamingLog(analysis || '');
       }, [analysis]);
+      
+      // Scroll to selected component in list
+      useEffect(() => {
+         if (selectedBoxId && selectedRowRef.current) {
+            selectedRowRef.current.scrollIntoView({
+               behavior: 'smooth',
+               block: 'nearest'
+            });
+         }
+      }, [selectedBoxId]);
 
       useEffect(() => {
          const handler = (e: Event) => {
@@ -133,34 +146,41 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             {/* Components List */}
             <div className="space-y-1">
                {filteredBoxes.length > 0 ? (
-                  filteredBoxes.map((box) => (
-                     <div 
-                        key={box.id}
-                        onClick={() => onSelectBox(box.id)}
-                        className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
-                           selectedBoxId === box.id 
-                              ? 'bg-cyan-500/10 border border-cyan-500/30' 
-                              : 'hover:bg-white/5 border border-transparent'
-                        }`}
-                     >
-                         <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                              selectedBoxId === box.id ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-                         }`}>
-                              <Box size={14} />
-                         </div>
-                         <div className="flex-1 min-w-0">
-                              <div className={`text-xs font-semibold truncate ${selectedBoxId === box.id ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                                 {box.label}
-                              </div>
-                              <div className="text-[10px] text-zinc-500 truncate">
-                                 {box.meta?.description || 'No description'}
-                              </div>
-                         </div>
-                         {selectedBoxId === box.id && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-                         )}
-                     </div>
-                  ))
+                  filteredBoxes.map((box) => {
+                     const isSelected = selectedBoxId === box.id;
+                     return (
+                        <div 
+                           key={box.id}
+                           ref={isSelected ? selectedRowRef : null}
+                           onClick={() => onSelectBox(box.id)}
+                           onMouseEnter={() => onSelectBox(box.id)}
+                           onMouseLeave={() => onSelectBox(null)}
+                           className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
+                              isSelected
+                                 ? 'bg-cyan-500/10 border border-cyan-500/30' 
+                                 : 'hover:bg-white/5 border border-transparent'
+                           }`}
+                        >
+                  
+                            <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
+                                 isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                            }`}>
+                                 <Box size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                 <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
+                                    {box.label}
+                                 </div>
+                                 <div className="text-[10px] text-zinc-500 truncate">
+                                    {box.meta?.description || 'No description'}
+                                 </div>
+                            </div>
+                            {isSelected && (
+                                 <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                            )}
+                        </div>
+                     );
+                  })
                ) : (
                   <div className="p-4 text-center text-zinc-500 text-xs italic">
                      No components found.

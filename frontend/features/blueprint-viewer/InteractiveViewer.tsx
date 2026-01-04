@@ -31,7 +31,6 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   const [showOCR, setShowOCR] = useState(false);
   const [showGeo, setShowGeo] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
 
   // --- Geometry Engine (Drift Fix Logic) ---
   const containerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +123,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               ref={imageRef}
               src={imageUrl} 
               alt="Blueprint" 
-              className={`w-full h-full object-fill`}
+              className={`w-full h-full object-contain`}
               onLoad={updateMetrics}
             />
 
@@ -154,16 +153,19 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                   height: `${Math.max(1, Math.round(h))}px`
                 };
 
+                const isSelected = selectedBoxId === box.id;
+                
                 return (
                   <div
                     key={box.id}
                     className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
                       ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                      hover:border-opacity-100 hover:bg-opacity-20
+                      ${isSelected ? 'border-opacity-100 bg-opacity-30 ring-2 ring-cyan-400/50' : 'hover:border-opacity-100 hover:bg-opacity-20'}
                     `}
                     style={style}
-                    onMouseEnter={() => setActiveBoxId(box.id)}
-                    onMouseLeave={() => setActiveBoxId(null)}
+                    onMouseEnter={() => onSelectBox?.(box.id)}
+                    onMouseLeave={() => onSelectBox?.(null)}
+                    onClick={() => onSelectBox?.(box.id)}
                   >
                     {/* Always-visible tiny debug badge for easier QA (mock mode) */}
                     {debugMode && (
@@ -176,9 +178,17 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
                         <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-cyan-600'}`} />
-                        <div className="p-3 text-left">
+                        <div className="p-3 text-left space-y-1">
                           <h4 className="text-xs font-bold text-slate-100 uppercase truncate">{box.label || box.id}</h4>
+                          {box.meta?.description && (
+                            <div className="text-[11px] text-cyan-300 font-medium">{box.meta.description}</div>
+                          )}
                           <div className="text-[10px] text-slate-400 capitalize">{box.type}</div>
+                          {box.confidence && (
+                            <div className="text-[10px] text-emerald-400 font-mono">
+                              Confidence: {(box.confidence * 100).toFixed(1)}%
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
