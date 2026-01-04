@@ -3,6 +3,7 @@ import {
    Layers, 
    Search,
    ChevronDown,
+   ChevronRight,
    DollarSign,
    FileText,
    Box,
@@ -44,6 +45,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       
       // Ref for scrolling to selected component
       const selectedRowRef = useRef<HTMLDivElement>(null);
+      
+      // State for expanded component details
+      const [expandedComponentId, setExpandedComponentId] = useState<string | null>(null);
 
       useEffect(() => {
          // initialize from prop when it changes (e.g., new analysis run)
@@ -148,36 +152,203 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                {filteredBoxes.length > 0 ? (
                   filteredBoxes.map((box) => {
                      const isSelected = selectedBoxId === box.id;
+                     const isExpanded = expandedComponentId === box.id;
                      return (
                         <div 
                            key={box.id}
                            ref={isSelected ? selectedRowRef : null}
-                           onClick={() => onSelectBox(box.id)}
-                           onMouseEnter={() => onSelectBox(box.id)}
-                           onMouseLeave={() => onSelectBox(null)}
-                           className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all group ${
+                           className={`rounded border transition-all ${
                               isSelected
-                                 ? 'bg-cyan-500/10 border border-cyan-500/30' 
-                                 : 'hover:bg-white/5 border border-transparent'
+                                 ? 'bg-cyan-500/10 border-cyan-500/30' 
+                                 : 'border-transparent hover:bg-white/5'
                            }`}
                         >
-                  
-                            <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                                 isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-                            }`}>
-                                 <Box size={14} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                 <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                                    {box.label}
+                           {/* Component Header */}
+                           <div 
+                              onClick={() => {
+                                 onSelectBox(box.id);
+                                 setExpandedComponentId(isExpanded ? null : box.id);
+                              }}
+                              onMouseEnter={() => onSelectBox(box.id)}
+                              onMouseLeave={() => onSelectBox(null)}
+                              className="flex items-center gap-3 p-2 cursor-pointer group"
+                           >
+                              {/* Expand/Collapse Icon */}
+                              <div className="shrink-0">
+                                 {isExpanded ? (
+                                    <ChevronDown size={14} className="text-cyan-400" />
+                                 ) : (
+                                    <ChevronRight size={14} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
+                                 )}
+                              </div>
+                      
+                              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
+                                   isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                              }`}>
+                                   <Box size={14} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                   <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
+                                      {box.label}
+                                   </div>
+                                   <div className="text-[10px] text-zinc-500 truncate">
+                                      {box.meta?.description || 'No description'}
+                                   </div>
+                              </div>
+                              {isSelected && (
+                                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                              )}
+                           </div>
+
+                           {/* Expanded Details */}
+                           {isExpanded && (
+                              <div className="px-2 pb-2 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                                 {/* Component Specifications */}
+                                 <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                                    <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                       <div className="w-1 h-3 bg-cyan-500 rounded-full"></div>
+                                       Component Specifications
+                                    </div>
+                                    <div className="space-y-2.5 text-xs">
+                                       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                                          <div>
+                                             <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Type</span>
+                                             <div className="text-zinc-200 font-medium mt-0.5">{box.type || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                             <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Confidence</span>
+                                             <div className="text-emerald-400 font-mono font-semibold mt-0.5">
+                                                {(box.confidence * 100).toFixed(1)}%
+                                             </div>
+                                          </div>
+                                          {box.meta?.tag && (
+                                             <div>
+                                                <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Tag ID</span>
+                                                <div className="text-zinc-200 font-mono mt-0.5">{box.meta.tag}</div>
+                                             </div>
+                                          )}
+                                          {box.meta?.equipment_type && (
+                                             <div>
+                                                <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Equipment Type</span>
+                                                <div className="text-zinc-200 mt-0.5">{box.meta.equipment_type}</div>
+                                             </div>
+                                          )}
+                                          {box.meta?.hvac_subsystem && (
+                                             <div>
+                                                <span className="text-zinc-500 text-[10px] uppercase tracking-wide">HVAC Subsystem</span>
+                                                <div className="text-zinc-200 mt-0.5 capitalize">{box.meta.hvac_subsystem.replace('_', ' ')}</div>
+                                             </div>
+                                          )}
+                                          {box.meta?.detection_quality && (
+                                             <div>
+                                                <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Detection Quality</span>
+                                                <div className={`mt-0.5 capitalize font-medium ${
+                                                   box.meta.detection_quality === 'excellent' ? 'text-emerald-400' :
+                                                   box.meta.detection_quality === 'good' ? 'text-cyan-400' :
+                                                   'text-yellow-400'
+                                                }`}>
+                                                   {box.meta.detection_quality}
+                                                </div>
+                                             </div>
+                                          )}
+                                       </div>
+                                    </div>
                                  </div>
-                                 <div className="text-[10px] text-zinc-500 truncate">
-                                    {box.meta?.description || 'No description'}
-                                 </div>
-                            </div>
-                            {isSelected && (
-                                 <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-                            )}
+
+                                 {/* AI Inference Analysis */}
+                                 {box.meta?.reasoning && (
+                                    <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                                       <div className="text-[10px] font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                          <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                          AI Inference Analysis
+                                       </div>
+                                       <div className="text-xs text-zinc-300 leading-relaxed">
+                                          {box.meta.reasoning}
+                                       </div>
+                                    </div>
+                                 )}
+
+                                 {/* ISA Information */}
+                                 {(box.meta?.isa_function || box.meta?.isa_measured_variable) && (
+                                    <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                                       <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                          <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                          ISA Standards
+                                       </div>
+                                       <div className="space-y-2 text-xs">
+                                          {box.meta.isa_function && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Function Code</span>
+                                                <span className="text-zinc-200 font-mono font-semibold">{box.meta.isa_function}</span>
+                                             </div>
+                                          )}
+                                          {box.meta.isa_measured_variable && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Measured Variable</span>
+                                                <span className="text-zinc-200">{box.meta.isa_measured_variable}</span>
+                                             </div>
+                                          )}
+                                          {box.meta.isa_modifier && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Modifier</span>
+                                                <span className="text-zinc-200">{box.meta.isa_modifier}</span>
+                                             </div>
+                                          )}
+                                          {box.meta.isa_confidence !== undefined && (
+                                             <div className="flex justify-between items-center pt-1 border-t border-white/5">
+                                                <span className="text-zinc-400">ISA Confidence</span>
+                                                <span className="text-amber-400 font-mono font-semibold">
+                                                   {(box.meta.isa_confidence * 100).toFixed(0)}%
+                                                </span>
+                                             </div>
+                                          )}
+                                          {box.meta.isa_reasoning && (
+                                             <div className="pt-2 mt-2 border-t border-white/5">
+                                                <div className="text-zinc-500 text-[10px] mb-1">Reasoning:</div>
+                                                <div className="text-zinc-300 text-xs leading-relaxed">{box.meta.isa_reasoning}</div>
+                                             </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+
+                                 {/* Additional Metadata */}
+                                 {(box.meta?.occlusion_level || box.meta?.text_clarity || box.meta?.functional_desc) && (
+                                    <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
+                                       <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                          <div className="w-1 h-3 bg-zinc-500 rounded-full"></div>
+                                          Additional Properties
+                                       </div>
+                                       <div className="space-y-2 text-xs">
+                                          {box.meta.functional_desc && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Function</span>
+                                                <span className="text-zinc-200">{box.meta.functional_desc}</span>
+                                             </div>
+                                          )}
+                                          {box.meta.occlusion_level && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Occlusion Level</span>
+                                                <span className="text-zinc-200 capitalize">{box.meta.occlusion_level}</span>
+                                             </div>
+                                          )}
+                                          {box.meta.text_clarity && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Text Clarity</span>
+                                                <span className="text-zinc-200 capitalize">{box.meta.text_clarity}</span>
+                                             </div>
+                                          )}
+                                          {box.rotation !== undefined && (
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-zinc-400">Rotation</span>
+                                                <span className="text-zinc-200 font-mono">{box.rotation}°</span>
+                                             </div>
+                                          )}
+                                       </div>
+                                    </div>
+                                 )}
+                              </div>
+                           )}
                         </div>
                      );
                   })
@@ -188,36 +359,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                )}
             </div>
 
-            {/* Selected Item Details */}
-            {selectedBoxId && (
-               <div className="border-t border-white/5 p-3 bg-[#1a1a1a]">
-                   <div className="text-[10px] font-bold text-zinc-500 uppercase mb-2">Selected Properties</div>
-                   {(() => {
-                        const selected = detectedBoxes.find(b => b.id === selectedBoxId);
-                        if (!selected) return null;
-                        return (
-                           <div className="space-y-2">
-                                 <div className="flex justify-between">
-                                       <span className="text-xs text-zinc-400">Confidence</span>
-                                       <span className="text-xs text-emerald-400 font-mono">{(selected.confidence * 100).toFixed(1)}%</span>
-                                 </div>
-                                 <div className="flex justify-between">
-                                       <span className="text-xs text-zinc-400">Tag ID</span>
-                                       <span className="text-xs text-zinc-200 font-mono">{selected.meta?.tag || 'N/A'}</span>
-                                 </div>
-                           </div>
-                        );
-                   })()}
-               </div>
-            )}
-
             {/* Process Log */}
                   {streamingLog && (
-                     <div>
+                     <div className="pb-3">
                         <div className="flex items-center justify-between mb-2 relative">
                            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-0 pt-1">Process Log</div>
                            <div className="relative">
-                             <button onClick={copyProcessLog} aria-label="Copy process log" title="Copy process log" className="text-zinc-400 hover:text-white p-2 rounded-md">
+                             <button onClick={copyProcessLog} aria-label="Copy process log" title="Copy process log" className="text-zinc-400 hover:text-white p-2 rounded-md transition-colors">
                                 <Copy size={14} />
                              </button>
                                            {copied && (
@@ -229,8 +377,35 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                            )}
                            </div>
                         </div>
-                        <div className="text-xs text-zinc-400 leading-relaxed font-mono p-3 bg-[#0a0a0a] rounded border border-white/5 whitespace-pre-wrap" style={{ userSelect: 'text' }}>
-                           {streamingLog}
+                        <div className="bg-gradient-to-br from-[#0d0d0d] to-[#151515] rounded-lg p-4 border border-white/10 shadow-lg">
+                           <div className="text-[11px] text-zinc-300 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto scrollbar-thin" style={{ userSelect: 'text' }}>
+                              {streamingLog.split('\n').map((line, index) => {
+                                 // Style different types of log lines
+                                 let lineClass = 'text-zinc-300';
+                                 let prefix = '';
+                                 
+                                 if (line.includes('Step')) {
+                                    lineClass = 'text-cyan-400 font-semibold';
+                                    prefix = '▶ ';
+                                 } else if (line.includes('Error') || line.includes('error')) {
+                                    lineClass = 'text-red-400';
+                                    prefix = '✖ ';
+                                 } else if (line.includes('complete') || line.includes('Complete')) {
+                                    lineClass = 'text-emerald-400';
+                                    prefix = '✓ ';
+                                 } else if (line.startsWith('[') || line.startsWith('{')) {
+                                    lineClass = 'text-purple-300';
+                                 } else if (line.includes('result:') || line.includes('Selected')) {
+                                    lineClass = 'text-amber-300';
+                                 }
+                                 
+                                 return (
+                                    <div key={index} className={`${lineClass} py-0.5`}>
+                                       {prefix}{line}
+                                    </div>
+                                 );
+                              })}
+                           </div>
                         </div>
                      </div>
                   )}
