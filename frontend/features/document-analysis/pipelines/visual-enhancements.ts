@@ -11,7 +11,7 @@ import {
   validateConnections,
   detectControlLoops
 } from '../../../lib/utils/connection-engine';
-import type { VisualAnalysisResult, DetectedComponent, Connection } from './types';
+import type { VisualAnalysisResult, DetectedComponent, Connection } from '../types';
 
 /**
  * Post-process visual analysis results with all enhancements

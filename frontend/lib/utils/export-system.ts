@@ -3,7 +3,7 @@
  * Supports multiple formats: JSON, CSV, PDF annotations
  */
 
-import type { VisualAnalysisResult, DetectedComponent, Connection } from '../../features/document-analysis/types';
+import type { VisualAnalysisResult, DetectedComponent, Connection } from '../../../features/document-analysis/types';
 
 export type ExportFormat = 'json' | 'csv' | 'pdf' | 'excel';
 
@@ -152,8 +152,15 @@ export class ResultExporter {
   
   /**
    * Create downloadable file
+   * Browser-only: Creates and triggers download of a file
    */
   static download(content: string, filename: string, mimeType: string): void {
+    // Check if running in browser environment
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+      console.error('Download functionality requires browser environment');
+      return;
+    }
+    
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -342,8 +349,15 @@ export function generateSummaryReport(result: VisualAnalysisResult): string {
 
 /**
  * Copy results to clipboard
+ * Browser-only: Uses Clipboard API to copy text
  */
 export async function copyToClipboard(text: string): Promise<boolean> {
+  // Check if Clipboard API is available
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+    console.warn('Clipboard API not available in this environment');
+    return false;
+  }
+  
   try {
     await navigator.clipboard.writeText(text);
     return true;
