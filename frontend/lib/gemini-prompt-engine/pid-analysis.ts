@@ -78,10 +78,14 @@ export const analyzePID = async (base64Image: string, options: {
           ]
         },
         config: {
-          // Adaptive thinking budget allows deeper analysis for complex drawings
+          // Adaptive thinking budget allows deeper analysis for complex drawings.
+          // NOTE: 'enableMultiStepReasoning' was removed because the
+          // @google/genai TypeScript definitions do not include it on
+          // ThinkingConfig (TS2353). If multi-step reasoning becomes a
+          // supported option in the future, reintroduce here guarded by
+          // a runtime feature flag and update types accordingly.
           thinkingConfig: { 
-            thinkingBudget: thinkingBudget,
-            enableMultiStepReasoning: true
+            thinkingBudget: thinkingBudget
           },
           systemInstruction: PID_ANALYSIS_SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
