@@ -43,7 +43,7 @@ const BlueprintAnalyzer: React.FC = () => {
     return entities.map((entity, idx) => {
         // inference_graph.py returns [x1, y1, x2, y2] in pixel coords
         const [x1, y1, x2, y2] = entity.bbox;
-        // Convert to normalized [ymin, xmin, ymax, xmax]
+        // Convert to normalized canonical format [xmin, ymin, xmax, ymax] in 0-1 range
         const xmin = x1 / imgWidth;
         const ymin = y1 / imgHeight;
         const xmax = x2 / imgWidth;
@@ -97,15 +97,14 @@ const BlueprintAnalyzer: React.FC = () => {
 
                 // Map entities to detectedBoxes for visualization
                 const boxes: DetectedComponent[] = parsed.entities.map((e: any, idx: number) => {
-                    const xmin = (e.bbox_2d?.[1] ?? 0) / (e.image_width || 1);
-                    const ymin = (e.bbox_2d?.[0] ?? 0) / (e.image_height || 1);
-                    const xmax = (e.bbox_2d?.[3] ?? 0) / (e.image_width || 1);
-                    const ymax = (e.bbox_2d?.[2] ?? 0) / (e.image_height || 1);
+                    // The bbox from the visual pipeline is already in canonical format [xmin, ymin, xmax, ymax]
+                    // normalized to 0-1 range, so we can use it directly without coordinate swapping
+                    const bbox = e.bbox || [0, 0, 0, 0];
                     return {
                         id: e.id || `gem-${idx}`,
                         label: e.tag || e.label || e.functional_desc || '',
                         confidence: e.confidence || 0.9,
-                        bbox: [xmin, ymin, xmax, ymax],
+                        bbox: bbox as [number, number, number, number],
                         rotation: e.rotation || 0,
                         type: e.instrument_type === 'Computer' ? 'text' : 'component',
                         meta: { tag: e.tag, description: e.functional_desc, reasoning: e.reasoning }
