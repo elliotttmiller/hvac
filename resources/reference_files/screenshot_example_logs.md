@@ -5,1143 +5,221 @@ Step 2: Routing to pipeline...
 ["Selected pipeline:","visual"]
 Step 3: Executing pipeline...
 Pipeline execution complete
-["Analysis complete:",{"document_id":"1767564036419-bobakvbnf","type":"SCHEMATIC","processing_time_ms":143623,"components":45}]
+["Analysis complete:",{"document_id":"1767566296053-46febgcej","type":"SCHEMATIC","processing_time_ms":73609,"components":30}]
 
 {
-  "document_id": "1767564036419-bobakvbnf",
+  "document_id": "1767566296053-46febgcej",
   "document_type": "SCHEMATIC",
   "file_name": "current-image",
-  "timestamp": 1767564180042,
+  "timestamp": 1767566369662,
   "classification": {
     "type": "SCHEMATIC",
     "confidence": 0.95,
     "reasoning": "Mock classification: Detected P&ID diagram with instrumentation symbols and process flow lines"
   },
-  "processing_time_ms": 143623,
+  "processing_time_ms": 73609,
   "cache_hit": false,
   "visual": {
     "components": [
       {
-        "id": "SVC-1",
-        "type": "instrument_controller",
-        "label": "SVC",
+        "id": "tank-1",
+        "type": "equipment",
+        "label": "Tank",
         "bbox": [
-          0.069,
-          0.301,
-          0.138,
-          0.359
+          0.0053,
+          0.4,
+          0.2907,
+          0.8
         ],
         "confidence": 0.98,
         "rotation": 0,
         "meta": {
-          "reasoning": "Identified as a square with a circle inside and a diagonal line, containing 'SVC' and 'P'. This indicates a Shared Display/Control function, likely a Signal Converter or Controller for Pressure (P).",
-          "description": "Shared Display Signal Converter/Controller for Pressure",
-          "functional_desc": "Signal Converter / Pressure",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Shared Display",
-          "location": "Main Panel",
+          "reasoning": "Identified as a large rectangular vessel with internal dashed lines indicating liquid level, consistent with a storage tank symbol.",
+          "description": "Storage tank for MRF SS304",
+          "equipment_type": "Storage Tank",
+          "hvac_subsystem": "water_systems",
           "occlusion_level": "none",
-          "tag": "SVC",
-          "text_clarity": "excellent",
+          "text_clarity": "not_applicable",
           "raw_backend_output": [
-            0.069,
-            0.301,
-            0.138,
-            0.359
+            0.0053,
+            0.4,
+            0.2907,
+            0.8
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.021Z",
+              "timestamp": "2026-01-04T22:39:29.628Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.069,
-                  0.301,
-                  0.138,
-                  0.359
+                  0.0053,
+                  0.4,
+                  0.2907,
+                  0.8
                 ],
                 "normalized_bbox": [
-                  0.069,
-                  0.301,
-                  0.138,
-                  0.359
+                  0.0053,
+                  0.4,
+                  0.2907,
+                  0.8
                 ]
               }
             }
           ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
+          "component_category": "equipment",
+          "isa_function": "TA",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Temperature",
+          "isa_modifier": "Alarm",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: TANK"
         }
       },
       {
-        "id": "PI-unlabeled-1",
-        "type": "sensor_pressure",
-        "label": "PI",
+        "id": "text-tl-mrf-ss304-1",
+        "type": "text_annotation",
+        "label": "TL MRF SS304",
         "bbox": [
-          0.199,
-          0.301,
-          0.245,
-          0.347
-        ],
-        "confidence": 0.97,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PI' inside, indicating a discrete Pressure Indicator, field mounted.",
-          "description": "Pressure Indicator",
-          "functional_desc": "Pressure Indicator",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PI",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.199,
-            0.301,
-            0.245,
-            0.347
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.024Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.199,
-                  0.301,
-                  0.245,
-                  0.347
-                ],
-                "normalized_bbox": [
-                  0.199,
-                  0.301,
-                  0.245,
-                  0.347
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "POSITION_INDICATOR-1",
-        "type": "instrument_indicator",
-        "label": "POSITION INDICATOR",
-        "bbox": [
-          0.283,
-          0.354,
-          0.366,
-          0.385
+          0.0507,
+          0.7707,
+          0.1507,
+          0.8
         ],
         "confidence": 0.95,
         "rotation": 0,
         "meta": {
-          "reasoning": "Identified as a text label 'POSITION INDICATOR' next to a mechanical linkage symbol, indicating a mechanical position indicator.",
-          "description": "Mechanical Position Indicator",
-          "instrument_type": "Mechanical",
-          "location": "Field",
+          "reasoning": "Direct OCR extraction of text label 'TL MRF SS304' associated with the tank.",
+          "description": "Tank material specification",
           "occlusion_level": "none",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.283,
-            0.354,
-            0.366,
-            0.385
+            0.0507,
+            0.7707,
+            0.1507,
+            0.8
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.025Z",
+              "timestamp": "2026-01-04T22:39:29.630Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.283,
-                  0.354,
-                  0.366,
-                  0.385
+                  0.0507,
+                  0.7707,
+                  0.1507,
+                  0.8
                 ],
                 "normalized_bbox": [
-                  0.283,
-                  0.354,
-                  0.366,
-                  0.385
+                  0.0507,
+                  0.7707,
+                  0.1507,
+                  0.8
                 ]
               }
             }
           ],
           "hvac_subsystem": "other",
           "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
+          "isa_function": "TL",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Temperature",
+          "isa_modifier": "Low",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: TL-MRF-SS304"
         }
       },
       {
-        "id": "SDV-unlabeled-1",
-        "type": "valve_solenoid",
-        "label": "SDV",
-        "bbox": [
-          0.298,
-          0.443,
-          0.344,
-          0.489
-        ],
-        "confidence": 0.96,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'SDV' inside, indicating a discrete Solenoid Operated Valve, field mounted.",
-          "description": "Solenoid Operated Valve",
-          "functional_desc": "Solenoid Valve",
-          "hvac_subsystem": "controls",
-          "instrument_function": "V",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "SDV",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.298,
-            0.443,
-            0.344,
-            0.489
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.025Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.298,
-                  0.443,
-                  0.344,
-                  0.489
-                ],
-                "normalized_bbox": [
-                  0.298,
-                  0.443,
-                  0.344,
-                  0.489
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "NOTE_11-left",
+        "id": "text-tl-mrf-ss304-2",
         "type": "text_annotation",
-        "label": "NOTE 11",
+        "label": "TL MRF SS304",
         "bbox": [
-          0.283,
-          0.421,
-          0.329,
-          0.434
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'NOTE 11'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.283,
-            0.421,
-            0.329,
-            0.434
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.025Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.283,
-                  0.421,
-                  0.329,
-                  0.434
-                ],
-                "normalized_bbox": [
-                  0.283,
-                  0.421,
-                  0.329,
-                  0.434
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "FCV-301217",
-        "type": "valve_control",
-        "label": "FCV-301217",
-        "bbox": [
-          0.353,
-          0.299,
-          0.4,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'FCV' and '301217' inside, indicating a discrete Flow Control Valve, field mounted.",
-          "description": "Flow Control Valve for Zone 2",
-          "functional_desc": "Flow Control Valve",
-          "hvac_subsystem": "controls",
-          "instrument_function": "F",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "FCV-301217",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.353,
-            0.299,
-            0.4,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.026Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.353,
-                  0.299,
-                  0.4,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.353,
-                  0.299,
-                  0.4,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "FCV",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PT-301218",
-        "type": "sensor_pressure",
-        "label": "PT-301218",
-        "bbox": [
-          0.407,
-          0.299,
-          0.454,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PT' and '301218' inside, indicating a discrete Pressure Transmitter, field mounted.",
-          "description": "Pressure Transmitter for Zone 2",
-          "functional_desc": "Pressure Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PT-301218",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.407,
-            0.299,
-            0.454,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.026Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.407,
-                  0.299,
-                  0.454,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.407,
-                  0.299,
-                  0.454,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "PT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TT-301219",
-        "type": "sensor_temperature",
-        "label": "TT-301219",
-        "bbox": [
-          0.461,
-          0.299,
-          0.508,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'TT' and '301219' inside, indicating a discrete Temperature Transmitter, field mounted.",
-          "description": "Temperature Transmitter for Zone 2",
-          "functional_desc": "Temperature Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "T",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "TT-301219",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.461,
-            0.299,
-            0.508,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.026Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.461,
-                  0.299,
-                  0.508,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.461,
-                  0.299,
-                  0.508,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "TT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "ZONE_2",
-        "type": "text_annotation",
-        "label": "ZONE 2",
-        "bbox": [
-          0.407,
-          0.273,
-          0.454,
-          0.286
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'ZONE 2'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.407,
-            0.273,
-            0.454,
-            0.286
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.026Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.407,
-                  0.273,
-                  0.454,
-                  0.286
-                ],
-                "normalized_bbox": [
-                  0.407,
-                  0.273,
-                  0.454,
-                  0.286
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "7_PRE-DRILLED_LINER-1",
-        "type": "text_annotation",
-        "label": "7\" PRE-DRILLED LINER",
-        "bbox": [
-          0.519,
-          0.326,
-          0.659,
-          0.339
-        ],
-        "confidence": 0.98,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block '7\" PRE-DRILLED LINER'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.519,
-            0.326,
-            0.659,
-            0.339
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.027Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.519,
-                  0.326,
-                  0.659,
-                  0.339
-                ],
-                "normalized_bbox": [
-                  0.519,
-                  0.326,
-                  0.659,
-                  0.339
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "4-1/2_TUBING-1",
-        "type": "text_annotation",
-        "label": "4-1/2\" TUBING",
-        "bbox": [
-          0.435,
-          0.36,
-          0.536,
-          0.373
-        ],
-        "confidence": 0.98,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block '4-1/2\" TUBING'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.435,
-            0.36,
-            0.536,
-            0.373
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.027Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.435,
-                  0.36,
-                  0.536,
-                  0.373
-                ],
-                "normalized_bbox": [
-                  0.435,
-                  0.36,
-                  0.536,
-                  0.373
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "NOTE_41",
-        "type": "text_annotation",
-        "label": "NOTE 41",
-        "bbox": [
-          0.353,
-          0.409,
-          0.4,
-          0.422
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'NOTE 41'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.353,
-            0.409,
-            0.4,
-            0.422
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.027Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.353,
-                  0.409,
-                  0.4,
-                  0.422
-                ],
-                "normalized_bbox": [
-                  0.353,
-                  0.409,
-                  0.4,
-                  0.422
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "FCV-301220",
-        "type": "valve_control",
-        "label": "FCV-301220",
-        "bbox": [
-          0.59,
-          0.299,
-          0.637,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'FCV' and '301220' inside, indicating a discrete Flow Control Valve, field mounted.",
-          "description": "Flow Control Valve for Zone 1",
-          "functional_desc": "Flow Control Valve",
-          "hvac_subsystem": "controls",
-          "instrument_function": "F",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "FCV-301220",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.59,
-            0.299,
-            0.637,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.028Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.59,
-                  0.299,
-                  0.637,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.59,
-                  0.299,
-                  0.637,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "FCV",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "BV-301221",
-        "type": "valve_ball",
-        "label": "BV-301221",
-        "bbox": [
-          0.644,
-          0.299,
-          0.691,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'BV' and '301221' inside, indicating a discrete Ball Valve, field mounted.",
-          "description": "Ball Valve for Zone 1",
-          "functional_desc": "Ball Valve",
-          "hvac_subsystem": "controls",
-          "instrument_function": "V",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "BV-301221",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.644,
-            0.299,
-            0.691,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.028Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.644,
-                  0.299,
-                  0.691,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.644,
-                  0.299,
-                  0.691,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "BV",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PT-301222",
-        "type": "sensor_pressure",
-        "label": "PT-301222",
-        "bbox": [
-          0.698,
-          0.299,
-          0.745,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PT' and '301222' inside, indicating a discrete Pressure Transmitter, field mounted.",
-          "description": "Pressure Transmitter for Zone 1",
-          "functional_desc": "Pressure Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PT-301222",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.698,
-            0.299,
-            0.745,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.028Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.698,
-                  0.299,
-                  0.745,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.698,
-                  0.299,
-                  0.745,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "PT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TT-301223",
-        "type": "sensor_temperature",
-        "label": "TT-301223",
-        "bbox": [
-          0.752,
-          0.299,
-          0.799,
-          0.346
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'TT' and '301223' inside, indicating a discrete Temperature Transmitter, field mounted.",
-          "description": "Temperature Transmitter for Zone 1",
-          "functional_desc": "Temperature Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "T",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "TT-301223",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.752,
-            0.299,
-            0.799,
-            0.346
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.028Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.752,
-                  0.299,
-                  0.799,
-                  0.346
-                ],
-                "normalized_bbox": [
-                  0.752,
-                  0.299,
-                  0.799,
-                  0.346
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "TT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "ZONE_1",
-        "type": "text_annotation",
-        "label": "ZONE 1",
-        "bbox": [
-          0.698,
-          0.273,
-          0.745,
-          0.286
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'ZONE 1'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.698,
-            0.273,
-            0.745,
-            0.286
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.028Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.698,
-                  0.273,
-                  0.745,
-                  0.286
-                ],
-                "normalized_bbox": [
-                  0.698,
-                  0.273,
-                  0.745,
-                  0.286
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "7_PRE-DRILLED_LINER-2",
-        "type": "text_annotation",
-        "label": "7\" PRE-DRILLED LINER",
-        "bbox": [
-          0.81,
-          0.326,
-          0.95,
-          0.339
-        ],
-        "confidence": 0.98,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block '7\" PRE-DRILLED LINER'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.81,
-            0.326,
-            0.95,
-            0.339
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.029Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.81,
-                  0.326,
-                  0.95,
-                  0.339
-                ],
-                "normalized_bbox": [
-                  0.81,
-                  0.326,
-                  0.95,
-                  0.339
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TEXT-590",
-        "type": "text_annotation",
-        "label": "590",
-        "bbox": [
-          0.887,
+          0.28,
+          0.7707,
           0.38,
-          0.914,
-          0.393
+          0.8
         ],
         "confidence": 0.95,
         "rotation": 0,
         "meta": {
-          "reasoning": "Identified as a numerical text block '590'.",
+          "reasoning": "Direct OCR extraction of text label 'TL MRF SS304' associated with the tank.",
+          "description": "Tank material specification",
           "occlusion_level": "none",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.887,
+            0.28,
+            0.7707,
             0.38,
-            0.914,
-            0.393
+            0.8
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.029Z",
+              "timestamp": "2026-01-04T22:39:29.631Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.887,
+                  0.28,
+                  0.7707,
                   0.38,
-                  0.914,
-                  0.393
+                  0.8
                 ],
                 "normalized_bbox": [
-                  0.887,
+                  0.28,
+                  0.7707,
                   0.38,
-                  0.914,
-                  0.393
+                  0.8
                 ]
               }
             }
           ],
           "hvac_subsystem": "other",
           "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
+          "isa_function": "TL",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Temperature",
+          "isa_modifier": "Low",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: TL-MRF-SS304"
         }
       },
       {
-        "id": "SIGNAL_CONDITIONER-S-1",
-        "type": "instrument_relay",
-        "label": "S",
-        "bbox": [
-          0.407,
-          0.46,
-          0.44,
-          0.493
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a triangle symbol with 'S' inside, indicating a signal conditioner or relay, likely a switch function.",
-          "description": "Signal Conditioner/Relay (Switch)",
-          "functional_desc": "Switch / Relay",
-          "hvac_subsystem": "controls",
-          "instrument_function": "S",
-          "instrument_type": "Logic",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "S",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.407,
-            0.46,
-            0.44,
-            0.493
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.029Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.407,
-                  0.46,
-                  0.44,
-                  0.493
-                ],
-                "normalized_bbox": [
-                  0.407,
-                  0.46,
-                  0.44,
-                  0.493
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "SIGNAL_CONDITIONER-C-1",
-        "type": "instrument_relay",
-        "label": "C",
-        "bbox": [
-          0.461,
-          0.46,
-          0.494,
-          0.493
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a triangle symbol with 'C' inside, indicating a signal conditioner or relay, likely a control function.",
-          "description": "Signal Conditioner/Relay (Control)",
-          "functional_desc": "Controller / Relay",
-          "hvac_subsystem": "controls",
-          "instrument_function": "C",
-          "instrument_type": "Logic",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "C",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.461,
-            0.46,
-            0.494,
-            0.493
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.029Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.461,
-                  0.46,
-                  0.494,
-                  0.493
-                ],
-                "normalized_bbox": [
-                  0.461,
-                  0.46,
-                  0.494,
-                  0.493
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TEXT-FCW",
+        "id": "text-150nb-upvc-1",
         "type": "text_annotation",
-        "label": "FCW",
+        "label": "150NB uPVC",
         "bbox": [
-          0.499,
-          0.46,
-          0.529,
-          0.473
+          0.28,
+          0.6,
+          0.38,
+          0.6307
         ],
         "confidence": 0.95,
         "rotation": 0,
         "meta": {
-          "reasoning": "Identified as a text block 'FCW'.",
+          "reasoning": "Direct OCR extraction of pipe specification '150NB uPVC'.",
+          "description": "Pipe specification: 150 Nominal Bore, unplasticized Polyvinyl Chloride",
           "occlusion_level": "none",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.499,
-            0.46,
-            0.529,
-            0.473
+            0.28,
+            0.6,
+            0.38,
+            0.6307
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.030Z",
+              "timestamp": "2026-01-04T22:39:29.631Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.499,
-                  0.46,
-                  0.529,
-                  0.473
+                  0.28,
+                  0.6,
+                  0.38,
+                  0.6307
                 ],
                 "normalized_bbox": [
-                  0.499,
-                  0.46,
-                  0.529,
-                  0.473
+                  0.28,
+                  0.6,
+                  0.38,
+                  0.6307
                 ]
               }
             }
@@ -1149,1062 +227,1069 @@ Pipeline execution complete
           "hvac_subsystem": "other",
           "component_category": "equipment",
           "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 150NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "text-80nb-upvc-1",
+        "type": "text_annotation",
+        "label": "80NB uPVC",
+        "bbox": [
+          0.18,
+          0.4,
+          0.28,
+          0.4307
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC'.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.18,
+            0.4,
+            0.28,
+            0.4307
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.631Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.18,
+                  0.4,
+                  0.28,
+                  0.4307
+                ],
+                "normalized_bbox": [
+                  0.18,
+                  0.4,
+                  0.28,
+                  0.4307
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "P-1091",
+        "type": "pump",
+        "label": "P-1091",
+        "bbox": [
+          0.3507,
+          0.6507,
+          0.4507,
+          0.7507
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a pump symbol (circle with semicircle at bottom) and associated with the 'P-1091/92' label, indicating the first pump in a pair.",
+          "description": "RO-I Feed Pump 1",
+          "equipment_type": "Centrifugal Pump",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "parent_system": "RO-I FEED PUMP",
+          "tag": "P-1091",
+          "text_clarity": "good",
+          "raw_backend_output": [
+            0.3507,
+            0.6507,
+            0.4507,
+            0.7507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.631Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.3507,
+                  0.6507,
+                  0.4507,
+                  0.7507
+                ],
+                "normalized_bbox": [
+                  0.3507,
+                  0.6507,
+                  0.4507,
+                  0.7507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "P",
           "detection_quality": "excellent"
         }
       },
       {
-        "id": "SIGNAL_CONDITIONER-unlabeled-1",
-        "type": "instrument_relay",
-        "label": "SIGNAL CONDITIONER",
+        "id": "P-1092",
+        "type": "pump",
+        "label": "P-1092",
         "bbox": [
-          0.548,
+          0.5,
+          0.6507,
+          0.6,
+          0.7507
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a pump symbol (circle with semicircle at bottom) and associated with the 'P-1091/92' label, indicating the second pump in a pair.",
+          "description": "RO-I Feed Pump 2",
+          "equipment_type": "Centrifugal Pump",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "parent_system": "RO-I FEED PUMP",
+          "tag": "P-1092",
+          "text_clarity": "good",
+          "raw_backend_output": [
+            0.5,
+            0.6507,
+            0.6,
+            0.7507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.631Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5,
+                  0.6507,
+                  0.6,
+                  0.7507
+                ],
+                "normalized_bbox": [
+                  0.5,
+                  0.6507,
+                  0.6,
+                  0.7507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "P",
+          "detection_quality": "excellent"
+        }
+      },
+      {
+        "id": "text-p-1091-92",
+        "type": "text_annotation",
+        "label": "P-1091/92",
+        "bbox": [
+          0.68,
+          0.7707,
+          0.78,
+          0.8
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Direct OCR extraction of equipment tag 'P-1091/92'.",
+          "description": "Pump identification for both pumps",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.68,
+            0.7707,
+            0.78,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.631Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.68,
+                  0.7707,
+                  0.78,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.68,
+                  0.7707,
+                  0.78,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": "P",
+          "detection_quality": "excellent"
+        }
+      },
+      {
+        "id": "text-ro-i-feed-pump",
+        "type": "pump",
+        "label": "RO-I FEED PUMP",
+        "bbox": [
+          0.68,
+          0.8,
+          0.8,
+          0.8307
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Direct OCR extraction of descriptive text 'RO-I FEED PUMP'.",
+          "description": "Functional description of the pumps",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.68,
+            0.8,
+            0.8,
+            0.8307
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.632Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.68,
+                  0.8,
+                  0.8,
+                  0.8307
+                ],
+                "normalized_bbox": [
+                  0.68,
+                  0.8,
+                  0.8,
+                  0.8307
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": "RO",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Radiation",
+          "isa_modifier": "Orifice",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: RO-I-FEED-PUMP"
+        }
+      },
+      {
+        "id": "V111",
+        "type": "valve_ball",
+        "label": "V111",
+        "bbox": [
+          0.38,
+          0.7507,
+          0.42,
+          0.8
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V111'.",
+          "description": "Manual isolation valve for P-1091 suction",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V111",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.38,
+            0.7507,
+            0.42,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.632Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.38,
+                  0.7507,
+                  0.42,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.38,
+                  0.7507,
+                  0.42,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "V112",
+        "type": "valve_ball",
+        "label": "V112",
+        "bbox": [
+          0.5307,
+          0.7507,
+          0.5707,
+          0.8
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V112'.",
+          "description": "Manual isolation valve for P-1092 suction",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V112",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5307,
+            0.7507,
+            0.5707,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.632Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5307,
+                  0.7507,
+                  0.5707,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.5307,
+                  0.7507,
+                  0.5707,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "PG-134",
+        "type": "instrument_indicator",
+        "label": "PG-134",
+        "bbox": [
+          0.4,
+          0.4507,
+          0.4507,
+          0.5
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a discrete instrument (circle) with tag 'PG-134'. 'P' for Pressure, 'G' for Gauge/Viewing Device. No internal line indicates field mounted.",
+          "description": "Pressure gauge for loop 134, indicating discharge pressure of P-1091",
+          "functional_desc": "Pressure Gauge",
+          "hvac_subsystem": "water_systems",
+          "instrument_function": "P",
+          "instrument_type": "Discrete",
+          "location": "Field",
+          "occlusion_level": "none",
+          "tag": "PG-134",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.4,
+            0.4507,
+            0.4507,
+            0.5
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.632Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.4,
+                  0.4507,
+                  0.4507,
+                  0.5
+                ],
+                "normalized_bbox": [
+                  0.4,
+                  0.4507,
+                  0.4507,
+                  0.5
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "PG",
+          "detection_quality": "excellent"
+        }
+      },
+      {
+        "id": "V113",
+        "type": "valve_ball",
+        "label": "V113",
+        "bbox": [
+          0.42,
+          0.5,
           0.46,
-          0.581,
-          0.493
+          0.5507
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V113'.",
+          "description": "Manual isolation valve downstream of PG-134",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V113",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.42,
+            0.5,
+            0.46,
+            0.5507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.42,
+                  0.5,
+                  0.46,
+                  0.5507
+                ],
+                "normalized_bbox": [
+                  0.42,
+                  0.5,
+                  0.46,
+                  0.5507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "PG-135",
+        "type": "instrument_indicator",
+        "label": "PG-135",
+        "bbox": [
+          0.5507,
+          0.4507,
+          0.6,
+          0.5
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a discrete instrument (circle) with tag 'PG-135'. 'P' for Pressure, 'G' for Gauge/Viewing Device. No internal line indicates field mounted.",
+          "description": "Pressure gauge for loop 135, indicating discharge pressure of P-1092",
+          "functional_desc": "Pressure Gauge",
+          "hvac_subsystem": "water_systems",
+          "instrument_function": "P",
+          "instrument_type": "Discrete",
+          "location": "Field",
+          "occlusion_level": "none",
+          "tag": "PG-135",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5507,
+            0.4507,
+            0.6,
+            0.5
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5507,
+                  0.4507,
+                  0.6,
+                  0.5
+                ],
+                "normalized_bbox": [
+                  0.5507,
+                  0.4507,
+                  0.6,
+                  0.5
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "PG",
+          "detection_quality": "excellent"
+        }
+      },
+      {
+        "id": "V114",
+        "type": "valve_ball",
+        "label": "V114",
+        "bbox": [
+          0.5707,
+          0.5,
+          0.6107,
+          0.5507
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V114'.",
+          "description": "Manual isolation valve downstream of PG-135",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V114",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5707,
+            0.5,
+            0.6107,
+            0.5507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5707,
+                  0.5,
+                  0.6107,
+                  0.5507
+                ],
+                "normalized_bbox": [
+                  0.5707,
+                  0.5,
+                  0.6107,
+                  0.5507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "V115",
+        "type": "valve_check",
+        "label": "V115",
+        "bbox": [
+          0.42,
+          0.3507,
+          0.46,
+          0.4
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a check valve symbol (Z-shaped with two slashes) with tag 'V115'.",
+          "description": "Check valve to prevent backflow from common header to P-1091 line",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V115",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.42,
+            0.3507,
+            0.46,
+            0.4
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.42,
+                  0.3507,
+                  0.46,
+                  0.4
+                ],
+                "normalized_bbox": [
+                  0.42,
+                  0.3507,
+                  0.46,
+                  0.4
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: V115 (type: valve_check)"
+        }
+      },
+      {
+        "id": "V116",
+        "type": "valve_check",
+        "label": "V116",
+        "bbox": [
+          0.5707,
+          0.3507,
+          0.6107,
+          0.4
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a check valve symbol (Z-shaped with two slashes) with tag 'V116'.",
+          "description": "Check valve to prevent backflow from common header to P-1092 line",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V116",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5707,
+            0.3507,
+            0.6107,
+            0.4
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5707,
+                  0.3507,
+                  0.6107,
+                  0.4
+                ],
+                "normalized_bbox": [
+                  0.5707,
+                  0.3507,
+                  0.6107,
+                  0.4
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: V116 (type: valve_check)"
+        }
+      },
+      {
+        "id": "FIT-104",
+        "type": "sensor_flow",
+        "label": "FIT-104",
+        "bbox": [
+          0.5,
+          0.2,
+          0.5507,
+          0.2507
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a discrete instrument (circle) with tag 'FIT-104'. 'F' for Flow, 'I' for Indicator, 'T' for Transmitter. No internal line indicates field mounted.",
+          "description": "Flow indicator transmitter for loop 104, measuring combined flow from pumps",
+          "functional_desc": "Flow Indicator Transmitter",
+          "hvac_subsystem": "water_systems",
+          "instrument_function": "F",
+          "instrument_type": "Discrete",
+          "location": "Field",
+          "occlusion_level": "none",
+          "tag": "FIT-104",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5,
+            0.2,
+            0.5507,
+            0.2507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5,
+                  0.2,
+                  0.5507,
+                  0.2507
+                ],
+                "normalized_bbox": [
+                  0.5,
+                  0.2,
+                  0.5507,
+                  0.2507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "FIT",
+          "detection_quality": "excellent"
+        }
+      },
+      {
+        "id": "V118",
+        "type": "valve_ball",
+        "label": "V118",
+        "bbox": [
+          0.7,
+          0.0507,
+          0.74,
+          0.1
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V118'.",
+          "description": "Manual isolation valve on a branch line",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V118",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.7,
+            0.0507,
+            0.74,
+            0.1
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.7,
+                  0.0507,
+                  0.74,
+                  0.1
+                ],
+                "normalized_bbox": [
+                  0.7,
+                  0.0507,
+                  0.74,
+                  0.1
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "V119",
+        "type": "valve_ball",
+        "label": "V119",
+        "bbox": [
+          0.78,
+          0.0507,
+          0.82,
+          0.1
+        ],
+        "confidence": 0.98,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a manual ball valve symbol (diamond with internal 'X') with tag 'V119'.",
+          "description": "Manual isolation valve on a branch line",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "V119",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.78,
+            0.0507,
+            0.82,
+            0.1
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.78,
+                  0.0507,
+                  0.82,
+                  0.1
+                ],
+                "normalized_bbox": [
+                  0.78,
+                  0.0507,
+                  0.82,
+                  0.1
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "BV",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Ball",
+          "isa_modifier": "Valve",
+          "isa_confidence": 0.9,
+          "isa_reasoning": "Inferred from component type: valve_ball"
+        }
+      },
+      {
+        "id": "VN26",
+        "type": "equipment",
+        "label": "VN26",
+        "bbox": [
+          0.38,
+          0.4,
+          0.42,
+          0.4507
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a nozzle/vent symbol (Z-shaped with a line) with tag 'VN26'. 'VN' likely stands for Vent Nozzle.",
+          "description": "Vent/Drain connection 26",
+          "equipment_type": "Nozzle/Vent",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "VN26",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.38,
+            0.4,
+            0.42,
+            0.4507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.38,
+                  0.4,
+                  0.42,
+                  0.4507
+                ],
+                "normalized_bbox": [
+                  0.38,
+                  0.4,
+                  0.42,
+                  0.4507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "VN",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Vibration/Position",
+          "isa_modifier": "User Defined",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: VN26"
+        }
+      },
+      {
+        "id": "VN27",
+        "type": "equipment",
+        "label": "VN27",
+        "bbox": [
+          0.5307,
+          0.4,
+          0.5707,
+          0.4507
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified as a nozzle/vent symbol (Z-shaped with a line) with tag 'VN27'. 'VN' likely stands for Vent Nozzle.",
+          "description": "Vent/Drain connection 27",
+          "equipment_type": "Nozzle/Vent",
+          "hvac_subsystem": "water_systems",
+          "occlusion_level": "none",
+          "tag": "VN27",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5307,
+            0.4,
+            0.5707,
+            0.4507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5307,
+                  0.4,
+                  0.5707,
+                  0.4507
+                ],
+                "normalized_bbox": [
+                  0.5307,
+                  0.4,
+                  0.5707,
+                  0.4507
+                ]
+              }
+            }
+          ],
+          "component_category": "equipment",
+          "isa_function": "VN",
+          "detection_quality": "excellent",
+          "isa_measured_variable": "Vibration/Position",
+          "isa_modifier": "User Defined",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: VN27"
+        }
+      },
+      {
+        "id": "flow-element-104",
+        "type": "equipment",
+        "label": "M",
+        "bbox": [
+          0.5,
+          0.2507,
+          0.52,
+          0.2707
         ],
         "confidence": 0.9,
         "rotation": 0,
         "meta": {
-          "reasoning": "Identified as an unlabeled triangle symbol, indicating a signal conditioner or relay.",
-          "description": "Unlabeled Signal Conditioner/Relay",
+          "reasoning": "Identified as a square with 'M' inside, connected by a dashed line to FIT-104. In the context of flow measurement, 'M' often denotes a primary flow element (e.g., orifice plate) that mechanically interfaces with the transmitter.",
+          "description": "Primary flow element for FIT-104",
+          "equipment_type": "Flow Element",
           "hvac_subsystem": "controls",
-          "instrument_type": "Logic",
-          "location": "Field",
           "occlusion_level": "none",
-          "text_clarity": "unreadable",
-          "raw_backend_output": [
-            0.548,
-            0.46,
-            0.581,
-            0.493
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.030Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.548,
-                  0.46,
-                  0.581,
-                  0.493
-                ],
-                "normalized_bbox": [
-                  0.548,
-                  0.46,
-                  0.581,
-                  0.493
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PALL-292204",
-        "type": "instrument_controller",
-        "label": "PALL-292204",
-        "bbox": [
-          0.59,
-          0.429,
-          0.64,
-          0.469
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a hexagon with 'PALL' and '292204' inside, indicating a computer function for Pressure Alarm Low/Level.",
-          "description": "Pressure Alarm Low/Level (Computer Function)",
-          "functional_desc": "Pressure Alarm Low/Level",
-          "hvac_subsystem": "controls",
-          "instrument_function": "PAL",
-          "instrument_type": "Computer",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PALL-292204",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.59,
-            0.429,
-            0.64,
-            0.469
+            0.5,
+            0.2507,
+            0.52,
+            0.2707
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.030Z",
+              "timestamp": "2026-01-04T22:39:29.633Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.59,
-                  0.429,
-                  0.64,
-                  0.469
+                  0.5,
+                  0.2507,
+                  0.52,
+                  0.2707
                 ],
                 "normalized_bbox": [
-                  0.59,
-                  0.429,
-                  0.64,
-                  0.469
+                  0.5,
+                  0.2507,
+                  0.52,
+                  0.2707
                 ]
               }
             }
           ],
           "component_category": "controls",
           "isa_function": null,
-          "detection_quality": "excellent"
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: M (type: equipment)"
         }
       },
       {
-        "id": "SET_13.8_barg",
+        "id": "text-80nb-upvc-2",
         "type": "text_annotation",
-        "label": "SET @ 13.8 barg",
+        "label": "80NB uPVC",
         "bbox": [
-          0.644,
-          0.439,
-          0.73,
-          0.462
+          0.42,
+          0.4,
+          0.46,
+          0.4507
         ],
-        "confidence": 0.98,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'SET @ 13.8 barg'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.644,
-            0.439,
-            0.73,
-            0.462
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.030Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.644,
-                  0.439,
-                  0.73,
-                  0.462
-                ],
-                "normalized_bbox": [
-                  0.644,
-                  0.439,
-                  0.73,
-                  0.462
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PT-292204",
-        "type": "sensor_pressure",
-        "label": "PT-292204",
-        "bbox": [
-          0.59,
-          0.52,
-          0.637,
-          0.567
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PT' and '292204' inside, indicating a discrete Pressure Transmitter, field mounted.",
-          "description": "Pressure Transmitter",
-          "functional_desc": "Pressure Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PT-292204",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.59,
-            0.52,
-            0.637,
-            0.567
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.59,
-                  0.52,
-                  0.637,
-                  0.567
-                ],
-                "normalized_bbox": [
-                  0.59,
-                  0.52,
-                  0.637,
-                  0.567
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "PT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PT-292205",
-        "type": "sensor_pressure",
-        "label": "PT-292205",
-        "bbox": [
-          0.499,
-          0.52,
-          0.546,
-          0.567
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PT' and '292205' inside, indicating a discrete Pressure Transmitter, field mounted.",
-          "description": "Pressure Transmitter",
-          "functional_desc": "Pressure Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PT-292205",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.499,
-            0.52,
-            0.546,
-            0.567
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.499,
-                  0.52,
-                  0.546,
-                  0.567
-                ],
-                "normalized_bbox": [
-                  0.499,
-                  0.52,
-                  0.546,
-                  0.567
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "PT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TT-292208",
-        "type": "sensor_temperature",
-        "label": "TT-292208",
-        "bbox": [
-          0.445,
-          0.52,
-          0.492,
-          0.567
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'TT' and '292208' inside, indicating a discrete Temperature Transmitter, field mounted.",
-          "description": "Temperature Transmitter",
-          "functional_desc": "Temperature Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "T",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "TT-292208",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.445,
-            0.52,
-            0.492,
-            0.567
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.445,
-                  0.52,
-                  0.492,
-                  0.567
-                ],
-                "normalized_bbox": [
-                  0.445,
-                  0.52,
-                  0.492,
-                  0.567
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "TT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "TT-292206",
-        "type": "sensor_temperature",
-        "label": "TT-292206",
-        "bbox": [
-          0.391,
-          0.52,
-          0.438,
-          0.567
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'TT' and '292206' inside, indicating a discrete Temperature Transmitter, field mounted.",
-          "description": "Temperature Transmitter",
-          "functional_desc": "Temperature Transmitter",
-          "hvac_subsystem": "controls",
-          "instrument_function": "T",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "TT-292206",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.391,
-            0.52,
-            0.438,
-            0.567
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.391,
-                  0.52,
-                  0.438,
-                  0.567
-                ],
-                "normalized_bbox": [
-                  0.391,
-                  0.52,
-                  0.438,
-                  0.567
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "TT",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PI-292203",
-        "type": "sensor_pressure",
-        "label": "PI-292203",
-        "bbox": [
-          0.798,
-          0.479,
-          0.845,
-          0.526
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a circle with 'PI' and '292203' inside, indicating a discrete Pressure Indicator, field mounted.",
-          "description": "Pressure Indicator",
-          "functional_desc": "Pressure Indicator",
-          "hvac_subsystem": "controls",
-          "instrument_function": "P",
-          "instrument_type": "Discrete",
-          "location": "Field",
-          "occlusion_level": "none",
-          "tag": "PI-292203",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.798,
-            0.479,
-            0.845,
-            0.526
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.798,
-                  0.479,
-                  0.845,
-                  0.526
-                ],
-                "normalized_bbox": [
-                  0.798,
-                  0.479,
-                  0.845,
-                  0.526
-                ]
-              }
-            }
-          ],
-          "component_category": "controls",
-          "isa_function": "PI",
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "NOTE_11-right",
-        "type": "text_annotation",
-        "label": "NOTE 11",
-        "bbox": [
-          0.798,
-          0.457,
-          0.845,
-          0.47
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'NOTE 11'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.798,
-            0.457,
-            0.845,
-            0.47
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.798,
-                  0.457,
-                  0.845,
-                  0.47
-                ],
-                "normalized_bbox": [
-                  0.798,
-                  0.457,
-                  0.845,
-                  0.47
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "ASDC-1-GPS-292202-ED1",
-        "type": "text_annotation",
-        "label": "ASDC-1\"-GPS-292202-ED1",
-        "bbox": [
-          0.76,
-          0.409,
-          0.773,
-          0.57
-        ],
-        "confidence": 0.98,
+        "confidence": 0.95,
         "rotation": 270,
         "meta": {
-          "reasoning": "Identified as a vertical text block 'ASDC-1\"-GPS-292202-ED1'.",
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC' rotated vertically.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
           "occlusion_level": "none",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.76,
-            0.409,
-            0.773,
-            0.57
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.031Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.76,
-                  0.409,
-                  0.773,
-                  0.57
-                ],
-                "normalized_bbox": [
-                  0.76,
-                  0.409,
-                  0.773,
-                  0.57
-                ]
-              }
-            }
-          ],
-          "hvac_subsystem": "other",
-          "component_category": "equipment",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "VALVE-manual-1",
-        "type": "valve_control",
-        "label": "VALVE-manual-1",
-        "bbox": [
-          0.508,
-          0.579,
-          0.537,
-          0.608
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a manual valve symbol (diamond shape with implied handwheel), with '1\"' size annotation.",
-          "description": "1 inch Manual Isolation Valve",
-          "hvac_subsystem": "chilled_water",
-          "instrument_type": "Mechanical",
-          "location": "Field",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.508,
-            0.579,
-            0.537,
-            0.608
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.508,
-                  0.579,
-                  0.537,
-                  0.608
-                ],
-                "normalized_bbox": [
-                  0.508,
-                  0.579,
-                  0.537,
-                  0.608
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "VALVE-manual-2",
-        "type": "valve_control",
-        "label": "VALVE-manual-2",
-        "bbox": [
-          0.599,
-          0.579,
-          0.628,
-          0.608
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a manual valve symbol (diamond shape with implied handwheel), with '1\"' size annotation and 'LO' indicating Lock Open.",
-          "description": "1 inch Manual Isolation Valve, Lock Open",
-          "hvac_subsystem": "chilled_water",
-          "instrument_type": "Mechanical",
-          "location": "Field",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.599,
-            0.579,
-            0.628,
-            0.608
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.599,
-                  0.579,
-                  0.628,
-                  0.608
-                ],
-                "normalized_bbox": [
-                  0.599,
-                  0.579,
-                  0.628,
-                  0.608
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "VALVE-manual-3",
-        "type": "valve_control",
-        "label": "VALVE-manual-3",
-        "bbox": [
-          0.807,
-          0.579,
-          0.836,
-          0.608
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a manual valve symbol (diamond shape with implied handwheel), with '1\"' size annotation.",
-          "description": "1 inch Manual Isolation Valve",
-          "hvac_subsystem": "chilled_water",
-          "instrument_type": "Mechanical",
-          "location": "Field",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.807,
-            0.579,
-            0.836,
-            0.608
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.807,
-                  0.579,
-                  0.836,
-                  0.608
-                ],
-                "normalized_bbox": [
-                  0.807,
-                  0.579,
-                  0.836,
-                  0.608
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-MAIN-HORIZONTAL",
-        "type": "pipe",
-        "label": "Main Process Pipe",
-        "bbox": [
-          0,
-          0.385,
-          1,
-          0.398
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a thick solid horizontal line spanning across the diagram, representing a main process pipe.",
-          "description": "Main process fluid line, likely chilled water based on connected instruments.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "n/a",
-          "raw_backend_output": [
-            0,
-            0.385,
-            1,
-            0.398
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0,
-                  0.385,
-                  1,
-                  0.398
-                ],
-                "normalized_bbox": [
-                  0,
-                  0.385,
-                  1,
-                  0.398
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-1/2-ZONE2-INLET",
-        "type": "pipe",
-        "label": "1/2\" Pipe",
-        "bbox": [
-          0.353,
-          0.28,
-          0.366,
-          0.385
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a solid line with '1/2\"' annotation, connecting to FCV-301217.",
-          "description": "1/2 inch process pipe for Zone 2 inlet.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.353,
-            0.28,
-            0.366,
-            0.385
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.353,
-                  0.28,
-                  0.366,
-                  0.385
-                ],
-                "normalized_bbox": [
-                  0.353,
-                  0.28,
-                  0.366,
-                  0.385
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-1/2-ZONE1-INLET",
-        "type": "pipe",
-        "label": "1/2\" Pipe",
-        "bbox": [
-          0.59,
-          0.28,
-          0.603,
-          0.385
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a solid line with '1/2\"' annotation, connecting to FCV-301220.",
-          "description": "1/2 inch process pipe for Zone 1 inlet.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.59,
-            0.28,
-            0.603,
-            0.385
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.59,
-                  0.28,
-                  0.603,
-                  0.385
-                ],
-                "normalized_bbox": [
-                  0.59,
-                  0.28,
-                  0.603,
-                  0.385
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-2-TT292206",
-        "type": "pipe",
-        "label": "2\" Pipe",
-        "bbox": [
-          0.407,
-          0.579,
-          0.42,
-          0.608
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a solid line with '2\"' annotation, connected below TT-292206.",
-          "description": "2 inch process pipe.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.407,
-            0.579,
             0.42,
-            0.608
+            0.4,
+            0.46,
+            0.4507
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.032Z",
+              "timestamp": "2026-01-04T22:39:29.633Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.407,
-                  0.579,
                   0.42,
-                  0.608
+                  0.4,
+                  0.46,
+                  0.4507
                 ],
                 "normalized_bbox": [
-                  0.407,
-                  0.579,
                   0.42,
-                  0.608
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-2-TT292208",
-        "type": "pipe",
-        "label": "2\" Pipe",
-        "bbox": [
-          0.461,
-          0.579,
-          0.474,
-          0.608
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a solid line with '2\"' annotation, connected below TT-292208.",
-          "description": "2 inch process pipe.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.461,
-            0.579,
-            0.474,
-            0.608
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.461,
-                  0.579,
-                  0.474,
-                  0.608
-                ],
-                "normalized_bbox": [
-                  0.461,
-                  0.579,
-                  0.474,
-                  0.608
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-4x2-HORIZONTAL",
-        "type": "pipe",
-        "label": "4\" x 2\" Pipe",
-        "bbox": [
-          0.445,
-          0.608,
-          0.492,
-          0.621
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified by text '4\" x 2\"' indicating a pipe dimension for a horizontal pipe segment.",
-          "description": "4 inch by 2 inch process pipe.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.445,
-            0.608,
-            0.492,
-            0.621
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.032Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.445,
-                  0.608,
-                  0.492,
-                  0.621
-                ],
-                "normalized_bbox": [
-                  0.445,
-                  0.608,
-                  0.492,
-                  0.621
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "PIPE-2x1.5-HORIZONTAL",
-        "type": "pipe",
-        "label": "2\" x 1 1/2\" Pipe",
-        "bbox": [
-          0.845,
-          0.608,
-          0.92,
-          0.621
-        ],
-        "confidence": 0.95,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified by text '2\" x 1 1/2\"' indicating a pipe dimension for a horizontal pipe segment.",
-          "description": "2 inch by 1 1/2 inch process pipe.",
-          "hvac_subsystem": "chilled_water",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.845,
-            0.608,
-            0.92,
-            0.621
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.033Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.845,
-                  0.608,
-                  0.92,
-                  0.621
-                ],
-                "normalized_bbox": [
-                  0.845,
-                  0.608,
-                  0.92,
-                  0.621
-                ]
-              }
-            }
-          ],
-          "component_category": "water_system",
-          "isa_function": null,
-          "detection_quality": "excellent"
-        }
-      },
-      {
-        "id": "NOTE_15",
-        "type": "text_annotation",
-        "label": "NOTE 15",
-        "bbox": [
-          0.7,
-          0.608,
-          0.747,
-          0.621
-        ],
-        "confidence": 0.99,
-        "rotation": 0,
-        "meta": {
-          "reasoning": "Identified as a text block 'NOTE 15'.",
-          "occlusion_level": "none",
-          "text_clarity": "excellent",
-          "raw_backend_output": [
-            0.7,
-            0.608,
-            0.747,
-            0.621
-          ],
-          "transform_history": [
-            {
-              "timestamp": "2026-01-04T22:03:00.033Z",
-              "operation": "normalize_bbox",
-              "details": {
-                "original_bbox": [
-                  0.7,
-                  0.608,
-                  0.747,
-                  0.621
-                ],
-                "normalized_bbox": [
-                  0.7,
-                  0.608,
-                  0.747,
-                  0.621
+                  0.4,
+                  0.46,
+                  0.4507
                 ]
               }
             }
@@ -2212,47 +1297,52 @@ Pipeline execution complete
           "hvac_subsystem": "other",
           "component_category": "equipment",
           "isa_function": null,
-          "detection_quality": "excellent"
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
         }
       },
       {
-        "id": "NOTE_8",
+        "id": "text-80nb-upvc-3",
         "type": "text_annotation",
-        "label": "NOTE 8",
+        "label": "80NB uPVC",
         "bbox": [
-          0.7,
-          0.63,
-          0.747,
-          0.643
+          0.5707,
+          0.4,
+          0.6107,
+          0.4507
         ],
-        "confidence": 0.99,
-        "rotation": 0,
+        "confidence": 0.95,
+        "rotation": 270,
         "meta": {
-          "reasoning": "Identified as a text block 'NOTE 8'.",
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC' rotated vertically.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
           "occlusion_level": "none",
           "text_clarity": "excellent",
           "raw_backend_output": [
-            0.7,
-            0.63,
-            0.747,
-            0.643
+            0.5707,
+            0.4,
+            0.6107,
+            0.4507
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.033Z",
+              "timestamp": "2026-01-04T22:39:29.633Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.7,
-                  0.63,
-                  0.747,
-                  0.643
+                  0.5707,
+                  0.4,
+                  0.6107,
+                  0.4507
                 ],
                 "normalized_bbox": [
-                  0.7,
-                  0.63,
-                  0.747,
-                  0.643
+                  0.5707,
+                  0.4,
+                  0.6107,
+                  0.4507
                 ]
               }
             }
@@ -2260,277 +1350,846 @@ Pipeline execution complete
           "hvac_subsystem": "other",
           "component_category": "equipment",
           "isa_function": null,
-          "detection_quality": "excellent"
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
         }
       },
       {
-        "id": "DATA_LINK-TOP",
-        "type": "data",
-        "label": "Data Link Bus",
+        "id": "text-100nb-upvc-2",
+        "type": "text_annotation",
+        "label": "100NB uPVC",
         "bbox": [
-          0.353,
-          0.25,
-          0.8,
-          0.26
+          0.38,
+          0.7507,
+          0.42,
+          0.8
         ],
         "confidence": 0.95,
-        "rotation": 0,
+        "rotation": 270,
         "meta": {
-          "reasoning": "Identified as a horizontal line with circles (o-o-o) indicating a software/data link bus connecting multiple instruments.",
-          "description": "Main data communication bus for field instruments.",
-          "hvac_subsystem": "controls",
-          "instrument_type": "Data",
-          "location": "Field",
+          "reasoning": "Direct OCR extraction of pipe specification '100NB uPVC' rotated vertically.",
+          "description": "Pipe specification: 100 Nominal Bore, unplasticized Polyvinyl Chloride",
           "occlusion_level": "none",
-          "text_clarity": "n/a",
+          "text_clarity": "excellent",
           "raw_backend_output": [
-            0.353,
-            0.25,
-            0.8,
-            0.26
+            0.38,
+            0.7507,
+            0.42,
+            0.8
           ],
           "transform_history": [
             {
-              "timestamp": "2026-01-04T22:03:00.033Z",
+              "timestamp": "2026-01-04T22:39:29.633Z",
               "operation": "normalize_bbox",
               "details": {
                 "original_bbox": [
-                  0.353,
-                  0.25,
-                  0.8,
-                  0.26
+                  0.38,
+                  0.7507,
+                  0.42,
+                  0.8
                 ],
                 "normalized_bbox": [
-                  0.353,
-                  0.25,
-                  0.8,
-                  0.26
+                  0.38,
+                  0.7507,
+                  0.42,
+                  0.8
                 ]
               }
             }
           ],
-          "component_category": "controls",
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
           "isa_function": null,
-          "detection_quality": "excellent"
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 100NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "text-100nb-upvc-3",
+        "type": "text_annotation",
+        "label": "100NB uPVC",
+        "bbox": [
+          0.5307,
+          0.7507,
+          0.5707,
+          0.8
+        ],
+        "confidence": 0.95,
+        "rotation": 270,
+        "meta": {
+          "reasoning": "Direct OCR extraction of pipe specification '100NB uPVC' rotated vertically.",
+          "description": "Pipe specification: 100 Nominal Bore, unplasticized Polyvinyl Chloride",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.5307,
+            0.7507,
+            0.5707,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5307,
+                  0.7507,
+                  0.5707,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.5307,
+                  0.7507,
+                  0.5707,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 100NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "text-80nb-upvc-4",
+        "type": "text_annotation",
+        "label": "80NB uPVC",
+        "bbox": [
+          0.18,
+          0.4,
+          0.22,
+          0.4507
+        ],
+        "confidence": 0.95,
+        "rotation": 270,
+        "meta": {
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC' rotated vertically.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.18,
+            0.4,
+            0.22,
+            0.4507
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.18,
+                  0.4,
+                  0.22,
+                  0.4507
+                ],
+                "normalized_bbox": [
+                  0.18,
+                  0.4,
+                  0.22,
+                  0.4507
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "text-80nb-upvc-5",
+        "type": "text_annotation",
+        "label": "80NB uPVC",
+        "bbox": [
+          0.4507,
+          0.1507,
+          0.5507,
+          0.18
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC'.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.4507,
+            0.1507,
+            0.5507,
+            0.18
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.4507,
+                  0.1507,
+                  0.5507,
+                  0.18
+                ],
+                "normalized_bbox": [
+                  0.4507,
+                  0.1507,
+                  0.5507,
+                  0.18
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
+        }
+      },
+      {
+        "id": "text-80nb-upvc-6",
+        "type": "text_annotation",
+        "label": "80NB uPVC",
+        "bbox": [
+          0.6507,
+          0,
+          0.7507,
+          0.0307
+        ],
+        "confidence": 0.95,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Direct OCR extraction of pipe specification '80NB uPVC'.",
+          "description": "Pipe specification: 80 Nominal Bore, unplasticized Polyvinyl Chloride",
+          "occlusion_level": "none",
+          "text_clarity": "excellent",
+          "raw_backend_output": [
+            0.6507,
+            0,
+            0.7507,
+            0.0307
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-04T22:39:29.633Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.6507,
+                  0,
+                  0.7507,
+                  0.0307
+                ],
+                "normalized_bbox": [
+                  0.6507,
+                  0,
+                  0.7507,
+                  0.0307
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "equipment",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 80NB-UPVC (type: text_annotation)"
         }
       }
     ],
     "connections": [
       {
-        "id": "1767564180033-d82ido9xg",
-        "from_id": "SVC-1",
-        "to_id": "POSITION_INDICATOR-1",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180033-1rbe77f95",
-        "from_id": "POSITION_INDICATOR-1",
-        "to_id": "SDV-unlabeled-1",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180033-19lfx47vq",
-        "from_id": "PIPE-MAIN-HORIZONTAL",
-        "to_id": "PIPE-1/2-ZONE2-INLET",
+        "id": "1767566369634-suw65l89p",
+        "from_id": "tank-1",
+        "to_id": "text-150nb-upvc-1",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment",
+          "to_component_type": "text_annotation",
+          "from_label": "Tank",
+          "to_label": "150NB uPVC"
+        }
       },
       {
-        "id": "1767564180033-llleycz4g",
-        "from_id": "PIPE-1/2-ZONE2-INLET",
-        "to_id": "FCV-301217",
+        "id": "1767566369634-69feeb5ac",
+        "from_id": "text-150nb-upvc-1",
+        "to_id": "V111",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "valve_ball",
+          "from_label": "150NB uPVC",
+          "to_label": "V111"
+        }
       },
       {
-        "id": "1767564180033-kyy7xqjuu",
-        "from_id": "FCV-301217",
-        "to_id": "PT-301218",
+        "id": "1767566369634-fpois70k8",
+        "from_id": "text-150nb-upvc-1",
+        "to_id": "V112",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "valve_ball",
+          "from_label": "150NB uPVC",
+          "to_label": "V112"
+        }
       },
       {
-        "id": "1767564180033-u7cz72hg0",
-        "from_id": "PT-301218",
-        "to_id": "TT-301219",
+        "id": "1767566369634-32jw2d3qa",
+        "from_id": "V111",
+        "to_id": "P-1091",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_ball",
+          "to_component_type": "pump",
+          "from_label": "V111",
+          "to_label": "P-1091"
+        }
       },
       {
-        "id": "1767564180033-pi4bu2db6",
-        "from_id": "PIPE-MAIN-HORIZONTAL",
-        "to_id": "PIPE-1/2-ZONE1-INLET",
+        "id": "1767566369634-peetzevsj",
+        "from_id": "V112",
+        "to_id": "P-1092",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_ball",
+          "to_component_type": "pump",
+          "from_label": "V112",
+          "to_label": "P-1092"
+        }
       },
       {
-        "id": "1767564180033-4t81gfz1v",
-        "from_id": "PIPE-1/2-ZONE1-INLET",
-        "to_id": "FCV-301220",
+        "id": "1767566369634-w3clgmst2",
+        "from_id": "P-1091",
+        "to_id": "PG-134",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "pump",
+          "to_component_type": "instrument_indicator",
+          "from_label": "P-1091",
+          "to_label": "PG-134"
+        }
       },
       {
-        "id": "1767564180033-4eb6wwezg",
-        "from_id": "FCV-301220",
-        "to_id": "BV-301221",
+        "id": "1767566369634-bxdsn838s",
+        "from_id": "P-1092",
+        "to_id": "PG-135",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "pump",
+          "to_component_type": "instrument_indicator",
+          "from_label": "P-1092",
+          "to_label": "PG-135"
+        }
       },
       {
-        "id": "1767564180033-bo2b3uf0y",
-        "from_id": "BV-301221",
-        "to_id": "PT-301222",
+        "id": "1767566369634-actejuw0z",
+        "from_id": "PG-134",
+        "to_id": "V113",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_indicator",
+          "to_component_type": "valve_ball",
+          "from_label": "PG-134",
+          "to_label": "V113"
+        }
       },
       {
-        "id": "1767564180034-awnt5x48k",
-        "from_id": "PT-301222",
-        "to_id": "TT-301223",
+        "id": "1767566369634-4wrp8lb5m",
+        "from_id": "PG-135",
+        "to_id": "V114",
         "type": "chilled_water",
-        "confidence": 0.99
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_indicator",
+          "to_component_type": "valve_ball",
+          "from_label": "PG-135",
+          "to_label": "V114"
+        }
       },
       {
-        "id": "1767564180034-r0dsxnuur",
-        "from_id": "PT-301218",
-        "to_id": "SIGNAL_CONDITIONER-S-1",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180034-354agysra",
-        "from_id": "TT-301219",
-        "to_id": "SIGNAL_CONDITIONER-C-1",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180034-a3ryuuc1e",
-        "from_id": "SIGNAL_CONDITIONER-S-1",
-        "to_id": "TT-292206",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180034-51tbni4gz",
-        "from_id": "SIGNAL_CONDITIONER-C-1",
-        "to_id": "TT-292208",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180034-qzhtmt9ub",
-        "from_id": "SIGNAL_CONDITIONER-unlabeled-1",
-        "to_id": "PT-292205",
-        "type": "electric_signal",
-        "confidence": 0.9
-      },
-      {
-        "id": "1767564180034-36qdtecsz",
-        "from_id": "PALL-292204",
-        "to_id": "PT-292204",
-        "type": "electric_signal",
-        "confidence": 0.98
-      },
-      {
-        "id": "1767564180034-epzbn1m7s",
-        "from_id": "PT-292205",
-        "to_id": "VALVE-manual-1",
+        "id": "1767566369634-wdvipbt9c",
+        "from_id": "V113",
+        "to_id": "V115",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_ball",
+          "to_component_type": "valve_check",
+          "from_label": "V113",
+          "to_label": "V115"
+        }
       },
       {
-        "id": "1767564180034-v28khjxy2",
-        "from_id": "PT-292204",
-        "to_id": "VALVE-manual-2",
+        "id": "1767566369634-ui90kdhz1",
+        "from_id": "V114",
+        "to_id": "V116",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_ball",
+          "to_component_type": "valve_check",
+          "from_label": "V114",
+          "to_label": "V116"
+        }
       },
       {
-        "id": "1767564180034-9hi5kv76v",
-        "from_id": "PI-292203",
-        "to_id": "VALVE-manual-3",
+        "id": "1767566369634-owo3ssbuq",
+        "from_id": "V115",
+        "to_id": "text-80nb-upvc-2",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_check",
+          "to_component_type": "text_annotation",
+          "from_label": "V115",
+          "to_label": "80NB uPVC"
+        }
       },
       {
-        "id": "1767564180034-pk97zwxoj",
-        "from_id": "VALVE-manual-1",
-        "to_id": "PIPE-4x2-HORIZONTAL",
+        "id": "1767566369634-6wvxnzbcy",
+        "from_id": "V116",
+        "to_id": "text-80nb-upvc-3",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_check",
+          "to_component_type": "text_annotation",
+          "from_label": "V116",
+          "to_label": "80NB uPVC"
+        }
       },
       {
-        "id": "1767564180034-jv518j7l3",
-        "from_id": "VALVE-manual-2",
-        "to_id": "PIPE-4x2-HORIZONTAL",
+        "id": "1767566369634-1hy7sfuzz",
+        "from_id": "text-80nb-upvc-2",
+        "to_id": "flow-element-104",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "equipment",
+          "from_label": "80NB uPVC",
+          "to_label": "M"
+        }
       },
       {
-        "id": "1767564180034-hk3wf9nrj",
-        "from_id": "VALVE-manual-3",
-        "to_id": "PIPE-2x1.5-HORIZONTAL",
+        "id": "1767566369634-577624aeh",
+        "from_id": "text-80nb-upvc-3",
+        "to_id": "flow-element-104",
         "type": "chilled_water",
-        "confidence": 0.98
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "equipment",
+          "from_label": "80NB uPVC",
+          "to_label": "M"
+        }
       },
       {
-        "id": "1767564180034-64tey0mbb",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "FCV-301217",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-pjod8mlt8",
+        "from_id": "flow-element-104",
+        "to_id": "FIT-104",
+        "type": "mechanical_link",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment",
+          "to_component_type": "sensor_flow",
+          "from_label": "M",
+          "to_label": "FIT-104"
+        }
       },
       {
-        "id": "1767564180034-9r4buu58h",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "PT-301218",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-f8swzyub4",
+        "from_id": "FIT-104",
+        "to_id": "text-80nb-upvc-5",
+        "type": "chilled_water",
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "sensor_flow",
+          "to_component_type": "text_annotation",
+          "from_label": "FIT-104",
+          "to_label": "80NB uPVC"
+        }
       },
       {
-        "id": "1767564180034-2u5p820zy",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "TT-301219",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-hod2pvetb",
+        "from_id": "text-80nb-upvc-5",
+        "to_id": "V118",
+        "type": "chilled_water",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "valve_ball",
+          "from_label": "80NB uPVC",
+          "to_label": "V118"
+        }
       },
       {
-        "id": "1767564180034-69omdxim4",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "FCV-301220",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-lumrr1wd4",
+        "from_id": "text-80nb-upvc-5",
+        "to_id": "V119",
+        "type": "chilled_water",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "valve_ball",
+          "from_label": "80NB uPVC",
+          "to_label": "V119"
+        }
       },
       {
-        "id": "1767564180034-ncp7edf1u",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "BV-301221",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-pvodj6qz7",
+        "from_id": "text-80nb-upvc-4",
+        "to_id": "tank-1",
+        "type": "chilled_water",
+        "confidence": 0.95,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "text_annotation",
+          "to_component_type": "equipment",
+          "from_label": "80NB uPVC",
+          "to_label": "Tank"
+        }
       },
       {
-        "id": "1767564180034-kq8pf8co2",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "PT-301222",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-hwfmuyfg1",
+        "from_id": "P-1091",
+        "to_id": "VN26",
+        "type": "chilled_water",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "pump",
+          "to_component_type": "equipment",
+          "from_label": "P-1091",
+          "to_label": "VN26"
+        }
       },
       {
-        "id": "1767564180034-2m3armsa1",
-        "from_id": "DATA_LINK-TOP",
-        "to_id": "TT-301223",
-        "type": "data",
-        "confidence": 0.95
+        "id": "1767566369634-ykmw5qbuk",
+        "from_id": "P-1092",
+        "to_id": "VN27",
+        "type": "chilled_water",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "pump",
+          "to_component_type": "equipment",
+          "from_label": "P-1092",
+          "to_label": "VN27"
+        }
       }
     ],
     "metadata": {
-      "total_components": 45,
-      "total_connections": 30,
-      "process_log": "The provided schematic details a process control system for two distinct zones (Zone 1 and Zone 2), likely involving fluid flow, pressure, and temperature monitoring. Each zone features a Flow Control Valve (FCV), Pressure Transmitter (PT), and Temperature Transmitter (TT), suggesting individual zone control and monitoring. A main data link bus connects these field instruments to a supervisory system. The diagram also includes a pressure alarm (PALL) with a defined setpoint, and several manual isolation valves, some with specific operational states like 'Lock Open'. A separate control loop involving a Signal Converter (SVC), Position Indicator, and Solenoid Operated Valve (SDV) is present, indicating a safety or critical control function. The use of specialized 'PRE-DRILLED LINER' and 'TUBING' suggests a specific application for the process fluid. The overall design indicates a robust, instrumented system with provisions for control, monitoring, and safety."
+      "total_components": 30,
+      "total_connections": 22,
+      "process_log": "The provided schematic details a dual-pump feed system, likely for a Reverse Osmosis (RO) or similar water treatment application, given the 'RO-I FEED PUMP' label. The system features a storage tank, two parallel centrifugal pumps (P-1091/92) with individual suction and discharge isolation valves (V111, V112, V113, V114), and check valves (V115, V116) on the discharge to prevent backflow. Instrumentation includes local pressure gauges (PG-134, PG-135) for each pump's discharge and a common flow indicator transmitter (FIT-104) on the combined discharge header. The piping is specified as uPVC, indicating a non-corrosive fluid, likely treated water. The design demonstrates standard engineering practices for pump redundancy, isolation, and basic process monitoring.",
+      "enhancement": {
+        "isa_detection_enabled": true,
+        "isa_functions_detected": 18,
+        "isa_detection_rate": 0.6,
+        "connection_inference_enabled": true,
+        "inferred_connections": 0,
+        "validation_enabled": true,
+        "validation_issues": 9,
+        "loop_detection_enabled": true,
+        "control_loops": 0,
+        "enhancement_duration_ms": 15
+      },
+      "control_loops": [],
+      "validation_issues": [
+        {
+          "connection": {
+            "id": "1767566369634-suw65l89p",
+            "from_id": "tank-1",
+            "to_id": "text-150nb-upvc-1",
+            "type": "chilled_water",
+            "confidence": 0.95,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "equipment",
+              "to_component_type": "text_annotation",
+              "from_label": "Tank",
+              "to_label": "150NB uPVC"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-w3clgmst2",
+            "from_id": "P-1091",
+            "to_id": "PG-134",
+            "type": "chilled_water",
+            "confidence": 0.95,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "pump",
+              "to_component_type": "instrument_indicator",
+              "from_label": "P-1091",
+              "to_label": "PG-134"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-bxdsn838s",
+            "from_id": "P-1092",
+            "to_id": "PG-135",
+            "type": "chilled_water",
+            "confidence": 0.95,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "pump",
+              "to_component_type": "instrument_indicator",
+              "from_label": "P-1092",
+              "to_label": "PG-135"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-1hy7sfuzz",
+            "from_id": "text-80nb-upvc-2",
+            "to_id": "flow-element-104",
+            "type": "chilled_water",
+            "confidence": 0.9,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "text_annotation",
+              "to_component_type": "equipment",
+              "from_label": "80NB uPVC",
+              "to_label": "M"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-577624aeh",
+            "from_id": "text-80nb-upvc-3",
+            "to_id": "flow-element-104",
+            "type": "chilled_water",
+            "confidence": 0.9,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "text_annotation",
+              "to_component_type": "equipment",
+              "from_label": "80NB uPVC",
+              "to_label": "M"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-f8swzyub4",
+            "from_id": "FIT-104",
+            "to_id": "text-80nb-upvc-5",
+            "type": "chilled_water",
+            "confidence": 0.95,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "sensor_flow",
+              "to_component_type": "text_annotation",
+              "from_label": "FIT-104",
+              "to_label": "80NB uPVC"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-pvodj6qz7",
+            "from_id": "text-80nb-upvc-4",
+            "to_id": "tank-1",
+            "type": "chilled_water",
+            "confidence": 0.95,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "text_annotation",
+              "to_component_type": "equipment",
+              "from_label": "80NB uPVC",
+              "to_label": "Tank"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-hwfmuyfg1",
+            "from_id": "P-1091",
+            "to_id": "VN26",
+            "type": "chilled_water",
+            "confidence": 0.9,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "pump",
+              "to_component_type": "equipment",
+              "from_label": "P-1091",
+              "to_label": "VN26"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        },
+        {
+          "connection": {
+            "id": "1767566369634-ykmw5qbuk",
+            "from_id": "P-1092",
+            "to_id": "VN27",
+            "type": "chilled_water",
+            "confidence": 0.9,
+            "meta": {
+              "inferred_type": "unknown",
+              "type_confidence": 0.5,
+              "type_reasoning": "Could not determine connection type from component types",
+              "from_component_type": "pump",
+              "to_component_type": "equipment",
+              "from_label": "P-1092",
+              "to_label": "VN27"
+            }
+          },
+          "issue": "Chilled water connection between non-process components",
+          "severity": "warning"
+        }
+      ],
+      "quality_metrics": {
+        "overall_score": 0.8353666666666666,
+        "detection_quality": 1,
+        "isa_completeness": 0.6,
+        "connection_coverage": 0.7333333333333333,
+        "confidence_avg": 0.9623333333333333,
+        "metrics": {
+          "total_components": 30,
+          "total_connections": 22,
+          "isa_functions_detected": 18,
+          "excellent_detections": 30,
+          "avg_confidence": 0.9623333333333333
+        }
+      }
     }
   }
 }
