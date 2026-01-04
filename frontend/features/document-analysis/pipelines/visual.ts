@@ -453,6 +453,40 @@ function validateBBox(bbox: any): [number, number, number, number] {
  * These functions add HVAC intelligence to component detection
  */
 
+// ISA-5.1 prefix-based type mapping
+const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
+  'TT': 'sensor_temperature',
+  'TI': 'sensor_temperature',
+  'TE': 'sensor_temperature',
+  'TIC': 'instrument_controller',
+  'PT': 'sensor_pressure',
+  'PI': 'sensor_pressure',
+  'PE': 'sensor_pressure',
+  'PIC': 'instrument_controller',
+  'FT': 'sensor_flow',
+  'FI': 'sensor_flow',
+  'FE': 'sensor_flow',
+  'FIC': 'instrument_controller',
+  'LT': 'sensor_level',
+  'LI': 'sensor_level',
+  'LE': 'sensor_level',
+  'LIC': 'instrument_controller',
+  'FV': 'valve_control',
+  'TV': 'valve_control',
+  'PV': 'valve_control',
+  'LV': 'valve_control',
+  'HV': 'valve_control',
+  'SOV': 'valve_solenoid',
+  'BV': 'valve_ball',
+  'CV': 'valve_control',
+  'AHU': 'air_handler',
+  'FCU': 'air_handler',
+  'VAV': 'air_handler',
+  'PUMP': 'pump',
+  'CHILLER': 'chiller',
+  'CT': 'cooling_tower'
+};
+
 /**
  * Normalize HVAC component type based on ISA-5.1 tag prefix
  */
@@ -462,42 +496,8 @@ function normalizeHVACComponentType(comp: any): any {
   const tag = (comp.meta?.tag || comp.label).toUpperCase();
   const normalized = { ...comp };
   
-  // ISA-5.1 prefix-based normalization
-  const isaPrefixes: Record<string, string> = {
-    'TT': 'sensor_temperature',
-    'TI': 'sensor_temperature',
-    'TE': 'sensor_temperature',
-    'TIC': 'instrument_controller',
-    'PT': 'sensor_pressure',
-    'PI': 'sensor_pressure',
-    'PE': 'sensor_pressure',
-    'PIC': 'instrument_controller',
-    'FT': 'sensor_flow',
-    'FI': 'sensor_flow',
-    'FE': 'sensor_flow',
-    'FIC': 'instrument_controller',
-    'LT': 'sensor_level',
-    'LI': 'sensor_level',
-    'LE': 'sensor_level',
-    'LIC': 'instrument_controller',
-    'FV': 'valve_control',
-    'TV': 'valve_control',
-    'PV': 'valve_control',
-    'LV': 'valve_control',
-    'HV': 'valve_control',
-    'SOV': 'valve_solenoid',
-    'BV': 'valve_ball',
-    'CV': 'valve_control',
-    'AHU': 'air_handler',
-    'FCU': 'air_handler',
-    'VAV': 'air_handler',
-    'PUMP': 'pump',
-    'CHILLER': 'chiller',
-    'CT': 'cooling_tower'
-  };
-  
   // Check for ISA prefix matches
-  for (const [prefix, type] of Object.entries(isaPrefixes)) {
+  for (const [prefix, type] of Object.entries(ISA_PREFIX_TYPE_MAP)) {
     if (tag.startsWith(prefix)) {
       normalized.type = type;
       break;

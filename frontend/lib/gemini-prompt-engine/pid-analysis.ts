@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { GeminiModel } from '@/features/document-analysis/types';
+import { generateId } from '@/lib/utils';
 import { 
   PID_ANALYSIS_SYSTEM_INSTRUCTION, 
   PID_ANALYSIS_SCHEMA,
@@ -8,6 +9,16 @@ import {
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
+
+// Configuration constants
+const MAX_THINKING_BUDGET = 32000;
+const MIN_THINKING_BUDGET = 8000;
+const MAX_THINKING_BUDGET_CAP = 64000;
+const IMAGE_SIZE_DIVISOR = 1000;
+const BASE_RETRY_DELAY_MS = 1000;
+const BACKOFF_MULTIPLIER = 2;
+const HIGH_CONFIDENCE_THRESHOLD = 0.95;
+const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 
 /**
  * Enhanced P&ID Analysis Engine with HVAC-Specific Intelligence.
@@ -77,7 +88,7 @@ export const analyzePID = async (base64Image: string, options: {
           responseSchema: PID_ANALYSIS_SCHEMA,
           // Start deterministic, increase creativity on retries
           temperature: attempt === 0 ? 0.1 : 0.3,
-          maxOutputTokens: 8192
+          maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS
         }
       });
 
@@ -100,7 +111,7 @@ export const analyzePID = async (base64Image: string, options: {
       }
       
       // Early exit if we have high confidence
-      if (resultConfidence >= 0.95) {
+      if (resultConfidence >= HIGH_CONFIDENCE_THRESHOLD) {
         console.log('✅ High confidence result achieved - skipping remaining attempts');
         break;
       }
@@ -117,7 +128,7 @@ export const analyzePID = async (base64Image: string, options: {
       }
       
       // Exponential backoff between retries
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+      await new Promise(resolve => setTimeout(resolve, BASE_RETRY_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, attempt)));
     }
   }
 
@@ -174,7 +185,7 @@ function generateContextAwarePrompt(basePrompt: string, hvacContext?: any): stri
  */
 function calculateThinkingBudget(imageSize: number, hvacContext?: any): number {
   // Base budget based on image size (larger images need more analysis)
-  let baseBudget = Math.min(32000, Math.max(8000, imageSize / 1000));
+  let baseBudget = Math.min(MAX_THINKING_BUDGET, Math.max(MIN_THINKING_BUDGET, imageSize / IMAGE_SIZE_DIVISOR));
   
   // HVAC complexity multipliers - more complex systems need deeper analysis
   const complexityMultipliers: Record<string, number> = {
@@ -196,7 +207,7 @@ function calculateThinkingBudget(imageSize: number, hvacContext?: any): number {
     }
   }
   
-  return Math.min(64000, Math.floor(baseBudget * multiplier)); // Cap at 64K tokens
+  return Math.min(MAX_THINKING_BUDGET_CAP, Math.floor(baseBudget * multiplier)); // Cap at 64K tokens
 }
 
 /**
@@ -246,7 +257,7 @@ function validateAndRecoverResult(jsonText: string, attempt: number): any {
     parsed.components.forEach((comp: any, index: number) => {
       if (!comp.id || !comp.label || !comp.bbox || comp.confidence === undefined) {
         console.warn(`⚠️ Component ${index} missing required fields - applying recovery`);
-        comp.id = comp.id || `component-${index}`;
+        comp.id = comp.id || generateId(); // Use unique ID generator
         comp.label = comp.label || 'unknown';
         comp.confidence = comp.confidence || 0.5;
         comp.bbox = comp.bbox || [0.1, 0.1, 0.2, 0.2];
@@ -274,7 +285,7 @@ function validateAndRecoverResult(jsonText: string, attempt: number): any {
         components: extractComponentsFromText(jsonText),
         connections: [],
         control_loops: [],
-        summary: `Initial analysis failed: ${(error as Error).message}. Using pattern extraction fallback.`
+        summary: `Initial analysis failed: ${error instanceof Error ? error.message : String(error)}. Using pattern extraction fallback.`
       };
     } else {
       // Multiple failures - return minimal valid structure
@@ -305,15 +316,13 @@ function extractComponentsFromText(text: string): any[] {
     { pattern: /(?:CT|COOLING_TOWER)-\d+/g, type: 'cooling_tower' }
   ];
   
-  let idCounter = 0;
-  
   hvacPatterns.forEach(({ pattern, type }) => {
     const matches = text.match(pattern) || [];
     const uniqueMatches = [...new Set(matches)]; // Remove duplicates
     
     uniqueMatches.forEach(match => {
       components.push({
-        id: `extracted-${idCounter++}`,
+        id: generateId(), // Use unique ID generator
         label: match.trim(),
         type: type,
         bbox: [0.1, 0.1, 0.2, 0.2], // Placeholder bbox
@@ -334,7 +343,7 @@ function extractComponentsFromText(text: string): any[] {
   // Add generic component if none found
   if (components.length === 0) {
     components.push({
-      id: 'fallback-0',
+      id: generateId(), // Use unique ID generator
       label: 'unknown_component',
       type: 'equipment',
       bbox: [0.1, 0.1, 0.2, 0.2],
@@ -357,7 +366,7 @@ function createMinimalValidResult(fallbackText: string): any {
   return {
     components: [
       {
-        id: 'minimal-fallback',
+        id: generateId(), // Use unique ID generator
         label: 'analysis_failed',
         type: 'equipment',
         bbox: [0.0, 0.0, 1.0, 1.0],
@@ -437,7 +446,7 @@ function createFallbackResult(hvacContext?: any): any {
   return {
     components: [
       {
-        id: 'fallback-system',
+        id: generateId(), // Use unique ID generator
         label: 'analysis_failed',
         type: 'equipment',
         bbox: [0.0, 0.0, 1.0, 1.0],
