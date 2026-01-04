@@ -4,6 +4,7 @@
       "id": "SOV-301202",
       "type": "solenoid_valve",
       "label": "SOV-301202",
+      "bbox": [0.52, 0.01, 0.62, 0.08],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -16,6 +17,7 @@
       "id": "SOV-301203A",
       "type": "solenoid_valve",
       "label": "SOV-301203A",
+      "bbox": [0.45, 0.09, 0.55, 0.17],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -28,6 +30,7 @@
       "id": "SOV-291201A",
       "type": "solenoid_valve",
       "label": "SOV-291201A",
+      "bbox": [0.52, 0.09, 0.62, 0.17],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -40,6 +43,7 @@
       "id": "SOV-301203B",
       "type": "solenoid_valve",
       "label": "SOV-301203B",
+      "bbox": [0.62, 0.09, 0.72, 0.17],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -52,6 +56,7 @@
       "id": "ZSC-301201",
       "type": "valve_position_switch",
       "label": "ZSC-301201",
+      "bbox": [0.45, 0.18, 0.55, 0.26],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -64,6 +69,7 @@
       "id": "SOV-291201B",
       "type": "solenoid_valve",
       "label": "SOV-291201B",
+      "bbox": [0.62, 0.18, 0.72, 0.26],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -76,6 +82,7 @@
       "id": "FCV-302317",
       "type": "flow_control_valve",
       "label": "FCV-302317",
+      "bbox": [0.48, 0.36, 0.58, 0.42],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -88,6 +95,7 @@
       "id": "PT-302318",
       "type": "pressure_transmitter",
       "label": "PT-302318",
+      "bbox": [0.48, 0.43, 0.56, 0.50],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -100,6 +108,7 @@
       "id": "TT-302319",
       "type": "temperature_transmitter",
       "label": "TT-302319",
+      "bbox": [0.48, 0.51, 0.56, 0.58],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -112,6 +121,7 @@
       "id": "FCV-302320",
       "type": "flow_control_valve",
       "label": "FCV-302320",
+      "bbox": [0.48, 0.68, 0.58, 0.74],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -124,6 +134,7 @@
       "id": "BV-302321",
       "type": "ball_valve",
       "label": "BV-302321",
+      "bbox": [0.56, 0.80, 0.66, 0.87],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -136,6 +147,7 @@
       "id": "PT-302322",
       "type": "pressure_transmitter",
       "label": "PT-302322",
+      "bbox": [0.48, 0.81, 0.56, 0.88],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -148,6 +160,7 @@
       "id": "TT-302323",
       "type": "temperature_transmitter",
       "label": "TT-302323",
+      "bbox": [0.48, 0.89, 0.56, 0.96],
       "confidence": 0.95,
       "rotation": 0,
       "meta": {
@@ -157,16 +170,17 @@
       }
     },
     {
-    "id": "valve-4-fc",
-    "type": "control_valve",
-    "label": "4\" FC",
-    "confidence": 0.95,
-    "rotation": 0,
-    "meta": {
-    "tag": "4\" FC",
-    "description": "4-inch Control Valve (Fail Closed)",
-    "reasoning": "ISA-5.1: FC = Fail Closed (valve fails in closed position upon loss of power/signal)"
-  }
-}
+      "id": "valve-4-fc",
+      "type": "control_valve",
+      "label": "4\" FC",
+      "bbox": [0.10, 0.21, 0.18, 0.28],
+      "confidence": 0.95,
+      "rotation": 0,
+      "meta": {
+        "tag": "4\" FC",
+        "description": "4-inch Control Valve (Fail Closed)",
+        "reasoning": "ISA-5.1: FC = Fail Closed (valve fails in closed position upon loss of power/signal)"
+      }
+    }
   ]
 }
