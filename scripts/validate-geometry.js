@@ -19,7 +19,7 @@ function normalizeBackendBBox(raw, options = {}) {
   if (!space) {
     if (maxVal > 1 && maxVal <= 1000) {
       a = a.map(v => v / 1000);
-    } else if (maxVal > 1 && maxVal > 1000) {
+    } else if (maxVal > 1000) {
       if (options?.imageSize) {
         const { width, height } = options.imageSize;
         const [r0,r1,r2,r3] = a;
