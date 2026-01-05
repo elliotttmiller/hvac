@@ -25,6 +25,7 @@ interface InspectorPanelProps {
   validationIssues: ValidationIssue[];
   selectedBoxId: string | null;
   onSelectBox: (id: string | null) => void;
+  finalAnalysisReport?: any; // Optional final analysis report
 }
 
 type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
@@ -53,7 +54,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
    detectedBoxes,
    validationIssues, 
    selectedBoxId,
-   onSelectBox
+   onSelectBox,
+   finalAnalysisReport
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
@@ -470,6 +472,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   const renderAnalysisTab = () => {
     const hasData = detectedBoxes.length > 0;
+    const hasFinalReport = finalAnalysisReport && Object.keys(finalAnalysisReport).length > 0;
 
     return (
       <div className="flex flex-col h-full">
@@ -480,6 +483,491 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <div className="text-sm font-semibold text-zinc-400 mb-2">No Analysis Available</div>
               <div className="text-xs text-zinc-500">Run document analysis to generate a comprehensive report</div>
             </div>
+          ) : hasFinalReport ? (
+            // Render enhanced final analysis report
+            <>
+              {/* Report Title */}
+              {finalAnalysisReport.report_title && (
+                <div className="bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 rounded-xl p-4">
+                  <h2 className="text-lg font-bold text-cyan-300 mb-2">{finalAnalysisReport.report_title}</h2>
+                </div>
+              )}
+
+              {/* Document Overview */}
+              {finalAnalysisReport.document_overview && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Document Overview</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    <div>
+                      <div className="text-[10px] text-zinc-500 uppercase mb-1">Classification</div>
+                      <div className="text-sm text-zinc-200">{finalAnalysisReport.document_overview.classification}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-zinc-500 uppercase mb-1">Purpose</div>
+                      <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.document_overview.purpose}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-zinc-500 uppercase mb-1">Scope</div>
+                      <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.document_overview.scope}</div>
+                    </div>
+                    {finalAnalysisReport.document_overview.complexity_assessment && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Complexity Assessment</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.document_overview.complexity_assessment}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* System Architecture */}
+              {finalAnalysisReport.system_architecture && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide">System Architecture</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    <div>
+                      <div className="text-[10px] text-zinc-500 uppercase mb-1">System Description</div>
+                      <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.system_architecture.system_description}</div>
+                    </div>
+                    {finalAnalysisReport.system_architecture.primary_function && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Primary Function</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.system_architecture.primary_function}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.system_architecture.major_subsystems && finalAnalysisReport.system_architecture.major_subsystems.length > 0 && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-2">Major Subsystems</div>
+                        <div className="space-y-2">
+                          {finalAnalysisReport.system_architecture.major_subsystems.map((subsystem: any, idx: number) => (
+                            <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5">
+                              <div className="text-xs font-semibold text-blue-300 mb-1">{subsystem.name}</div>
+                              <div className="text-[10px] text-zinc-400 mb-2">{subsystem.function}</div>
+                              {subsystem.key_components && subsystem.key_components.length > 0 && (
+                                <div className="text-[10px] text-zinc-500">
+                                  Components: {subsystem.key_components.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.system_architecture.topology_overview && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Topology Overview</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.system_architecture.topology_overview}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Component Analysis */}
+              {finalAnalysisReport.component_analysis && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-purple-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">Component Analysis</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {finalAnalysisReport.component_analysis.equipment_summary && finalAnalysisReport.component_analysis.equipment_summary.length > 0 && (
+                      <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                        <div className="text-[10px] text-zinc-500 uppercase mb-2">Equipment Summary</div>
+                        {finalAnalysisReport.component_analysis.equipment_summary.map((cat: any, idx: number) => (
+                          <div key={idx} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-semibold text-purple-300">{cat.category}</span>
+                              <span className="text-xs text-purple-400 font-mono">{cat.count} units</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-400 mb-2">{cat.significance}</div>
+                            {cat.examples && cat.examples.length > 0 && (
+                              <div className="text-[10px] text-zinc-500">
+                                Examples: {cat.examples.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {finalAnalysisReport.component_analysis.critical_components && finalAnalysisReport.component_analysis.critical_components.length > 0 && (
+                      <div className="bg-[#1a1a1a] rounded-lg p-4 border border-purple-500/20 space-y-2">
+                        <div className="text-[10px] text-purple-400 uppercase font-semibold mb-2">Critical Components</div>
+                        {finalAnalysisReport.component_analysis.critical_components.map((comp: any, idx: number) => (
+                          <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-xs font-bold text-purple-300">{comp.tag}</span>
+                              <span className="text-[10px] text-zinc-500">{comp.type}</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-400 mb-1">{comp.function}</div>
+                            <div className="text-[10px] text-amber-400 italic">{comp.importance}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Component Correlation & Integration - NEW CRITICAL SECTION */}
+              {finalAnalysisReport.component_correlation && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-pink-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-pink-400 uppercase tracking-wide">Component Correlation & Integration</h3>
+                  </div>
+                  
+                  {/* Control Loops */}
+                  {finalAnalysisReport.component_correlation.control_loops && finalAnalysisReport.component_correlation.control_loops.length > 0 && (
+                    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-pink-500/20 mb-3 space-y-3">
+                      <div className="text-[10px] text-pink-400 uppercase font-semibold mb-2">Control Loops</div>
+                      {finalAnalysisReport.component_correlation.control_loops.map((loop: any, idx: number) => (
+                        <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5 space-y-2">
+                          <div className="flex justify-between items-start">
+                            <span className="text-xs font-bold text-pink-300">{loop.loop_name}</span>
+                            {loop.loop_number && (
+                              <span className="text-[10px] text-zinc-500 font-mono">{loop.loop_number}</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 italic mb-2">{loop.function}</div>
+                          <div className="bg-gradient-to-r from-pink-500/5 to-transparent border-l-2 border-pink-500/30 pl-3 py-2 space-y-1">
+                            <div className="text-[10px] text-zinc-300">
+                              <span className="text-cyan-400 font-semibold">Sensor:</span> {loop.sensor}
+                            </div>
+                            {loop.controller && (
+                              <div className="text-[10px] text-zinc-300">
+                                <span className="text-blue-400 font-semibold">Controller:</span> {loop.controller}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-zinc-300">
+                              <span className="text-purple-400 font-semibold">Actuator:</span> {loop.actuator}
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-zinc-400 leading-relaxed pt-1">{loop.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Equipment Sequences */}
+                  {finalAnalysisReport.component_correlation.equipment_sequences && finalAnalysisReport.component_correlation.equipment_sequences.length > 0 && (
+                    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 mb-3 space-y-3">
+                      <div className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Equipment Flow Sequences</div>
+                      {finalAnalysisReport.component_correlation.equipment_sequences.map((seq: any, idx: number) => (
+                        <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5">
+                          <div className="text-xs font-semibold text-emerald-300 mb-2">{seq.sequence_name}</div>
+                          <div className="bg-gradient-to-r from-emerald-500/5 to-transparent border-l-2 border-emerald-500/30 pl-3 py-2 mb-2">
+                            <div className="text-[10px] font-mono text-zinc-300 flex flex-wrap items-center gap-1">
+                              {seq.flow_path.map((component: string, i: number) => (
+                                <React.Fragment key={i}>
+                                  <span className="text-cyan-400">{component}</span>
+                                  {i < seq.flow_path.length - 1 && <span className="text-zinc-600">→</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-zinc-400">
+                            <span className="text-zinc-500">Medium:</span> {seq.medium}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 mt-1">{seq.purpose}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Component Relationships */}
+                  {finalAnalysisReport.component_correlation.component_relationships && finalAnalysisReport.component_correlation.component_relationships.length > 0 && (
+                    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 mb-3 space-y-3">
+                      <div className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Component Relationships</div>
+                      {finalAnalysisReport.component_correlation.component_relationships.slice(0, 5).map((rel: any, idx: number) => (
+                        <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5 space-y-2">
+                          <div className="text-xs font-bold text-amber-300">{rel.component}</div>
+                          {rel.subsystem_role && (
+                            <div className="text-[10px] text-zinc-400 italic">{rel.subsystem_role}</div>
+                          )}
+                          <div className="space-y-1">
+                            {rel.upstream_components && rel.upstream_components.length > 0 && (
+                              <div className="text-[10px]">
+                                <span className="text-zinc-500">Upstream:</span>{' '}
+                                <span className="text-cyan-300">{rel.upstream_components.join(', ')}</span>
+                              </div>
+                            )}
+                            {rel.downstream_components && rel.downstream_components.length > 0 && (
+                              <div className="text-[10px]">
+                                <span className="text-zinc-500">Downstream:</span>{' '}
+                                <span className="text-emerald-300">{rel.downstream_components.join(', ')}</span>
+                              </div>
+                            )}
+                            {rel.controls && rel.controls.length > 0 && (
+                              <div className="text-[10px]">
+                                <span className="text-zinc-500">Controls:</span>{' '}
+                                <span className="text-purple-300">{rel.controls.join(', ')}</span>
+                              </div>
+                            )}
+                            {rel.controlled_by && rel.controlled_by.length > 0 && (
+                              <div className="text-[10px]">
+                                <span className="text-zinc-500">Controlled by:</span>{' '}
+                                <span className="text-blue-300">{rel.controlled_by.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {finalAnalysisReport.component_correlation.component_relationships.length > 5 && (
+                        <div className="text-[10px] text-zinc-500 italic text-center">
+                          +{finalAnalysisReport.component_correlation.component_relationships.length - 5} more relationships documented...
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Subsystem Integration */}
+                  {finalAnalysisReport.component_correlation.subsystem_integration && finalAnalysisReport.component_correlation.subsystem_integration.length > 0 && (
+                    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 mb-3 space-y-3">
+                      <div className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Subsystem Integration</div>
+                      {finalAnalysisReport.component_correlation.subsystem_integration.map((sub: any, idx: number) => (
+                        <div key={idx} className="bg-[#0d0d0d] rounded p-3 border border-white/5">
+                          <div className="text-xs font-semibold text-teal-300 mb-2">{sub.subsystem_name}</div>
+                          <div className="text-[10px] text-zinc-400 mb-2">
+                            <span className="text-zinc-500">Integrates with:</span>{' '}
+                            {sub.integrates_with.join(', ')}
+                          </div>
+                          {sub.integration_points && sub.integration_points.length > 0 && (
+                            <div className="text-[10px] text-zinc-400 mb-2">
+                              <span className="text-zinc-500">Integration points:</span>{' '}
+                              {sub.integration_points.join(', ')}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-zinc-400 leading-relaxed">{sub.coordination_strategy}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Redundancy Analysis */}
+                  {finalAnalysisReport.component_correlation.redundancy_analysis && (
+                    <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                      <div className="text-[10px] text-zinc-500 uppercase font-semibold mb-2">Redundancy & Backup Systems</div>
+                      <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.component_correlation.redundancy_analysis}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Process Flow Analysis */}
+              {finalAnalysisReport.process_flow_analysis && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Process Flow Analysis</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    {finalAnalysisReport.process_flow_analysis.flow_description && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Flow Description</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.process_flow_analysis.flow_description}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.process_flow_analysis.primary_flows && finalAnalysisReport.process_flow_analysis.primary_flows.length > 0 && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-2">Primary Flow Paths</div>
+                        <div className="space-y-2">
+                          {finalAnalysisReport.process_flow_analysis.primary_flows.map((flow: any, idx: number) => (
+                            <div key={idx} className="bg-[#0d0d0d] rounded p-2 border border-white/5">
+                              <div className="text-[10px] text-emerald-300 font-semibold mb-1">{flow.path}</div>
+                              <div className="text-[10px] text-zinc-400">Medium: {flow.medium}</div>
+                              <div className="text-[10px] text-zinc-400">{flow.purpose}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.process_flow_analysis.control_strategy && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Control Strategy</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.process_flow_analysis.control_strategy}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.process_flow_analysis.safety_systems && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Safety Systems</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.process_flow_analysis.safety_systems}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Standards Compliance */}
+              {finalAnalysisReport.standards_compliance && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">Standards Compliance</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    {finalAnalysisReport.standards_compliance.isa_compliance && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">ISA-5.1 Compliance</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.standards_compliance.isa_compliance}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.standards_compliance.industry_standards && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Industry Standards</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.standards_compliance.industry_standards}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.standards_compliance.best_practices && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Best Practices</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.standards_compliance.best_practices}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.standards_compliance.documentation_quality && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Documentation Quality</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.standards_compliance.documentation_quality}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Technical Specifications */}
+              {finalAnalysisReport.technical_specifications && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-teal-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-teal-400 uppercase tracking-wide">Technical Specifications</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    {finalAnalysisReport.technical_specifications.piping_materials && finalAnalysisReport.technical_specifications.piping_materials.length > 0 && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Piping Materials</div>
+                        <div className="text-xs text-zinc-300">{finalAnalysisReport.technical_specifications.piping_materials.join(', ')}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.technical_specifications.sizing_information && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Sizing Information</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.technical_specifications.sizing_information}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.technical_specifications.operating_parameters && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Operating Parameters</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.technical_specifications.operating_parameters}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.technical_specifications.equipment_ratings && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Equipment Ratings</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.technical_specifications.equipment_ratings}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Quality Assessment */}
+              {finalAnalysisReport.quality_assessment && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-yellow-400 uppercase tracking-wide">Quality Assessment</h3>
+                  </div>
+                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                    {finalAnalysisReport.quality_assessment.completeness && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Completeness</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.quality_assessment.completeness}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.quality_assessment.clarity && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Clarity</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{finalAnalysisReport.quality_assessment.clarity}</div>
+                      </div>
+                    )}
+                    {finalAnalysisReport.quality_assessment.identified_issues && finalAnalysisReport.quality_assessment.identified_issues.length > 0 && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Identified Issues</div>
+                        <ul className="list-disc list-inside text-xs text-yellow-300 space-y-1">
+                          {finalAnalysisReport.quality_assessment.identified_issues.map((issue: string, idx: number) => (
+                            <li key={idx}>{issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {finalAnalysisReport.quality_assessment.verification_needs && finalAnalysisReport.quality_assessment.verification_needs.length > 0 && (
+                      <div>
+                        <div className="text-[10px] text-zinc-500 uppercase mb-1">Verification Needs</div>
+                        <ul className="list-disc list-inside text-xs text-zinc-400 space-y-1">
+                          {finalAnalysisReport.quality_assessment.verification_needs.map((need: string, idx: number) => (
+                            <li key={idx}>{need}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Findings */}
+              {finalAnalysisReport.key_findings && finalAnalysisReport.key_findings.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Key Findings</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {finalAnalysisReport.key_findings.map((finding: any, idx: number) => (
+                      <div key={idx} className="bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20 rounded-lg p-3">
+                        <div className="text-xs font-semibold text-cyan-300 mb-1">{finding.category}</div>
+                        <div className="text-xs text-zinc-300 leading-relaxed mb-1">{finding.finding}</div>
+                        <div className="text-[10px] text-zinc-500 italic">Significance: {finding.significance}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {finalAnalysisReport.recommendations && finalAnalysisReport.recommendations.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                    <h3 className="text-sm font-bold text-green-400 uppercase tracking-wide">Recommendations</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {finalAnalysisReport.recommendations.map((rec: any, idx: number) => (
+                      <div key={idx} className={`rounded-lg p-3 border ${
+                        rec.priority === 'HIGH' ? 'bg-red-500/10 border-red-500/30' :
+                        rec.priority === 'MEDIUM' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                        'bg-green-500/10 border-green-500/30'
+                      }`}>
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-xs font-semibold text-green-300">{rec.area}</span>
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                            rec.priority === 'HIGH' ? 'bg-red-500/20 text-red-400' :
+                            rec.priority === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'
+                          }`}>{rec.priority}</span>
+                        </div>
+                        <div className="text-xs text-zinc-300 leading-relaxed">{rec.recommendation}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <>
               {/* Executive Summary */}
@@ -493,11 +981,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </p>
               </div>
 
-              {/* Key Metrics */}
+              {/* Key Metrics - De-emphasized confidence */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-5 bg-emerald-500 rounded-full"></div>
-                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Key Metrics</h3>
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Detection Summary</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
@@ -505,16 +993,16 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     <div className="text-xl font-bold text-cyan-400">{componentStats.total}</div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
-                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Avg Confidence</div>
-                    <div className="text-xl font-bold text-emerald-400">{(componentStats.avgConfidence * 100).toFixed(1)}%</div>
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">ISA Compliant</div>
+                    <div className="text-xl font-bold text-amber-400">{componentStats.isaCompliant}</div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
-                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Excellent Quality</div>
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">High Quality</div>
                     <div className="text-xl font-bold text-purple-400">{componentStats.excellentQuality}</div>
                   </div>
                   <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
-                    <div className="text-[10px] text-zinc-500 uppercase mb-1">ISA Compliant</div>
-                    <div className="text-xl font-bold text-amber-400">{componentStats.isaCompliant}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase mb-1">Subsystems</div>
+                    <div className="text-xl font-bold text-emerald-400">{Object.keys(componentStats.bySubsystem).length}</div>
                   </div>
                 </div>
               </div>
@@ -647,32 +1135,34 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
               )}
 
-              {/* Conclusions */}
+              {/* Conclusions - De-emphasized confidence */}
               <div className="bg-gradient-to-br from-[#0d0d0d] to-[#151515] rounded-xl p-4 border border-white/10">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-5 bg-cyan-500 rounded-full"></div>
-                  <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Analysis Conclusions</h3>
+                  <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Analysis Summary</h3>
                 </div>
                 <div className="space-y-2 text-xs text-zinc-300 leading-relaxed">
                   <p>
-                    • Detected <span className="text-cyan-400 font-semibold">{componentStats.total} components</span> across {Object.keys(componentStats.bySubsystem).length} HVAC subsystems
-                  </p>
-                  <p>
-                    • Average detection confidence of <span className="text-emerald-400 font-semibold">{(componentStats.avgConfidence * 100).toFixed(1)}%</span> indicates {getConfidenceQualityLabel(componentStats.avgConfidence)} model certainty
+                    • Identified <span className="text-cyan-400 font-semibold">{componentStats.total} components</span> across {Object.keys(componentStats.bySubsystem).length} HVAC subsystems
                   </p>
                   {componentStats.isaCompliant > 0 && (
                     <p>
-                      • <span className="text-amber-400 font-semibold">{componentStats.isaCompliant} components</span> conform to ISA standards for instrumentation naming
+                      • <span className="text-amber-400 font-semibold">{componentStats.isaCompliant} components</span> conform to ISA-5.1 instrumentation standards
+                    </p>
+                  )}
+                  {componentStats.excellentQuality > 0 && (
+                    <p>
+                      • <span className="text-purple-400 font-semibold">{componentStats.excellentQuality} components</span> detected with high quality classification
                     </p>
                   )}
                   {validationIssues.length > 0 && (
                     <p className="text-yellow-400">
-                      • <span className="font-semibold">{validationIssues.length} validation issues</span> require attention for compliance
+                      • <span className="font-semibold">{validationIssues.length} validation items</span> identified for review
                     </p>
                   )}
                   <p className="pt-2 text-zinc-400 text-[10px]">
-                    This automated analysis provides comprehensive insights into the document's HVAC system components, 
-                    their classifications, and conformance to industry standards. Review individual components for detailed specifications.
+                    This analysis provides comprehensive insights into the HVAC system components, their classifications, 
+                    and conformance to industry standards. Review individual components in the Components tab for detailed specifications.
                   </p>
                 </div>
               </div>
