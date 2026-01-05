@@ -95,6 +95,27 @@ export async function analyzeDocument(
       components: result.visual?.components?.length || 0
     }]);
 
+    // Step 5: Generate comprehensive final analysis report
+    // Only generate for visual documents (BLUEPRINT/SCHEMATIC) with components
+    if ((classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && 
+        result.visual?.components && result.visual.components.length > 0) {
+      try {
+        emit('Step 4: Generating comprehensive final analysis report...');
+        
+        // Dynamically import to avoid bundling issues
+        const { generateFinalAnalysis } = await import('../../../lib/gemini-prompt-engine/final-analysis');
+        
+        const finalAnalysisReport = await generateFinalAnalysis(result);
+        result.final_analysis = finalAnalysisReport;
+        
+        emit('Final analysis report generated successfully');
+      } catch (error) {
+        console.warn('Failed to generate final analysis report:', error);
+        emit('Warning: Final analysis report generation failed, continuing with basic analysis');
+        // Don't fail the entire pipeline if final analysis fails
+      }
+    }
+
     return result;
   } catch (error) {
     console.error('Analysis error:', error);

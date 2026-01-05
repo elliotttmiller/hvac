@@ -21,6 +21,7 @@ const BlueprintWorkspace: React.FC<{
   const [inventory, setInventory] = useState<any[]>([]);
   const [detectedBoxes, setDetectedBoxes] = useState<DetectedComponent[]>([]);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+  const [finalAnalysisReport, setFinalAnalysisReport] = useState<any>(null);
   
   // Interactivity State
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
@@ -101,6 +102,7 @@ const BlueprintWorkspace: React.FC<{
 
       setExecutiveSummary(result.executive_summary || `Document classified as: ${result.document_type}`);
       setValidationIssues(result.validation_issues || []);
+      setFinalAnalysisReport(result.final_analysis || null);
       setAnalysisRaw((prev) => `${prev}\n\n${JSON.stringify(result, null, 2)}`);
 
       setTimeout(() => setIsProcessing(false), 500);
@@ -176,6 +178,7 @@ const BlueprintWorkspace: React.FC<{
                 validationIssues={validationIssues}
                 selectedBoxId={selectedBoxId}
                 onSelectBox={setSelectedBoxId}
+                finalAnalysisReport={finalAnalysisReport}
             />
           </div>
       </div>

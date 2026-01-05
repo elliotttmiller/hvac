@@ -209,6 +209,114 @@ export interface CorrelationResult {
 }
 
 // ============================================================================
+// FINAL ANALYSIS REPORT
+// ============================================================================
+
+export interface FinalAnalysisReport {
+  report_title: string;
+  document_overview: {
+    classification: string;
+    purpose: string;
+    scope: string;
+    complexity_assessment: string;
+  };
+  system_architecture: {
+    system_description: string;
+    primary_function: string;
+    major_subsystems: Array<{
+      name: string;
+      function: string;
+      key_components: string[];
+    }>;
+    topology_overview: string;
+  };
+  component_analysis: {
+    equipment_summary: Array<{
+      category: string;
+      count: number;
+      examples: string[];
+      significance: string;
+    }>;
+    critical_components: Array<{
+      tag: string;
+      type: string;
+      function: string;
+      importance: string;
+    }>;
+  };
+  component_correlation: {
+    control_loops: Array<{
+      loop_name: string;
+      loop_number: string;
+      function: string;
+      sensor: string;
+      controller: string;
+      actuator: string;
+      description: string;
+    }>;
+    equipment_sequences: Array<{
+      sequence_name: string;
+      flow_path: string[];
+      purpose: string;
+      medium: string;
+    }>;
+    component_relationships: Array<{
+      component: string;
+      upstream_components: string[];
+      downstream_components: string[];
+      controls: string[];
+      controlled_by: string[];
+      subsystem_role: string;
+    }>;
+    subsystem_integration?: Array<{
+      subsystem_name: string;
+      integrates_with: string[];
+      integration_points: string[];
+      coordination_strategy: string;
+    }>;
+    redundancy_analysis?: string;
+  };
+  process_flow_analysis: {
+    flow_description: string;
+    primary_flows: Array<{
+      path: string;
+      medium: string;
+      purpose: string;
+    }>;
+    control_strategy: string;
+    safety_systems: string;
+  };
+  standards_compliance: {
+    isa_compliance: string;
+    industry_standards: string;
+    best_practices: string;
+    documentation_quality: string;
+  };
+  technical_specifications?: {
+    piping_materials: string[];
+    sizing_information: string;
+    operating_parameters: string;
+    equipment_ratings: string;
+  };
+  quality_assessment?: {
+    completeness: string;
+    clarity: string;
+    identified_issues: string[];
+    verification_needs: string[];
+  };
+  key_findings: Array<{
+    category: string;
+    finding: string;
+    significance: string;
+  }>;
+  recommendations?: Array<{
+    area: string;
+    recommendation: string;
+    priority: string;
+  }>;
+}
+
+// ============================================================================
 // UNIVERSAL DOCUMENT RESULT
 // ============================================================================
 
@@ -232,6 +340,9 @@ export interface UniversalDocumentResult {
   
   // Executive Summary
   executive_summary?: string;
+  
+  // Final Analysis Report
+  final_analysis?: FinalAnalysisReport;
   
   // Processing metadata
   processing_time_ms?: number;
