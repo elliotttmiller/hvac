@@ -4,6 +4,7 @@
  */
 
 import { getAIClient } from '@/lib/ai/client';
+import { config } from '@/app/config';
 import { UniversalDocumentResult } from '@/features/document-analysis/types';
 
 export interface QueryRequest {
@@ -198,6 +199,7 @@ export async function processQuery(request: QueryRequest): Promise<QueryResponse
         systemInstruction: QUERY_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         temperature: 0.3, // Low temperature for factual responses
+        maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
       },
     });
     

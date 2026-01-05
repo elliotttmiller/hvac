@@ -39,6 +39,9 @@ export const config = {
     
     // Max tokens for response
     maxTokens: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
+    
+    // Max output tokens for AI responses (prevents truncation)
+    maxOutputTokens: parseInt(import.meta.env.VITE_AI_MAX_OUTPUT_TOKENS || '8192'),
   },
 
   // Feature Flags

@@ -23,6 +23,12 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 // and fall back to the recommended model (gemini-2.5-flash).
 const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MODEL || 'gemini-2.5-flash';
 
+// AI Generation Configuration
+// Default max output tokens for Gemini API (prevents truncation of large JSON responses)
+const DEFAULT_MAX_OUTPUT_TOKENS = parseInt(process.env.VITE_AI_MAX_OUTPUT_TOKENS || '8192', 10);
+const MAX_RETRIES = parseInt(process.env.VITE_RATE_LIMIT_MAX_RETRIES || '3', 10);
+const RETRY_DELAY_MS = parseInt(process.env.VITE_RATE_LIMIT_DELAY_MS || '1000', 10);
+
 // Mock Mode Configuration (for zero-cost debugging)
 const MOCK_MODE_ENABLED = process.env.MOCK_MODE_ENABLED === 'true';
 const MOCK_DATA_PATH = path.join(__dirname, 'mocks', 'golden-record.json');
@@ -95,6 +101,69 @@ try {
   }
 } catch (error) {
   console.error('⚠️  AI Proxy Error: @google/generative-ai module not found.');
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Retry wrapper for AI API calls with exponential backoff
+ */
+async function retryWithBackoff(fn, maxRetries = MAX_RETRIES) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn(attempt);
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on certain error types
+      if (error.message && (
+        error.message.includes('API key') ||
+        error.message.includes('authentication') ||
+        error.message.includes('Missing data')
+      )) {
+        throw error;
+      }
+      
+      // If this isn't the last attempt, wait before retrying
+      if (attempt < maxRetries - 1) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
+ * Validate JSON response completeness
+ */
+function validateJSONCompleteness(text) {
+  // Check for common truncation indicators
+  const truncationIndicators = [
+    /\.\.\.$/, // Ends with ellipsis
+    /[^}\]]\s*$/, // Doesn't end with closing bracket/brace
+    /,\s*$/, // Ends with comma (incomplete array/object)
+  ];
+  
+  for (const pattern of truncationIndicators) {
+    if (pattern.test(text.trim())) {
+      return false;
+    }
+  }
+  
+  // Count brackets/braces for balance
+  const openBraces = (text.match(/{/g) || []).length;
+  const closeBraces = (text.match(/}/g) || []).length;
+  const openBrackets = (text.match(/\[/g) || []).length;
+  const closeBrackets = (text.match(/\]/g) || []).length;
+  
+  return openBraces === closeBraces && openBrackets === closeBrackets;
 }
 
 // ============================================================================
@@ -187,56 +256,80 @@ app.post('/api/ai/generateVision', async (req, res) => {
   if (!imageData || !prompt) return res.status(400).json({ error: 'Missing data.' });
 
   try {
-    const geminiModel = genAI.getGenerativeModel({
-      model: model || AI_MODEL_DEFAULT,
-      generationConfig: {
-        temperature: options?.temperature ?? 0.1,
-        responseMimeType: options?.responseMimeType,
-        responseSchema: options?.responseSchema
-      },
-      systemInstruction: options?.systemInstruction,
-    });
-
-    const result = await geminiModel.generateContent([
-      prompt,
-      { inlineData: { data: imageData, mimeType: mimeType || 'image/png' } }
-    ]);
-    
-    const responseText = result.response.text();
-    
-    // Validate response is not empty
-    if (!responseText || responseText.trim().length === 0) {
-      console.error('AI Vision Error: Empty response from Gemini API');
-      return res.status(500).json({ 
-        error: 'Empty response from AI model',
-        details: 'The AI model returned an empty response. Please try again.'
+    const responseText = await retryWithBackoff(async (attempt) => {
+      // Adjust temperature slightly on retries to get different responses
+      const temperature = attempt === 0 
+        ? (options?.temperature ?? 0.1)
+        : Math.min((options?.temperature ?? 0.1) + (attempt * 0.1), 0.5);
+      
+      const geminiModel = genAI.getGenerativeModel({
+        model: model || AI_MODEL_DEFAULT,
+        generationConfig: {
+          temperature,
+          maxOutputTokens: options?.maxOutputTokens || DEFAULT_MAX_OUTPUT_TOKENS,
+          responseMimeType: options?.responseMimeType,
+          responseSchema: options?.responseSchema
+        },
+        systemInstruction: options?.systemInstruction,
       });
-    }
-    
-    // Log response for debugging (first 200 chars)
-    console.log('AI Vision Response:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-    
-    // For JSON responses, validate they're parseable
-    if (options?.responseMimeType === 'application/json') {
-      try {
-        // Try to parse to validate it's valid JSON
-        JSON.parse(responseText);
-      } catch (jsonError) {
-        console.error('AI Vision Error: Invalid JSON response:', responseText.substring(0, 500));
-        return res.status(500).json({ 
-          error: 'Invalid JSON response from AI model',
-          details: 'The AI model returned a response that is not valid JSON. This may indicate a model configuration issue.',
-        });
+
+      const result = await geminiModel.generateContent([
+        prompt,
+        { inlineData: { data: imageData, mimeType: mimeType || 'image/png' } }
+      ]);
+      
+      const responseText = result.response.text();
+      
+      // Validate response is not empty
+      if (!responseText || responseText.trim().length === 0) {
+        console.error('AI Vision Error: Empty response from Gemini API (attempt ' + (attempt + 1) + ')');
+        throw new Error('Empty response from AI model');
       }
-    }
+      
+      // For JSON responses, validate completeness and parseability
+      if (options?.responseMimeType === 'application/json') {
+        // Check for truncation indicators
+        if (!validateJSONCompleteness(responseText)) {
+          console.error('AI Vision Error: Response appears truncated (attempt ' + (attempt + 1) + ')');
+          console.error('Response tail:', responseText.substring(Math.max(0, responseText.length - 200)));
+          throw new Error('Response appears to be truncated. Try increasing maxOutputTokens.');
+        }
+        
+        try {
+          // Try to parse to validate it's valid JSON
+          JSON.parse(responseText);
+        } catch (jsonError) {
+          console.error('AI Vision Error: Invalid JSON response (attempt ' + (attempt + 1) + '):', jsonError.message);
+          console.error('Response snippet:', responseText.substring(0, 500) + '...' + responseText.substring(Math.max(0, responseText.length - 200)));
+          throw new Error('Invalid JSON response from AI model: ' + jsonError.message);
+        }
+      }
+      
+      return responseText;
+    });
+    
+    // Log successful response (first 200 chars for debugging)
+    console.log('AI Vision Response (attempt succeeded):', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
     
     res.json({ text: responseText });
   } catch (error) {
-    console.error('AI Vision Error:', error.message);
+    console.error('AI Vision Error (all retries exhausted):', error.message);
     console.error('Full error details:', error);
+    
+    // Provide helpful error messages based on error type
+    let errorDetails = 'An error occurred while processing the AI request.';
+    if (error.message.includes('truncated')) {
+      errorDetails = 'The AI model response was truncated. This may indicate that the response exceeds the configured token limit. Consider increasing VITE_AI_MAX_OUTPUT_TOKENS in your environment configuration.';
+    } else if (error.message.includes('Invalid JSON')) {
+      errorDetails = 'The AI model returned a response that is not valid JSON. This may indicate a model configuration issue or response truncation.';
+    } else if (error.message.includes('Empty response')) {
+      errorDetails = 'The AI model returned an empty response. This may indicate a temporary issue with the AI service.';
+    }
+    
     res.status(500).json({ 
       error: error.message,
-      details: 'An error occurred while processing the AI request. Check server logs for details.'
+      details: errorDetails,
+      suggestion: 'Check server logs for details. If the issue persists, try increasing maxOutputTokens or using a different model.'
     });
   }
 });
@@ -247,21 +340,51 @@ app.post('/api/ai/generateText', async (req, res) => {
 
   const { prompt, model, options } = req.body;
   try {
-    const geminiModel = genAI.getGenerativeModel({
-      model: model || AI_MODEL_DEFAULT,
-      generationConfig: {
-        temperature: options?.temperature ?? 0.2,
-        responseMimeType: options?.responseMimeType,
-        responseSchema: options?.responseSchema
-      },
-      systemInstruction: options?.systemInstruction,
-    });
+    const responseText = await retryWithBackoff(async (attempt) => {
+      // Adjust temperature slightly on retries
+      const temperature = attempt === 0 
+        ? (options?.temperature ?? 0.2)
+        : Math.min((options?.temperature ?? 0.2) + (attempt * 0.1), 0.5);
+      
+      const geminiModel = genAI.getGenerativeModel({
+        model: model || AI_MODEL_DEFAULT,
+        generationConfig: {
+          temperature,
+          maxOutputTokens: options?.maxOutputTokens || DEFAULT_MAX_OUTPUT_TOKENS,
+          responseMimeType: options?.responseMimeType,
+          responseSchema: options?.responseSchema
+        },
+        systemInstruction: options?.systemInstruction,
+      });
 
-    const result = await geminiModel.generateContent(prompt);
-    res.json({ text: result.response.text() });
+      const result = await geminiModel.generateContent(prompt);
+      const responseText = result.response.text();
+      
+      // Validate response
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error('Empty response from AI model');
+      }
+      
+      // For JSON responses, validate
+      if (options?.responseMimeType === 'application/json') {
+        if (!validateJSONCompleteness(responseText)) {
+          throw new Error('Response appears to be truncated');
+        }
+        JSON.parse(responseText); // Validate parseability
+      }
+      
+      return responseText;
+    });
+    
+    res.json({ text: responseText });
   } catch (error) {
     console.error('AI Text Error:', error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      details: error.message.includes('truncated') 
+        ? 'Response was truncated. Consider increasing maxOutputTokens.'
+        : 'An error occurred while processing the AI request.'
+    });
   }
 });
 
