@@ -429,19 +429,19 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     const prompt = generateFinalAnalysisPrompt(inferenceResults);
     
     const response = await ai.models.generateContent({
-      model: GeminiModel.PRO,
+      model: GeminiModel.FLASH, // OPTIMIZED: Use Flash for free tier compatibility (Pro has no free access as of 2026)
       contents: {
         parts: [{ text: prompt }]
       },
       config: {
         thinkingConfig: { 
-          thinkingBudget: 24000 // Higher budget for comprehensive analysis
+          thinkingBudget: 16000 // Optimized: Reduced from 24K to 16K for cost-efficiency while maintaining quality
         },
         systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: FINAL_ANALYSIS_SCHEMA,
         temperature: 0.3, // Balanced for technical accuracy and readability
-        maxOutputTokens: 8192
+        maxOutputTokens: 16384 // Optimized: Doubled from 8192, still well under 65K official limit
       }
     });
 

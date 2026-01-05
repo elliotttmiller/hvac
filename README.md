@@ -248,15 +248,22 @@ VITE_AI_MODEL=gemini-2.5-flash
 **Get your API key:** [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 **Available models:**
-- `gemini-2.5-flash` (default) - Best balance of speed and accuracy, 128K context
-- `gemini-2.5-pro` - Higher accuracy, slower, more expensive
+- `gemini-2.5-flash` (default) - **Recommended for free tier** - Best balance of speed and accuracy, 1M context
+- `gemini-2.5-pro` - Higher accuracy, slower, more expensive - **⚠️ No free tier access (as of 2026)**
 - `gemini-2.0-flash` - Alternative flash model with experimental features
 - `gemini-1.5-flash` - Previous generation, still supported
 - `gemini-1.5-pro` - Previous generation pro model
 
+**Free Tier Limits (Google AI Studio API Keys - 2026):**
+- **Gemini 2.5 Flash**: ✅ 10 RPM, 250K TPM, 50 requests/day - **FREE**
+- **Gemini 2.5 Pro**: ❌ No free tier access (requires paid Google Cloud billing)
+- **Perfect for development and testing** with up to 50 document analyses per day
+
 **Pricing (per 1M tokens):**
 - Gemini 2.5 Flash: $0.075 input / $0.30 output
-- Gemini 1.5 Pro: $1.25 input / $5.00 output
+- Gemini 2.5 Pro: $1.25 input / $5.00 output
+
+**⚠️ Important for Development**: This platform is optimized for Google AI Studio free tier API keys. All inference configurations are within official API limits. See [AI_OPTIMIZATION_GUIDE.md](./AI_OPTIMIZATION_GUIDE.md) for detailed information.
 
 ### Option 2: OpenAI (Interface Ready)
 
