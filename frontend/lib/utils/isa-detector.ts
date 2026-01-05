@@ -4,6 +4,8 @@
  * Provides intelligent fallback and pattern matching for instrument tags
  */
 
+import { parseISATag, ISA_TAG_PATTERNS as EXPANDED_ISA_PATTERNS } from '../knowledge-base/isa-5-1';
+
 export interface ISAFunctionResult {
   isa_function: string | null;
   measured_variable: string | null;
@@ -103,6 +105,7 @@ const TAG_NORMALIZATION_PATTERN = /[_\s]+/g;
 
 /**
  * Extract ISA function from component label/tag
+ * Now uses the enhanced parseISATag function from knowledge base
  */
 export function detectISAFunction(
   label: string,
@@ -112,7 +115,19 @@ export function detectISAFunction(
   // Clean the label: remove underscores/spaces and convert to uppercase
   const cleanLabel = label.trim().toUpperCase().replace(TAG_NORMALIZATION_PATTERN, '-');
   
-  // Try direct tag pattern matching first
+  // First, try the comprehensive parseISATag function
+  const parsed = parseISATag(cleanLabel);
+  if (parsed.confidence > 0.6) {
+    return {
+      isa_function: parsed.functions.length > 0 ? parsed.measuredVariable + parsed.functions.join('') : parsed.measuredVariable,
+      measured_variable: parsed.measuredVariable,
+      modifier: parsed.modifier,
+      confidence: parsed.confidence,
+      reasoning: parsed.reasoning
+    };
+  }
+  
+  // Fallback: Try direct tag pattern matching
   for (const { pattern, type: tagType } of HVAC_TAG_PATTERNS) {
     const match = cleanLabel.match(pattern);
     if (match) {
