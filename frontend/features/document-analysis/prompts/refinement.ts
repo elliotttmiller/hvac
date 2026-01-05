@@ -25,7 +25,7 @@ Review AI-generated detections. Fix errors, extract missing text labels, remove 
 - "unknown" labels FORBIDDEN unless text >80% occluded
 - Generic labels (e.g., "vav") NOT acceptable when specific tags visible (e.g., "VAV-101")
 - Text annotations (room labels, dimensions, notes) are NOT components
-- Extract and reconstruct broken tags (T\\nIC-101 → TIC-101)
+- Extract and reconstruct broken tags (T/IC-101 → TIC-101)
 - Every component needs clear visual representation
 
 ### OUTPUT

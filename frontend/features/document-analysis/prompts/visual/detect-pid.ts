@@ -30,7 +30,7 @@ Generate loss-less, physics-compliant semantic extraction of P&ID/Schematics int
 - Multi-scale detection: large equipment (AHUs, chillers) AND small symbols (valves, sensors)
 - Handle occlusion: Context for partially hidden tags (if >80% occluded, use descriptive placeholder)
 - Geometric invariance: ANY rotation (0°, 90°, 180°, 270°)
-- Tag reconstruction: Broken tags (T\\nIC-101 → TIC-101)
+- Tag reconstruction: Broken tags (T/IC-101 → TIC-101)
 
 **2. HVAC SYMBOL CLASSIFICATION**
 Equipment: AHU (rectangle + internals), Pump (circle + X), Chiller (double circle), Coil (rectangle + diagonal), Fan (rectangle + fan)
@@ -337,7 +337,9 @@ ${USE_LEAN_MODE ? generateOptimizedISAContext() : generateISAContext()}
 export function generateOptimizedISAContext(): string {
   return `
 ### ISA-5.1 QUICK REFERENCE
-**Letters**: T=Temp, P=Press, F=Flow, L=Level, H=Hand, I=Indicate, C=Control, T=Transmit, V=Valve, S=Switch, A=Alarm, E=Element
+**Function Letters**: T=Temp, P=Press, F=Flow, L=Level, H=Hand
+**Readout Letters**: I=Indicate, C=Control, E=Element, A=Alarm, S=Switch
+**Output Letters**: V=Valve, T=Transmit
 **Symbols**: Circle=Discrete, Circle-in-Square=HMI, Diamond=Logic, Hexagon=Computer
 **Lines**: Solid=Process, Dashed=Electric, //=Pneumatic, o-o-o=Data
 **Valves**: FO=Fail Open, FC=Fail Closed, FL=Fail Last
