@@ -930,13 +930,13 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
       },
       config: {
         thinkingConfig: { 
-          thinkingBudget: 24000 // Higher budget for comprehensive analysis
+          thinkingBudget: 8000 // Reduced from 24000 for cost efficiency
         },
         systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: FINAL_ANALYSIS_SCHEMA,
         temperature: 0.3, // Balanced for technical accuracy and readability
-        maxOutputTokens: 8192
+        maxOutputTokens: 4096 // Reduced from 8192 for cost efficiency
       }
     });
 

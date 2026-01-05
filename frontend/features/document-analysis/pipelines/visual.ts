@@ -366,8 +366,9 @@ async function refineWithFullImage(
 async function shouldUseTiling(imageData: string): Promise<boolean> {
   try {
     const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
-    // Tiling is expensive. Only use for images > 500KB or very large dimensions.
-    return normalized.length > 500000; 
+    // Tiling is expensive. Only use for very large images (>1MB) to reduce costs.
+    // Increased from 500KB to 1MB for better cost efficiency.
+    return normalized.length > 1000000; 
   } catch {
     return false;
   }

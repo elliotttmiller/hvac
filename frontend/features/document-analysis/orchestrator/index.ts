@@ -7,6 +7,7 @@ import { classifyDocument } from './classifier';
 import { routeToPipeline } from './router';
 import { UniversalDocumentResult, DocumentType } from '../types';
 import { generateId } from '../../../lib/utils';
+import { config } from '../../../app/config';
 
 export interface AnalysisOptions {
   fileName: string;
@@ -95,9 +96,10 @@ export async function analyzeDocument(
       components: result.visual?.components?.length || 0
     }]);
 
-    // Step 5: Generate comprehensive final analysis report
+    // Step 5: Generate comprehensive final analysis report (optional, controlled by feature flag)
     // Only generate for visual documents (BLUEPRINT/SCHEMATIC) with components
-    if ((classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && 
+    if (config.features.finalAnalysis && 
+        (classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && 
         result.visual?.components && result.visual.components.length > 0) {
       try {
         emit('Step 4: Generating comprehensive final analysis report...');

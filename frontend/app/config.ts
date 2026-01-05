@@ -41,7 +41,7 @@ export const config = {
     maxTokens: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
     
     // Max output tokens for AI responses (prevents truncation)
-    maxOutputTokens: parseInt(import.meta.env.VITE_AI_MAX_OUTPUT_TOKENS || '8192'),
+    maxOutputTokens: parseInt(import.meta.env.VITE_AI_MAX_OUTPUT_TOKENS || '4096'),
   },
 
   // Feature Flags
@@ -59,6 +59,8 @@ export const config = {
     debugOverlay: import.meta.env.VITE_FEATURE_DEBUG_OVERLAY === 'true',
     // Precision debug: set VITE_FEATURE_PRECISION_DEBUG=true to enable structured IoU and precision logs
     precisionDebug: import.meta.env.VITE_FEATURE_PRECISION_DEBUG === 'true',
+    // Final analysis report: set VITE_FEATURE_FINAL_ANALYSIS=false to disable (saves tokens/cost)
+    finalAnalysis: import.meta.env.VITE_FEATURE_FINAL_ANALYSIS !== 'false',
   },
 
   // Rate Limiting
