@@ -11,8 +11,10 @@ const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 // Configuration constants - Optimized for Gemini 2.5 API limits (2026)
-// Official thinking budget limit: 0-24,576 tokens (24K)
-// Official max output tokens: 65,535 tokens
+// API Version: Google AI Gemini API (generativelanguage.googleapis.com/v1beta)
+// Official thinking budget limit: 0-24,576 tokens (24K) - Verified Jan 2026
+// Official max output tokens: 65,535 tokens - Verified Jan 2026
+// Source: https://ai.google.dev/gemini-api/docs/thinking
 const MAX_THINKING_BUDGET = 16000;  // Optimized: Balanced for complex HVAC analysis
 const MIN_THINKING_BUDGET = 4000;   // Optimized: Sufficient for simple diagrams
 const MAX_THINKING_BUDGET_CAP = 24000; // FIXED: Was 64K (over limit), now 24K (official max)
