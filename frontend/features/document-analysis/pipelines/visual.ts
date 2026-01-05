@@ -173,6 +173,7 @@ async function analyzeStandard(imageData: string, blueprintType: BlueprintType):
       responseMimeType: 'application/json',
       responseSchema: schema,
       temperature: 0.1, // Strict for JSON
+      maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
     },
   });
 
@@ -201,6 +202,7 @@ async function analyzeWithTiling(imageData: string, blueprintType: BlueprintType
           responseMimeType: 'application/json',
           responseSchema: schema,
           temperature: 0.1,
+          maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
         },
       });
       
@@ -305,6 +307,7 @@ async function refineWithFullImage(
       responseMimeType: 'application/json',
       responseSchema: blueprintType === 'PID' ? PID_ANALYSIS_SCHEMA : VISUAL_ANALYSIS_SCHEMA,
       temperature: 0.1,
+      maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
     },
   });
   

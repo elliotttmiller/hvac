@@ -43,6 +43,7 @@ export async function classifyDocument(
         responseMimeType: 'application/json',
         responseSchema: CLASSIFICATION_SCHEMA,
         temperature: 0.1, // Low temperature for consistent classification
+        maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
       },
     });
 

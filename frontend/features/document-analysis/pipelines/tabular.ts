@@ -106,6 +106,7 @@ export async function analyzeTabular(imageData: string): Promise<TabularAnalysis
         responseMimeType: 'application/json',
         responseSchema: TABULAR_ANALYSIS_SCHEMA,
         temperature: 0.1, // Very low temperature for accurate data extraction
+        maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
       },
     });
 

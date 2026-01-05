@@ -37,6 +37,7 @@ export async function analyzeTextual(imageData: string): Promise<TextualAnalysis
         responseMimeType: 'application/json',
         responseSchema: TEXTUAL_ANALYSIS_SCHEMA,
         temperature: 0.1, // Very low temperature for accurate transcription
+        maxOutputTokens: config.ai.maxOutputTokens, // Prevent truncation
       },
     });
 
