@@ -175,7 +175,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, [streamingLog]);
 
   // Memoize component analysis data
-  const componentsByType = useMemo(() => {
+  const componentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
     const groups: Record<string, DetectedComponent[]> = {};
     detectedBoxes.forEach(comp => {
       const type = comp.meta?.equipment_type || comp.type || 'Other';
@@ -185,7 +185,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return groups;
   }, [detectedBoxes]);
 
-  const componentStats = useMemo(() => {
+  const componentStats = useMemo<{
+    total: number;
+    bySubsystem: Record<string, number>;
+    avgConfidence: number;
+    excellentQuality: number;
+    isaCompliant: number;
+  }>(() => {
     const stats = {
       total: detectedBoxes.length,
       bySubsystem: {} as Record<string, number>,
@@ -390,41 +396,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     </div>
                                  )}
 
-                                 {/* Additional Metadata */}
-                                 {(box.meta?.occlusion_level || box.meta?.text_clarity || box.meta?.functional_desc || box.rotation !== undefined) && (
-                                    <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
-                                       <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                          <div className="w-1 h-3 bg-zinc-500 rounded-full"></div>
-                                          Additional Properties
-                                       </div>
-                                       <div className="space-y-2 text-xs">
-                                          {box.meta.functional_desc && (
-                                             <div className="flex justify-between items-center">
-                                                <span className="text-zinc-400">Function</span>
-                                                <span className="text-zinc-200">{box.meta.functional_desc}</span>
-                                             </div>
-                                          )}
-                                          {box.meta.occlusion_level && (
-                                             <div className="flex justify-between items-center">
-                                                <span className="text-zinc-400">Occlusion Level</span>
-                                                <span className="text-zinc-200 capitalize">{box.meta.occlusion_level}</span>
-                                             </div>
-                                          )}
-                                          {box.meta.text_clarity && (
-                                             <div className="flex justify-between items-center">
-                                                <span className="text-zinc-400">Text Clarity</span>
-                                                <span className="text-zinc-200 capitalize">{box.meta.text_clarity}</span>
-                                             </div>
-                                          )}
-                                          {box.rotation !== undefined && (
-                                             <div className="flex justify-between items-center">
-                                                <span className="text-zinc-400">Rotation</span>
-                                                <span className="text-zinc-200 font-mono">{box.rotation}°</span>
-                                             </div>
-                                          )}
-                                       </div>
-                                    </div>
-                                 )}
+                      {/* Additional Metadata removed per UI request */}
                               </div>
                            )}
                         </div>
@@ -1014,7 +986,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">System Distribution</h3>
                 </div>
                 <div className="space-y-2">
-                  {Object.entries(componentStats.bySubsystem).map(([subsystem, count]) => {
+                  {Object.entries(componentStats.bySubsystem).map(([subsystem, count]: [string, number]) => {
                     const percentage = (count / componentStats.total) * 100;
                     return (
                       <div key={subsystem} className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
@@ -1048,7 +1020,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Component Breakdown</h3>
                 </div>
                 <div className="space-y-3">
-                  {Object.entries(componentsByType).map(([type, components]) => (
+                  {Object.entries(componentsByType).map(([type, components]: [string, DetectedComponent[]]) => (
                     <div key={type} className="bg-[#1a1a1a] rounded-lg border border-white/5 overflow-hidden">
                       <div className="bg-gradient-to-r from-amber-500/10 to-transparent p-3 border-b border-white/5">
                         <div className="flex justify-between items-center">
