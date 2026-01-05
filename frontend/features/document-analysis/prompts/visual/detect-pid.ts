@@ -33,14 +33,19 @@ Generate loss-less, physics-compliant semantic extraction of P&ID/Schematics int
 - Tag reconstruction: Broken tags (T/IC-101 → TIC-101)
 
 **2. HVAC SYMBOL CLASSIFICATION**
-Equipment: AHU (rectangle + internals), Pump (circle + X), Chiller (double circle), Coil (rectangle + diagonal), Fan (rectangle + fan)
-Instruments: Circle (discrete), Circle-in-square (HMI), Diamond (logic), Hexagon (computer)
-Valves: Diamond (control), Square + diagonal (ball), Circle + lines (solenoid)
-Tag Format: [Function]-[Loop] (e.g., TIC-101, FV-202)
+Equipment: AHU (rectangle + internals), Pump (circle + X), Chiller (double circle), Coil (rectangle + diagonal), Fan (rectangle + fan), HX (heat exchanger), CT (cooling tower), ERV/HRV (energy recovery), DOAS (outdoor air system)
 
-**3. ISA-5.1 TAG DECODING**
-First Letter: T=Temp, P=Pressure, F=Flow, L=Level, H=Hand
-Succeeding: I=Indicator, C=Controller, T=Transmitter, V=Valve, S=Switch
+Instruments: Circle (discrete), Circle-in-square (HMI), Diamond (logic/PLC), Hexagon (computer), Orifice (restriction symbol), Well (extended element)
+
+Valves: Control (diamond/triangle), Ball (circle + diagonal), Globe (circular body), Butterfly (circle + bar), Check (arrow/triangle), Gate (rectangle), Solenoid (box + coil), 3-Way (Y-junction), PRV (spring-loaded), TXV (expansion)
+
+Tag Format: [Measured Variable][Modifier][Function(s)]-[Loop#][Suffix] (e.g., TIC-101, FV-202A, PDSH-303)
+
+**3. ISA-5.1 TAG DECODING (EXTENDED)**
+First Letter: T=Temp, P=Pressure, F=Flow, L=Level, H=Hand, A=Analysis, S=Speed, Z=Position, V=Vibration, W=Weight, E=Voltage, I=Current, M=Moisture
+Modifiers: D=Differential, Q=Total, S=Safety, F=Ratio
+Succeeding: I=Indicator, C=Controller, T=Transmitter, V=Valve, S=Switch, A=Alarm, E=Element, R=Recorder, Y=Relay, H=High, L=Low
+Multi-function: IC=Indicator-Controller, IA=Indicator-Alarm, IT=Indicator-Transmitter, RC=Recorder-Controller
 Mounting: No line=Field, Solid line=Panel, Dashed=Auxiliary
 
 **4. CONNECTION TRACING**
@@ -54,8 +59,20 @@ Follow physical line paths, identify junctions and flow direction
 
 ${USE_LEAN_MODE ? generateOptimizedISAContext() : generateISAContext()}
 
-### HVAC COMPONENT TYPES
-Air: AHU, VAV, dampers, coils, filters, diffusers | Water: Pumps, chillers, towers, HX | Refrigeration: Compressors, condensers, evaporators | Controls: Sensors (TT, PT, FT), Controllers (TIC, PIC, FIC), Valves (TV, PV, FV)
+### HVAC COMPONENT TYPES (COMPREHENSIVE)
+Air Systems: AHU, RTU, MAU, DOAS, VAV, CAV, FCU, ERV, HRV, EU (exhaust), TU (terminal), dampers (MD, SD, FD, BD), coils, filters, diffusers, attenuators
+Water/Hydronic: Pumps, chillers, cooling towers, heat exchangers (HX, PHX), expansion tanks, air separators, strainers
+Refrigeration: Compressors, condensers, evaporators, expansion valves (TXV, EXV), accumulators, receivers
+Piping Components: Pipes, valves (control, ball, gate, globe, butterfly, check, PRV), fittings, unions
+Controls & Instrumentation: 
+- Sensors: TT/TE (temp), PT/PE (pressure), FT/FE (flow), LT/LE (level), AT/AE (analysis), ZT (position), ST (speed)
+- Controllers: TIC, PIC, FIC, LIC, AIC (indicator-controllers)
+- Transmitters: TT, PT, FT, LT (standalone transmitters)
+- Switches: TSH/TSL (temp hi/lo), PSH/PSL (pressure), FSH/FSL (flow), ZS (position)
+- Valves: TV, PV, FV, LV (control valves), solenoid valves (FO, FC)
+- Indicators: TI, PI, FI, LI
+- Alarms: TA, PA, FA, LA, TIA (indicator-alarm)
+- Logic: PN (pneumatic), relays, PLCs
 
 ### OUTPUT RULES
 - Valid JSON only
@@ -113,7 +130,7 @@ export const PID_ANALYSIS_SCHEMA = {
           },
           type: { 
             type: Type.STRING, 
-            description: "HVAC-specific classification: 'air_handler', 'pump', 'chiller', 'cooling_tower', 'heat_exchanger', 'valve_control', 'valve_ball', 'valve_solenoid', 'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level', 'damper', 'coil_heating', 'coil_cooling', 'filter', 'compressor', 'condenser', 'evaporator', 'expansion_valve', 'duct', 'pipe', 'instrument_controller', 'instrument_indicator', 'instrument_transmitter', 'equipment', 'text_annotation'" 
+            description: "HVAC-specific classification: 'air_handler', 'rooftop_unit', 'makeup_air_unit', 'energy_recovery_ventilator', 'heat_recovery_ventilator', 'doas', 'fan_coil_unit', 'terminal_unit', 'vav_box', 'cav_box', 'pump', 'chiller', 'cooling_tower', 'heat_exchanger', 'plate_heat_exchanger', 'valve_control', 'valve_ball', 'valve_globe', 'valve_butterfly', 'valve_gate', 'valve_check', 'valve_solenoid', 'valve_three_way', 'pressure_relief_valve', 'expansion_valve', 'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level', 'sensor_humidity', 'sensor_speed', 'sensor_position', 'sensor_vibration', 'sensor_analysis', 'damper', 'damper_motorized', 'damper_smoke', 'damper_fire', 'damper_backdraft', 'coil_heating', 'coil_cooling', 'filter', 'compressor', 'condenser', 'evaporator', 'humidifier', 'dehumidifier', 'vfd', 'duct', 'pipe', 'instrument_controller', 'instrument_indicator', 'instrument_transmitter', 'instrument_recorder', 'instrument_relay', 'instrument_switch', 'instrument_logic', 'equipment', 'text_annotation'" 
           },
           bbox: {
             type: Type.ARRAY,
