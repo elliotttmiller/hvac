@@ -9,7 +9,9 @@ import {
   inferMissingConnections,
   enhanceConnections,
   validateConnections,
-  detectControlLoops
+  detectControlLoops,
+  traceConnectionPaths,
+  validateAndCorrectConnectionTypes
 } from '../../../lib/utils/connection-engine';
 import type { VisualAnalysisResult, DetectedComponent, Connection } from '../types';
 
@@ -57,18 +59,32 @@ export async function enhanceVisualAnalysis(
     connections = enhanceConnections(components, connections);
   }
   
-  // Step 3: Infer missing connections
+  // Step 3: Infer missing connections via control loop analysis
   if (enableConnectionInference) {
-    console.log('[Enhancement] Inferring missing connections...');
+    console.log('[Enhancement] Inferring missing connections via control loops...');
     const inferred = inferMissingConnections(components, connections);
     
     if (inferred.length > 0) {
-      console.log(`[Enhancement] Found ${inferred.length} inferred connections`);
+      console.log(`[Enhancement] Found ${inferred.length} inferred control loop connections`);
       connections = [...connections, ...inferred];
+    }
+    
+    // Step 3b: Trace connection paths for additional discovery
+    console.log('[Enhancement] Tracing physical connection paths...');
+    const traced = traceConnectionPaths(components, connections, {
+      maxDistance: 0.08,
+      requireAlignment: true,
+      traceProcessFlow: true,
+      traceSignalFlow: true
+    });
+    
+    if (traced.length > 0) {
+      console.log(`[Enhancement] Discovered ${traced.length} additional connections via path tracing`);
+      connections = [...connections, ...traced];
     }
   }
   
-  // Step 4: Validate connections
+  // Step 4: Validate and correct connection types
   let validationIssues: any[] = [];
   if (enableValidation) {
     console.log('[Enhancement] Validating connections...');
@@ -81,6 +97,10 @@ export async function enhanceVisualAnalysis(
         `[Enhancement] Connection validation found ${validationIssues.length} issues ` +
         `(${errors} errors, ${warnings} warnings)`
       );
+      
+      // Attempt to auto-correct connection type mismatches
+      console.log('[Enhancement] Auto-correcting connection type mismatches...');
+      connections = validateAndCorrectConnectionTypes(connections, components);
     }
   }
   
