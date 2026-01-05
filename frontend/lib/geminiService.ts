@@ -9,15 +9,13 @@ const isBrowser = typeof window !== 'undefined' && typeof window.fetch === 'func
 
 // Server-side implementation (lazy require to avoid bundling in client)
 const serverImpl = async () => {
-  // Use dynamic import/require so bundlers don't include server-only deps in the client
+  // Use centralized server AI factory so all server-side modules share configuration
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { GoogleGenAI } = require('@google/genai');
+  const { getServerAI } = require('./serverAI');
   const { COPILOT_SYSTEM_INSTRUCTION } = require('../features/document-analysis/prompts/visual/detect-pid');
   const { analyzePID } = require('./gemini-prompt-engine/pid-analysis');
 
-  // Accept multiple env variable names for backwards compatibility with .env files
-  const apiKey = process.env.API_KEY || process.env.VITE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
-  const ai = new GoogleGenAI({ apiKey });
+  const { ai, apiKey } = await getServerAI();
 
   return { ai, apiKey, analyzePID, COPILOT_SYSTEM_INSTRUCTION } as const;
 };

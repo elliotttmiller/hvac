@@ -6,11 +6,14 @@
  * pipeline into a professional, detailed analysis overview.
  */
 
-import { GoogleGenAI } from "@google/genai";
 import { GeminiModel } from '@/features/document-analysis/types';
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+// Use centralized server AI factory on server-side
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { getServerAI } = require('../serverAI');
+// Centralized server config
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { serverConfig } = require('../serverConfig');
 
 /**
  * System instruction for final analysis report generation
@@ -419,6 +422,8 @@ export const FINAL_ANALYSIS_SCHEMA = {
  * @returns Structured analysis report following HVAC industry standards
  */
 export const generateFinalAnalysis = async (inferenceResults: any): Promise<any> => {
+  // Obtain server AI client and runtime API key
+  const { ai, apiKey } = await getServerAI();
   if (!apiKey) {
     throw new Error("API Key is missing. Please check your environment configuration.");
   }
@@ -435,13 +440,13 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
       },
       config: {
         thinkingConfig: { 
-          thinkingBudget: 16000 // Optimized: Reduced from 24K to 16K for cost-efficiency while maintaining quality
+          thinkingBudget: serverConfig.DEFAULT_THINKING_BUDGET
         },
         systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: FINAL_ANALYSIS_SCHEMA,
         temperature: 0.3, // Balanced for technical accuracy and readability
-        maxOutputTokens: 16384 // Optimized: Doubled from 8192, still well under 65K official limit
+        maxOutputTokens: serverConfig.DEFAULT_MAX_OUTPUT_TOKENS
       }
     });
 

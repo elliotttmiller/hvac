@@ -186,9 +186,10 @@ app.post('/api/ai/generateVision', async (req, res) => {
   const { imageData, prompt, mimeType, model, options } = req.body;
   if (!imageData || !prompt) return res.status(400).json({ error: 'Missing data.' });
 
-  try {
+    try {
+    const modelName = model || AI_MODEL_DEFAULT;
     const geminiModel = genAI.getGenerativeModel({
-      model: model || AI_MODEL_DEFAULT,
+      model: modelName,
       generationConfig: {
         temperature: options?.temperature ?? 0.1,
         responseMimeType: options?.responseMimeType,
@@ -197,11 +198,49 @@ app.post('/api/ai/generateVision', async (req, res) => {
       systemInstruction: options?.systemInstruction,
     });
 
-    const result = await geminiModel.generateContent([
+    // Debug: log a compact preview of the request shape and size (no sensitive data)
+    try {
+      console.log(`AI Vision Request -> model=${modelName} imageSize=${imageData ? imageData.length : 0} mimeType=${mimeType || 'image/png'} responseMimeType=${options?.responseMimeType || 'unset'}`);
+    } catch (e) {
+      // ignore logging failures
+    }
+
+    // Build the request payload once (avoid duplicating large buffers)
+    const requestPayload = [
       prompt,
       { inlineData: { data: imageData, mimeType: mimeType || 'image/png' } }
-    ]);
-    
+    ];
+
+    // Retry wrapper for transient network/fetch failures (undici).
+    // Read retry/backoff settings from environment (falls back to sensible defaults).
+    const MAX_ATTEMPTS = parseInt(process.env.VITE_RATE_LIMIT_MAX_RETRIES || process.env.RATE_LIMIT_MAX_RETRIES || '3', 10);
+    const BASE_DELAY_MS = parseInt(process.env.VITE_RATE_LIMIT_DELAY_MS || process.env.RATE_LIMIT_DELAY_MS || '1000', 10);
+    const EXP_BACKOFF = (process.env.VITE_RATE_LIMIT_EXPONENTIAL_BACKOFF || process.env.RATE_LIMIT_EXPONENTIAL_BACKOFF || 'true') === 'true';
+    const REQUEST_TIMEOUT_MS = parseInt(process.env.VITE_AI_REQUEST_TIMEOUT_MS || '60000', 10); // 60s default
+
+    console.log(`AI Vision: retry settings -> attempts=${MAX_ATTEMPTS}, baseDelayMs=${BASE_DELAY_MS}, exponential=${EXP_BACKOFF}, timeoutMs=${REQUEST_TIMEOUT_MS}`);
+
+    let result;
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        result = await geminiModel.generateContent(requestPayload, { timeout: REQUEST_TIMEOUT_MS });
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        // Log attempt-level error with a short indicator
+        console.error(`AI Vision attempt ${attempt} failed:`, err && err.message ? err.message : err);
+        // If it's the last attempt, rethrow to be handled by outer catch
+        if (attempt === MAX_ATTEMPTS) {
+          throw lastErr;
+        }
+        // Backoff delay calculation (exponential or linear)
+        const delayMs = EXP_BACKOFF ? BASE_DELAY_MS * Math.pow(2, attempt - 1) : BASE_DELAY_MS * attempt;
+        await new Promise(resolve => setTimeout(resolve, Math.min(delayMs, 60_000)));
+      }
+    }
+
     const responseText = result.response.text();
     
     // Validate response is not empty

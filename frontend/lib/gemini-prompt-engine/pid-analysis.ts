@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { GeminiModel } from '@/features/document-analysis/types';
 import { generateId } from '@/lib/utils';
 import { 
@@ -7,22 +6,12 @@ import {
   PID_USER_PROMPT 
 } from '@/features/document-analysis/prompts/visual/detect-pid';
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
-
-// Configuration constants - Optimized for Gemini 2.5 API limits (2026)
-// API Version: Google AI Gemini API (generativelanguage.googleapis.com/v1beta)
-// Official thinking budget limit: 0-24,576 tokens (24K)
-// Official max output tokens: 65,535 tokens
-// Source: https://ai.google.dev/gemini-api/docs/thinking (accessed Dec 2024)
-const MAX_THINKING_BUDGET = 16000;  // Optimized: Balanced for complex HVAC analysis
-const MIN_THINKING_BUDGET = 4000;   // Optimized: Sufficient for simple diagrams
-const MAX_THINKING_BUDGET_CAP = 24000; // FIXED: Was 64K (over limit), now 24K (official max)
-const IMAGE_SIZE_DIVISOR = 2000;    // Optimized: More conservative budget calculation
-const BASE_RETRY_DELAY_MS = 1000;
-const BACKOFF_MULTIPLIER = 2;
-const HIGH_CONFIDENCE_THRESHOLD = 0.95;
-const DEFAULT_MAX_OUTPUT_TOKENS = 16384; // Optimized: Increased from 8192, still well under 65K limit
+// Use centralized server AI factory on server-side
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { getServerAI } = require('../serverAI');
+// Use centralized server config & helpers
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { serverConfig, calculateThinkingBudget } = require('../serverConfig');
 
 /**
  * Enhanced P&ID Analysis Engine with HVAC-Specific Intelligence.
@@ -44,9 +33,10 @@ export const analyzePID = async (base64Image: string, options: {
     facilityType?: string; // 'data_center', 'hospital', 'laboratory', 'commercial'
   }
 } = {}) => {
-  if (!apiKey) {
-    throw new Error("API Key is missing. Please check your environment configuration.");
-  }
+  // Obtain server AI client and runtime API key
+  const { ai, apiKey: _apiKey } = await getServerAI();
+  const effectiveApiKey = _apiKey || process.env.API_KEY || '';
+  if (!effectiveApiKey) throw new Error('API Key is missing. Please check your environment configuration.');
 
   // Normalize base64 string (remove data URI prefix if present)
   const imageBytes = base64Image.includes('base64,') 
@@ -96,7 +86,7 @@ export const analyzePID = async (base64Image: string, options: {
           responseSchema: PID_ANALYSIS_SCHEMA,
           // Start deterministic, increase creativity on retries
           temperature: attempt === 0 ? 0.1 : 0.3,
-          maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS
+          maxOutputTokens: serverConfig.DEFAULT_MAX_OUTPUT_TOKENS
         }
       });
 
@@ -108,7 +98,7 @@ export const analyzePID = async (base64Image: string, options: {
       // Parse with validation and error recovery
       const parsedResult = validateAndRecoverResult(jsonText, attempt);
       
-      // Calculate result confidence based on component coverage
+  // Calculate result confidence based on component coverage
       const resultConfidence = calculateResultConfidence(parsedResult, options.hvacContext);
       console.log(`📊 Analysis Result Confidence: ${resultConfidence.toFixed(3)} - Components: ${parsedResult.components?.length || 0}`);
       
@@ -119,7 +109,7 @@ export const analyzePID = async (base64Image: string, options: {
       }
       
       // Early exit if we have high confidence
-      if (resultConfidence >= HIGH_CONFIDENCE_THRESHOLD) {
+      if (resultConfidence >= serverConfig.HIGH_CONFIDENCE_THRESHOLD) {
         console.log('✅ High confidence result achieved - skipping remaining attempts');
         break;
       }
@@ -135,8 +125,8 @@ export const analyzePID = async (base64Image: string, options: {
         return bestResult || createFallbackResult(options.hvacContext);
       }
       
-      // Exponential backoff between retries
-      await new Promise(resolve => setTimeout(resolve, BASE_RETRY_DELAY_MS * Math.pow(BACKOFF_MULTIPLIER, attempt)));
+  // Exponential backoff between retries
+  await new Promise(resolve => setTimeout(resolve, serverConfig.RATE_LIMIT_DELAY_MS * Math.pow(serverConfig.BACKOFF_MULTIPLIER, attempt)));
     }
   }
 
@@ -188,35 +178,7 @@ function generateContextAwarePrompt(basePrompt: string, hvacContext?: any): stri
     : basePrompt;
 }
 
-/**
- * Calculate adaptive thinking budget based on image complexity and HVAC context
- */
-function calculateThinkingBudget(imageSize: number, hvacContext?: any): number {
-  // Base budget based on image size (larger images need more analysis)
-  let baseBudget = Math.min(MAX_THINKING_BUDGET, Math.max(MIN_THINKING_BUDGET, imageSize / IMAGE_SIZE_DIVISOR));
-  
-  // HVAC complexity multipliers - more complex systems need deeper analysis
-  const complexityMultipliers: Record<string, number> = {
-    'data_center': 1.5,      // High redundancy, complex control
-    'hospital': 1.4,         // Strict code compliance, pressure relationships
-    'laboratory': 1.6,       // Precise control, complex exhaust
-    'refrigeration': 1.3,    // Complex thermodynamic cycles
-    'chilled_water': 1.2     // Primary/secondary systems
-  };
-  
-  let multiplier = 1.0;
-  
-  if (hvacContext) {
-    if (hvacContext.facilityType && complexityMultipliers[hvacContext.facilityType]) {
-      multiplier = Math.max(multiplier, complexityMultipliers[hvacContext.facilityType]);
-    }
-    if (hvacContext.systemType && complexityMultipliers[hvacContext.systemType]) {
-      multiplier = Math.max(multiplier, complexityMultipliers[hvacContext.systemType]);
-    }
-  }
-  
-  return Math.min(MAX_THINKING_BUDGET_CAP, Math.floor(baseBudget * multiplier)); // Cap at 64K tokens
-}
+// calculateThinkingBudget is provided by centralized serverConfig.calculateThinkingBudget
 
 /**
  * Advanced JSON cleanup and normalization
