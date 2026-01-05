@@ -7,13 +7,8 @@
  */
 
 import { GeminiModel } from '@/features/document-analysis/types';
-
-// Use centralized server AI factory on server-side
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { getServerAI } = require('../serverAI');
-// Centralized server config
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { serverConfig } = require('../serverConfig');
+import { getServerAI } from '../serverAI';
+import { serverConfig } from '../serverConfig';
 
 /**
  * System instruction for final analysis report generation

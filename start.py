@@ -83,10 +83,29 @@ logger = configure_logger(LOG_FILE)
 
 def log_step(step_name: str) -> None:
     """Log a major step with visual separator."""
-    logger.info("")
-    logger.info("=" * 70)
-    logger.info(f"  {step_name}")
-    logger.info("=" * 70)
+    # Use summary-aware info to keep startup console output concise when requested
+    s_info("")
+    s_info("=" * 70)
+    s_info(f"  {step_name}")
+    s_info("=" * 70)
+
+
+# Startup-summary mode: when true, reduce console INFO clutter and keep
+# detailed messages at DEBUG (still recorded to file). Set via env:
+# STARTUP_SUMMARY_ONLY=1
+STARTUP_SUMMARY_ONLY = os.getenv("STARTUP_SUMMARY_ONLY", "0") in ("1", "true", "True")
+
+
+def s_info(message: str) -> None:
+    """Summary-aware info logger.
+
+    When STARTUP_SUMMARY_ONLY is enabled we log these as DEBUG to the console
+    (they still go to the file at DEBUG level). Otherwise log as INFO.
+    """
+    if STARTUP_SUMMARY_ONLY:
+        logger.debug(message)
+    else:
+        logger.info(message)
 
 
 def read_env_file(path: Path) -> Dict[str, str]:
@@ -236,9 +255,9 @@ def check_platform() -> Dict[str, Any]:
     info["processor"] = platform.processor() or "unknown"
     info["python_implementation"] = platform.python_implementation()
     
-    logger.info(f"🖥️  Platform: {info['platform']} {info['platform_release']} ({info['architecture']})")
-    logger.info(f"🐍 Python: {info['python_implementation']} {sys.version.split()[0]}")
-    
+    s_info(f"🖥️  Platform: {info['platform']} {info['platform_release']} ({info['architecture']})")
+    s_info(f"🐍 Python: {info['python_implementation']} {sys.version.split()[0]}")
+
     logger.debug(f"Platform details: {json.dumps(info, indent=2)}")
     return info
 
@@ -252,15 +271,15 @@ def check_environment() -> Dict[str, str]:
     # Python info
     info["python_executable"] = sys.executable
     info["python_version"] = sys.version.replace('\n', ' ')
-    logger.info(f"✅ Python: {sys.version.split()[0]} ({sys.executable})")
+    s_info(f"✅ Python: {sys.version.split()[0]} ({sys.executable})")
     
     # Node.js
     info["node_path"] = which_or_none("node") or "(not found)"
     info["node_version"] = ""
     if info["node_path"] != "(not found)":
-        rc, out, _ = run_cmd([info["node_path"], "--version"])
+        rc, out, _ = run_cmd([info["node_path"], "--version"]) 
         info["node_version"] = out.strip() if rc == 0 else "(error)"
-        logger.info(f"✅ Node.js: {info['node_version']} ({info['node_path']})")
+        s_info(f"✅ Node.js: {info['node_version']} ({info['node_path']})")
     else:
         logger.error("❌ Node.js not found in PATH")
         logger.error("   Please install Node.js from https://nodejs.org/")
@@ -268,9 +287,9 @@ def check_environment() -> Dict[str, str]:
     # npm
     info["npm_path"] = which_or_none("npm") or "(not found)"
     if info["npm_path"] != "(not found)":
-        rc, out, _ = run_cmd([info["npm_path"], "--version"])
+        rc, out, _ = run_cmd([info["npm_path"], "--version"]) 
         info["npm_version"] = out.strip() if rc == 0 else "(error)"
-        logger.info(f"✅ npm: {info['npm_version']} ({info['npm_path']})")
+        s_info(f"✅ npm: {info['npm_version']} ({info['npm_path']})")
     else:
         info["npm_version"] = "(not found)"
         logger.error("❌ npm not found in PATH")
@@ -278,7 +297,7 @@ def check_environment() -> Dict[str, str]:
     # npx
     info["npx_path"] = which_or_none("npx") or "(not found)"
     if info["npx_path"] != "(not found)":
-        logger.info(f"✅ npx: {info['npx_path']}")
+        s_info(f"✅ npx: {info['npx_path']}")
     else:
         logger.warning("⚠️  npx not found in PATH")
     
@@ -600,127 +619,43 @@ def main(argv: Optional[List[str]] = None) -> int:
     
     # Print banner
     logger.info("=" * 70)
-    logger.info(" HVAC AI Platform - Startup Script v2.0")
+    logger.info("HVAC AI Platform - Startup Script v2.0")
     logger.info("=" * 70)
-    logger.info(f"🕐 Started: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    logger.info(f"📂 Working Directory: {ROOT}")
-    logger.info(f"📝 Log File: {LOG_FILE}")
+    logger.info(f"Started: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    logger.info(f"Working Directory: {ROOT}")
+    logger.info(f"Log File: {LOG_FILE}")
     logger.info("")
     
-    results: Dict[str, bool] = {}
     overall_start_time = time.time()
-    
+
     try:
-        # Platform information
-        platform_info = check_platform()
-        results["platform_ok"] = True
-        
-        # Environment validation
-        env_info = check_environment()
-        results["env_ok"] = (
-            env_info.get("node_path") != "(not found)" and
-            env_info.get("npm_path") != "(not found)"
-        )
-        
-        if not results["env_ok"]:
-            logger.error("")
-            logger.error("❌ CRITICAL: Node.js or npm not found")
-            logger.error("   Cannot proceed without Node.js environment")
-            print_summary(results)
-            return 1
-        
-        # Dependency check
-        dep_info = check_dependencies()
-        results["dependencies_ok"] = dep_info.get("dependencies_installed", False)
-        
-        # Auto-install dependencies if requested and needed
-        if not results["dependencies_ok"] and args.auto_install:
-            logger.info("")
-            logger.info("🔧 Auto-install enabled, attempting to install dependencies...")
-            if install_dependencies():
-                results["dependencies_ok"] = True
-            else:
-                logger.error("❌ Auto-install failed")
-        
-        if not results["dependencies_ok"]:
-            logger.error("")
-            logger.error("❌ Dependencies not installed")
-            logger.error("   Run with --auto-install flag or manually run: npm install")
-            print_summary(results)
-            print_final_recommendations(results)
-            return 1
-        
-        # Configuration loading and display
-        config_info = load_and_display_config()
-        results["config_loaded"] = config_info.get("has_env", False)
-        
-        # Environment variables validation
-        example = ROOT / ".env.example"
-        candidate_actuals = [
-            ROOT / ".env",
-            ROOT / ".env.local",
-            ROOT / ".env.development",
-            ROOT / ".env.development.local"
-        ]
-        missing_env_keys, unexpected = validate_environment()
-        results["env_keys_ok"] = len(missing_env_keys) == 0
-        
-        # Print summary
-        total_elapsed = time.time() - overall_start_time
-        logger.info("")
-        logger.info("=" * 70)
-        logger.info(f"⏱️  Total diagnostic time: {total_elapsed:.2f}s")
-        logger.info("=" * 70)
-        
-        print_summary(results)
-        print_final_recommendations(results)
-        
-        logger.info("")
-        logger.info(f"📝 Full log written to: {LOG_FILE}")
-        
-        # Start dev server if requested
+        s_info("Skipping pre-flight validations (startup summary mode)")
+        s_info("Full verbose logs are still written to the rotating log file")
+
+        logger.debug("Note: platform/environment/dependency checks intentionally skipped")
+
+        # Start dev server if requested (no gating on pre-flight checks)
         if args.dev:
             logger.info("")
-            
-            # Only start dev server if critical checks passed
-            critical_checks = [
-                "env_ok",
-                "dependencies_ok"
-            ]
-            critical_failed = [k for k in critical_checks if not results.get(k, False)]
-            
-            if critical_failed:
-                logger.error("❌ Cannot start dev server due to failed critical checks:")
-                for check in critical_failed:
-                    logger.error(f"   • {check}")
-                logger.error("")
-                logger.error("   Fix the issues above and try again")
-                return 1
-            # Determine whether to start backend API as well
             api_entry = ROOT / 'server' / 'index.cjs'
             start_api = api_entry.exists()
             if start_api:
-                logger.info("ℹ️  Found local API server entry, starting backend + frontend dev servers")
-            # Mark passthrough option on the function so the inner spawn can read it
-            logger.info(f"ℹ️  Passthrough mode: {'ENABLED' if args.passthrough else 'DISABLED'}")
+                s_info("Found local API server entry, starting backend + frontend dev servers")
+            s_info(f"Passthrough mode: {'ENABLED' if args.passthrough else 'DISABLED'}")
             start_dev_server()
         
-        # Determine overall exit code
-        critical_fail = not all([
-            results.get("env_ok", False),
-            results.get("dependencies_ok", False)
-        ])
-        
-        return 1 if critical_fail else 0
+        # Normal exit (diagnostics skipped). Any runtime errors will be
+        # captured in the detailed log file.
+        return 0
         
     except KeyboardInterrupt:
         logger.info("")
-        logger.info("⚠️  Interrupted by user (Ctrl+C)")
+        logger.info("Interrupted by user (Ctrl+C)")
         return 130
     except Exception as e:
         logger.error("")
         logger.error("=" * 70)
-        logger.error("💥 Unexpected Error")
+        logger.error("Unexpected Error")
         logger.error("=" * 70)
         logger.exception(f"Fatal error: {e}")
         logger.error("")

@@ -413,16 +413,16 @@ io.on('connection', socket => {
 // START SERVER
 // ============================================================================
 server.listen(PORT, () => {
-  console.log(`\n🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📂 Data Root: ${ROOT}`);
-  console.log(`🤖 AI Provider: ${AI_PROVIDER} (${genAI ? 'Active' : 'Disabled'})`);
-  
+  console.log(`\nServer running at http://localhost:${PORT}`);
+  console.log(`Data Root: ${ROOT}`);
+  console.log(`AI Provider: ${AI_PROVIDER} (${genAI ? 'Active' : 'Disabled'})`);
+
   // Mock Mode Status
   if (MOCK_MODE_ENABLED) {
-    console.log(`🎭 Mock Mode: ENABLED (using ${MOCK_DATA_PATH})`);
-    console.log(`   ⏱️  Simulated latency: ${MOCK_MODE_DELAY_MS}ms`);
-    console.warn('⚠️  WARNING: Mock mode is active. AI inference is bypassed.');
+    console.log(`Mock Mode: ENABLED (using ${MOCK_DATA_PATH})`);
+    console.log(`Simulated latency: ${MOCK_MODE_DELAY_MS}ms`);
+    console.warn('WARNING: Mock mode is active. AI inference is bypassed.');
   } else {
-    console.log(`🎭 Mock Mode: DISABLED (live AI inference)`);
+    console.log(`Mock Mode: DISABLED (live AI inference)`);
   }
 });

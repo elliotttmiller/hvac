@@ -7,11 +7,9 @@ import {
 } from '@/features/document-analysis/prompts/visual/detect-pid';
 
 // Use centralized server AI factory on server-side
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { getServerAI } = require('../serverAI');
+import { getServerAI } from '../serverAI';
 // Use centralized server config & helpers
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { serverConfig, calculateThinkingBudget } = require('../serverConfig');
+import { serverConfig, calculateThinkingBudget } from '../serverConfig';
 
 /**
  * Enhanced P&ID Analysis Engine with HVAC-Specific Intelligence.
