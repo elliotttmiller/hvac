@@ -10,15 +10,17 @@ import {
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
-// Configuration constants
-const MAX_THINKING_BUDGET = 32000;
-const MIN_THINKING_BUDGET = 8000;
-const MAX_THINKING_BUDGET_CAP = 64000;
-const IMAGE_SIZE_DIVISOR = 1000;
+// Configuration constants - Optimized for Gemini 2.5 API limits (2026)
+// Official thinking budget limit: 0-24,576 tokens (24K)
+// Official max output tokens: 65,535 tokens
+const MAX_THINKING_BUDGET = 16000;  // Optimized: Balanced for complex HVAC analysis
+const MIN_THINKING_BUDGET = 4000;   // Optimized: Sufficient for simple diagrams
+const MAX_THINKING_BUDGET_CAP = 24000; // FIXED: Was 64K (over limit), now 24K (official max)
+const IMAGE_SIZE_DIVISOR = 2000;    // Optimized: More conservative budget calculation
 const BASE_RETRY_DELAY_MS = 1000;
 const BACKOFF_MULTIPLIER = 2;
 const HIGH_CONFIDENCE_THRESHOLD = 0.95;
-const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
+const DEFAULT_MAX_OUTPUT_TOKENS = 16384; // Optimized: Increased from 8192, still well under 65K limit
 
 /**
  * Enhanced P&ID Analysis Engine with HVAC-Specific Intelligence.
@@ -63,7 +65,7 @@ export const analyzePID = async (base64Image: string, options: {
       console.log(`📊 Adaptive thinking budget: ${thinkingBudget} tokens`);
       
       const response = await ai.models.generateContent({
-        model: GeminiModel.PRO,
+        model: GeminiModel.FLASH, // OPTIMIZED: Use Flash for free tier compatibility (Pro has no free access as of 2026)
         contents: {
           parts: [
             {
@@ -144,7 +146,7 @@ export const analyzePID = async (base64Image: string, options: {
       attempts: attempt,
       best_confidence: bestConfidence,
       hvac_context: options.hvacContext,
-      model_used: GeminiModel.PRO
+      model_used: GeminiModel.FLASH // Updated for free tier compatibility
     };
   }
 

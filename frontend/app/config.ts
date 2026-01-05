@@ -37,8 +37,8 @@ export const config = {
     // Note: Vision analysis intentionally omits temperature to match legacy behavior
     temperature: parseFloat(import.meta.env.VITE_AI_TEMPERATURE || '0.2'),
     
-    // Max tokens for response
-    maxTokens: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '4096'),
+    // Max tokens for response (2026 Optimized: Official limit is 65,535)
+    maxTokens: parseInt(import.meta.env.VITE_AI_MAX_TOKENS || '16384'),
   },
 
   // Feature Flags

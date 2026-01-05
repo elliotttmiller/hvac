@@ -47,7 +47,7 @@ export const generateThinkingResponse = async (
   const fullPrompt = `${context}\nuser: ${prompt}\nmodel:`;
 
   const response = await ai.models.generateContent({
-    model: GeminiModel.PRO,
+    model: GeminiModel.FLASH, // OPTIMIZED: Use Flash for free tier compatibility (Pro has no free access as of 2026)
     contents: fullPrompt,
     config: {
       thinkingConfig: { thinkingBudget: 16000 },
