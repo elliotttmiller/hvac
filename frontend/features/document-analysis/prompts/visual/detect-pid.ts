@@ -91,17 +91,6 @@ export const PID_DETECT_PROMPT = `
 
 Output strict JSON per schema. No markdown.
 `;
-   - Common HVAC prefixes: TT, PT, FT, LT, TIC, FIC, PIC, LIC, FV, TV, PV, LV
-   - Equipment tags: AHU-1, PUMP-2A, CHILLER-3
-2. **Symbol Priority**: Equipment > Instruments > Valves > Pipes/Ducts > Text/Notes
-3. **Minimum Detection Threshold**: Include components with confidence > 0.3 (mark low-confidence for review)
-4. **Completeness**: Verify all grid areas scanned, cross-reference tag numbers for missing components
-
-**RESPONSE FORMAT**:
-Strict adherence to the JSON Schema. Output ONLY valid JSON. No markdown outside JSON structure.
-**OPTIONAL PIXEL-LEVEL MASKS**:
-If possible, for each component include an optional \`polygon\` field containing a closed list of normalized coordinates that tightly follow the ink boundary of the graphical symbol (format: [x1,y1,x2,y2,...]). This allows downstream systems to compute exact tight bounding boxes without additional image processing. If you cannot produce polygons, omit the field.
-`;
 
 /**
  * Enhanced P&ID Analysis Schema
