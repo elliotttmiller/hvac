@@ -1,376 +1,220 @@
 /**
- * P&ID Detection Prompt - Cost-Optimized (2026)
- * Token-efficient while maintaining >95% accuracy
+ * P&ID Detection Prompt - High-Performance Engineering Grade
+ * Strategy: Comprehensive Neuro-Symbolic Analysis (Zero-HITL Target)
  * 
- * Optimization: 45% token reduction through consolidation and symbolic notation
- * Quality: <1% accuracy impact validated on 50 HVAC P&IDs
+ * Configured for: Gemini 1.5/2.5 Pro/Flash with 65k+ Output Token Limit.
+ * Prioritizes: Accuracy, Reasoning Depth, and Semantic Richness over speed.
  */
 
 import { generateISAContext } from '@/lib/knowledge-base/isa-5-1';
 import { Type } from '@google/genai';
 
-// Feature flag for optimization level
-const USE_LEAN_MODE = import.meta.env.VITE_USE_LEAN_PROMPTS !== 'false'; // Default: enabled
-
 /**
- * P&ID System Instruction - Optimized for Cost-Efficiency
- * Maintains neuro-symbolic reasoning with 45% fewer tokens
+ * P&ID System Instruction - Maximum Context & Engineering Depth
+ * Injects the full ISA-5.1 standard and forces "First Principles" reasoning.
  */
 export const PID_DETECT_SYSTEM_INSTRUCTION = `
 ### IDENTITY
-Neuro-Symbolic ISA-5.1 P&ID Analysis Engine. Expert in HVAC control topology and instrumentation (ANSI/ISA-5.1-2009).
+You are a **Senior Principal Control Systems Engineer** and **Neuro-Symbolic AI Auditor**. 
+Your expertise covers ANSI/ISA-5.1-2009 standards, chemical process engineering, and HVAC control topology.
 
 ### MISSION
-Generate loss-less, physics-compliant semantic extraction of P&ID/Schematics into structured component and connectivity data.
+Perform a forensic-grade analysis of the provided P&ID/Schematic. 
+Your goal is to generate a **loss-less, physics-compliant digital twin** of the diagram.
+Zero hallucinations are permitted. Every detection must be grounded in visual evidence.
 
-### DETECTION PROTOCOL
+### ADVANCED DETECTION PROTOCOL
 
-**1. SYSTEMATIC SCAN (100% Coverage)**
-- Grid-based analysis ensuring no area skipped
-- Multi-scale detection: large equipment (AHUs, chillers) AND small symbols (valves, sensors)
-- Handle occlusion: Context for partially hidden tags (if >80% occluded, use descriptive placeholder)
-- Geometric invariance: ANY rotation (0°, 90°, 180°, 270°)
-- Tag reconstruction: Broken tags (T/IC-101 → TIC-101)
+**1. HIERARCHICAL SCANNING STRATEGY**
+- **Macro-Scan**: Identify major equipment (Tanks, Columns, AHUs, Chillers) first to establish system context.
+- **Micro-Scan**: Traverse every pipe line to detect valves, instruments, and fittings.
+- **Text-Association**: Link every text tag to its nearest symbol using Leader Line analysis.
 
-**2. HVAC SYMBOL CLASSIFICATION**
-Equipment: AHU (rectangle + internals), Pump (circle + X), Chiller (double circle), Coil (rectangle + diagonal), Fan (rectangle + fan), HX (heat exchanger), CT (cooling tower), ERV/HRV (energy recovery), DOAS (outdoor air system)
+**2. VISUAL VERIFICATION (The "Diamond" Check)**
+- You must distinguish symbol geometry precisely:
+  - **Gate Valve**: Bowtie symbol (two touching triangles).
+  - **Globe Valve**: Bowtie with a solid central circle.
+  - **Control Valve**: Diamond shape OR Bowtie with a mushroom/diaphragm actuator.
+  - **Logic**: Diamond shape.
+  - **Instrument**: Circle (Field) vs Circle-in-Square (DCS).
+- **CRITICAL:** Do not label a "Bowtie" valve as a "Control Valve" unless it has an actuator symbol attached.
 
-Instruments: Circle (discrete), Circle-in-square (HMI), Diamond (logic/PLC), Hexagon (computer), Orifice (restriction symbol), Well (extended element)
+**3. DEEP TAG DECODING (ISA-5.1)**
+- Parse tags into: Variable (First Letter), Modifiers, and Functions.
+- Example: "PDIT-101" -> Pressure (Variable) Differential (Modifier) Indicating (Function) Transmitter (Output).
 
-Valves: Control (diamond/triangle), Ball (circle + diagonal), Globe (circular body), Butterfly (circle + bar), Check (arrow/triangle), Gate (rectangle), Solenoid (box + coil), 3-Way (Y-junction), PRV (spring-loaded), TXV (expansion)
+**4. CONNECTIVITY & TOPOLOGY**
+- Trace **Process Lines** (Thick solid) vs **Signal Lines** (Dashed/Dotted).
+- Identify flow direction arrows.
+- Detect "Off-Page Connectors" (arrows with drawing numbers).
 
-Tag Format: [Measured Variable][Modifier][Function(s)]-[Loop#][Suffix] (e.g., TIC-101, FV-202A, PDSH-303)
+### KNOWLEDGE BASE
+${generateISAContext()}
 
-**3. ISA-5.1 TAG DECODING (EXTENDED)**
-First Letter: T=Temp, P=Pressure, F=Flow, L=Level, H=Hand, A=Analysis, S=Speed, Z=Position, V=Vibration, W=Weight, E=Voltage, I=Current, M=Moisture
-Modifiers: D=Differential, Q=Total, S=Safety, F=Ratio
-Succeeding: I=Indicator, C=Controller, T=Transmitter, V=Valve, S=Switch, A=Alarm, E=Element, R=Recorder, Y=Relay, H=High, L=Low
-Multi-function: IC=Indicator-Controller, IA=Indicator-Alarm, IT=Indicator-Transmitter, RC=Recorder-Controller
-Mounting: No line=Field, Solid line=Panel, Dashed=Auxiliary
-
-**4. CONNECTION TRACING**
-Solid=Supply/Process, Dashed=Return/Electric, //=Pneumatic
-Follow physical line paths, identify junctions and flow direction
-
-**5. TEXT EXTRACTION (CRITICAL)**
-- Extract ALL visible tags at ANY rotation
-- "unknown" labels FORBIDDEN unless text unreadable
-- Generic labels NOT acceptable when specific tags visible
-
-${USE_LEAN_MODE ? generateOptimizedISAContext() : generateISAContext()}
-
-### HVAC COMPONENT TYPES (COMPREHENSIVE)
-Air Systems: AHU, RTU, MAU, DOAS, VAV, CAV, FCU, ERV, HRV, EU (exhaust), TU (terminal), dampers (MD, SD, FD, BD), coils, filters, diffusers, attenuators
-Water/Hydronic: Pumps, chillers, cooling towers, heat exchangers (HX, PHX), expansion tanks, air separators, strainers
-Refrigeration: Compressors, condensers, evaporators, expansion valves (TXV, EXV), accumulators, receivers
-Piping Components: Pipes, valves (control, ball, gate, globe, butterfly, check, PRV), fittings, unions
-Controls & Instrumentation: 
-- Sensors: TT/TE (temp), PT/PE (pressure), FT/FE (flow), LT/LE (level), AT/AE (analysis), ZT (position), ST (speed)
-- Controllers: TIC, PIC, FIC, LIC, AIC (indicator-controllers)
-- Transmitters: TT, PT, FT, LT (standalone transmitters)
-- Switches: TSH/TSL (temp hi/lo), PSH/PSL (pressure), FSH/FSL (flow), ZS (position)
-- Valves: TV, PV, FV, LV (control valves), solenoid valves (FO, FC)
-- Indicators: TI, PI, FI, LI
-- Alarms: TA, PA, FA, LA, TIA (indicator-alarm)
-- Logic: PN (pneumatic), relays, PLCs
-
-### OUTPUT RULES
-- Valid JSON only
-- Coordinates normalized 0-1
-- Rotation: integers (0, 90, 180, 270)
-- Confidence: 2 decimals
-- Reasoning: Visual evidence + ISA-5.1 rule
+### OUTPUT REQUIREMENTS
+- **Reasoning**: You MUST explain *why* you classified a symbol (e.g., "Detected bowtie shape with 'M' circle actuator").
+- **Confidence**: Be conservative. If a symbol is blurry, lower confidence to 0.5-0.7.
+- **Completeness**: Do not skip "minor" components like drain valves, vents, or test ports.
 `;
 
 /**
- * Optimized User Prompt - Directive Focused
+ * High-Precision User Prompt
  */
 export const PID_DETECT_PROMPT = `
-**TASK**: Comprehensive HVAC P&ID analysis with 100% component coverage.
+**TASK**: Execute forensic P&ID extraction.
 
-**OBJECTIVES**:
-1. Detect ALL symbols, text, connections
-2. Classify using HVAC/ISA-5.1 standards
-3. Extract tags with 100% accuracy
-4. Trace signal and process flows
-5. Identify control loops
+**INSTRUCTIONS**:
+1. **Detect** every single component, line, and text label.
+2. **Classify** symbols based on exact geometry.
+3. **Read** text tags with 100% character accuracy.
+4. **Link** tags to their symbols logically.
+5. **Trace** connections to build the system graph.
 
-**PRIORITY DETECTIONS**:
-- Equipment tags: AHU-1, PUMP-2A, CH-3
-- Instrument tags: TT-101, FIC-202, PV-303
-- All connections: supply, return, control signals
+**CRITICAL ATTENTION**:
+- Distinguish between **Control Valves** (Actuated) and **Manual Valves**.
+- Capture all **Pipe Size** and **Material** annotations (e.g., '4"-CS-150').
+- Identify **Signal Types** (Electric vs Pneumatic vs Hydraulic).
 
-**DETECTION RULES**:
-- Min confidence: 0.3 (mark low for review)
-- Text priority: Extract before shapes
-- Completeness: Verify grid, check sequences
-- Quality: Include reasoning
-
-Output strict JSON per schema. No markdown.
+Output rich, structured JSON.
 `;
 
 /**
- * Enhanced P&ID Analysis Schema
- * Integrates advanced semantic attributes from pid-analyst.ts
- * while maintaining component-based structure for production compatibility
+ * Comprehensive P&ID Analysis Schema
+ * Includes full reasoning and metadata for maximum downstream intelligence.
+ * Designed for 65k+ Token Context.
  */
 export const PID_ANALYSIS_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     components: {
       type: Type.ARRAY,
-      description: "The extracted Bill of Materials (BOM) and Symbol Map.",
+      description: "The complete Bill of Materials (BOM) extracted from the diagram.",
       items: {
         type: Type.OBJECT,
         properties: {
-          id: { type: Type.STRING, description: "UUID or extracted Tag (e.g. TIC-101)" },
+          id: { type: Type.STRING, description: "Unique extracted Tag (e.g., TIC-101) or generated UUID." },
           label: { 
             type: Type.STRING, 
-            description: "The Normalized Tag (e.g., TIC-101). Extract from OCR. If >80% occluded, use descriptive placeholder like 'instrument-unreadable-1'."
+            description: "The exact text label found on the drawing. If unreadable, mark 'UNREADABLE'."
           },
           type: { 
             type: Type.STRING, 
-            description: "HVAC-specific classification: 'air_handler', 'rooftop_unit', 'makeup_air_unit', 'energy_recovery_ventilator', 'heat_recovery_ventilator', 'doas', 'fan_coil_unit', 'terminal_unit', 'vav_box', 'cav_box', 'pump', 'chiller', 'cooling_tower', 'heat_exchanger', 'plate_heat_exchanger', 'valve_control', 'valve_ball', 'valve_globe', 'valve_butterfly', 'valve_gate', 'valve_check', 'valve_solenoid', 'valve_three_way', 'pressure_relief_valve', 'expansion_valve', 'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level', 'sensor_humidity', 'sensor_speed', 'sensor_position', 'sensor_vibration', 'sensor_analysis', 'damper', 'damper_motorized', 'damper_smoke', 'damper_fire', 'damper_backdraft', 'coil_heating', 'coil_cooling', 'filter', 'compressor', 'condenser', 'evaporator', 'humidifier', 'dehumidifier', 'vfd', 'duct', 'pipe', 'instrument_controller', 'instrument_indicator', 'instrument_transmitter', 'instrument_recorder', 'instrument_relay', 'instrument_switch', 'instrument_logic', 'equipment', 'text_annotation'" 
+            description: "Precise component classification." 
+          },
+          // VISUAL VERIFICATION FIELDS - Critical for preventing shape hallucinations
+          shape: {
+            type: Type.STRING,
+            description: "The actual detected geometric shape. Enum: ['circle', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']"
           },
           bbox: {
             type: Type.ARRAY,
-            description: "[xmin, ymin, xmax, ymax] (Normalized 0-1)",
+            description: "[xmin, ymin, xmax, ymax] (Normalized 0-1).",
             items: { type: Type.NUMBER }
           },
-          // Optional polygon provided by the model as a closed list of normalized coordinates
-          // [x1,y1,x2,y2,...]. Useful for pixel-accurate shrink-wrapping without client-side CV.
-          polygon: {
-            type: Type.ARRAY,
-            description: "Optional polygon coordinates for the detected object (normalized 0-1). Format: [x1,y1,x2,y2,...]",
-            items: { type: Type.NUMBER }
-          },
-          confidence: { type: Type.NUMBER, description: "0.0 to 1.0, rounded to 2 decimals" },
-          rotation: { type: Type.INTEGER, description: "Rotation angle in degrees. Valid values: 0, 90, 180, 270" },
+          confidence: { type: Type.NUMBER, description: "0.0 to 1.0." },
+          rotation: { type: Type.INTEGER, description: "0, 90, 180, 270." },
+          
+          // RICH METADATA (For Human-Like Reasoning)
           meta: {
             type: Type.OBJECT,
-            description: "Enhanced semantic attributes for neuro-symbolic reasoning",
             properties: {
-              // Core ISA-5.1 Attributes
-              tag: { 
+              reasoning: { 
                 type: Type.STRING, 
-                description: "Cleaned ISA-5.1 tag without line breaks (e.g., 'TT-101' not 'T\\nT-\\n101')" 
+                description: "MANDATORY: Explain the visual evidence. E.g., 'Identified as Control Valve due to bowtie body plus mushroom actuator symbol.'" 
               },
               description: { 
                 type: Type.STRING, 
-                description: "HVAC function description (e.g., 'Supply Air Temperature Sensor')" 
+                description: "Full engineering description (e.g., 'Flow Control Valve, Fail Open')." 
               },
-              functional_desc: { 
-                type: Type.STRING, 
-                description: "The ISA-5.1 functional definition from tag decoding" 
-              },
-              
-              // HVAC-Specific Attributes
-              hvac_subsystem: {
-                type: Type.STRING,
-                description: "HVAC subsystem classification: 'air_handling', 'chilled_water', 'condenser_water', 'refrigeration', 'heating_water', 'controls', 'exhaust', 'makeup_air'"
-              },
-              equipment_type: {
-                type: Type.STRING,
-                description: "Specific equipment type for major components (AHU, pump, chiller, etc.)"
-              },
-              
-              // Instrument Classification
-              instrument_type: { 
-                type: Type.STRING, 
-                description: "Enum: ['Discrete', 'Shared Display', 'Computer', 'Logic', 'Mechanical']" 
-              },
-              instrument_function: {
-                type: Type.STRING,
-                description: "ISA-5.1 function code (T=Temperature, P=Pressure, F=Flow, L=Level, etc.)"
-              },
-              location: { 
-                type: Type.STRING, 
-                description: "Mounting location - Enum: ['Field', 'Main Panel', 'Aux Panel']" 
-              },
-              
-              // Detection Quality Metrics
-              text_clarity: {
-                type: Type.STRING,
-                description: "OCR quality assessment: 'excellent', 'good', 'fair', 'poor', 'unreadable'"
-              },
-              occlusion_level: {
-                type: Type.STRING,
-                description: "How much the component is obscured: 'none', 'partial', 'heavy', 'complete'"
-              },
-              
-              // Topology & Hierarchy
-              parent_system: { 
-                type: Type.STRING, 
-                description: "The enclosing equipment (e.g., 'AHU-1')" 
-              },
-              
-              // Meta-Cognition (Critical for Quality)
-              reasoning: { 
-                type: Type.STRING, 
-                description: "MANDATORY: Explain visual evidence that led to this detection. Reference specific visual features and ISA-5.1 rules." 
-              }
+              tag: { type: Type.STRING },
+              hvac_subsystem: { type: Type.STRING },
+              equipment_type: { type: Type.STRING },
+              instrument_function: { type: Type.STRING },
+              location: { type: Type.STRING },
+              text_clarity: { type: Type.STRING },
+              occlusion_level: { type: Type.STRING }
             },
-            required: ["reasoning"]
+            required: ["reasoning", "description"]
           }
         },
-        required: ["id", "label", "type", "bbox", "confidence", "meta"]
+        required: ["id", "label", "type", "bbox", "confidence", "meta", "shape"]
       }
     },
     connections: {
       type: Type.ARRAY,
-      description: "The connectivity graph (Edges) - Signal and Process flow.",
+      description: "Connectivity graph representing pipes and signals.",
       items: {
         type: Type.OBJECT,
         properties: {
-          from_id: { type: Type.STRING, description: "Tag or ID of the sender/source" },
-          to_id: { type: Type.STRING, description: "Tag or ID of the receiver/target" },
-          type: { 
-            type: Type.STRING, 
-            description: "Connection medium type - Enum: ['electric_signal', 'pneumatic_signal', 'chilled_water', 'condenser_water', 'hot_water', 'refrigerant', 'supply_air', 'return_air', 'outside_air', 'exhaust_air', 'steam', 'condensate', 'data', 'hydraulic', 'capillary']" 
-          },
-          confidence: { 
-            type: Type.NUMBER, 
-            description: "Confidence in this connection (0.0-1.0)" 
-          },
-          line_type: {
-            type: Type.STRING,
-            description: "Visual line type: 'solid', 'dashed', 'dotted', 'chain'"
-          },
-          description: { 
-            type: Type.STRING, 
-            description: "Contextual description (e.g., '4-20mA Signal', 'Chilled Water Supply')" 
-          }
+          from_id: { type: Type.STRING },
+          to_id: { type: Type.STRING },
+          type: { type: Type.STRING },
+          confidence: { type: Type.NUMBER },
+          line_type: { type: Type.STRING, description: "solid, dashed, dotted, etc." },
+          description: { type: Type.STRING, description: "E.g., '4-20mA Signal' or '6 inch Water Supply'" }
         },
         required: ["from_id", "to_id", "type"]
       }
     },
     control_loops: {
       type: Type.ARRAY,
-      description: "Functional groups of components working together in control strategies.",
+      description: "Identified control loops (Sensor -> Controller -> Actuator).",
       items: {
         type: Type.OBJECT,
         properties: {
-          loop_id: { 
-            type: Type.STRING, 
-            description: "The common numeric identifier (e.g., '101' from TIC-101, TT-101, TV-101)" 
-          },
-          strategy: { 
-            type: Type.STRING, 
-            description: "Control strategy type: 'Feedback PID', 'Cascade', 'Feedforward', 'On-Off', etc." 
-          },
-          components: { 
-            type: Type.ARRAY, 
-            items: { type: Type.STRING }, 
-            description: "List of component IDs/tags participating in this loop." 
-          }
+          loop_id: { type: Type.STRING },
+          strategy: { type: Type.STRING },
+          components: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
         required: ["loop_id", "components"]
       }
     },
     design_validation: {
       type: Type.ARRAY,
-      description: "Engineering audit findings - code compliance and design anomalies.",
       items: {
         type: Type.OBJECT,
         properties: {
-          severity: { 
-            type: Type.STRING, 
-            description: "Issue severity - Enum: ['CRITICAL', 'WARNING', 'INFO']" 
-          },
-          issue: { 
-            type: Type.STRING, 
-            description: "The detected anomaly, code violation, or design concern." 
-          },
-          recommendation: { 
-            type: Type.STRING, 
-            description: "The corrective action based on ASHRAE/ISA/NFPA standards." 
-          }
+          severity: { type: Type.STRING },
+          issue: { type: Type.STRING },
+          recommendation: { type: Type.STRING }
         },
         required: ["severity", "issue"]
       }
     },
-    summary: { 
-      type: Type.STRING, 
-      description: "A professional engineering assessment of the system's purpose, complexity, and design philosophy." 
-    }
+    summary: { type: Type.STRING }
   },
   required: ["components", "connections"]
 };
 
-// HVAC-focused refinement prompt for completeness verification
+export const PID_USER_PROMPT = PID_DETECT_PROMPT;
+export const PID_ANALYSIS_SYSTEM_INSTRUCTION = PID_DETECT_SYSTEM_INSTRUCTION;
+
+/**
+ * Generate a PID-specific refinement prompt.
+ * Mirrors the behavior of generateRefinePrompt but tuned for P&ID checks (ISA-5.1 OCR-first, valve/actuator logic, connectivity).
+ */
 export function generatePIDRefinePrompt(currentJson: any): string {
   return `
-**ROLE:** HVAC Detection Specialist - Completeness Auditor
-**CONTEXT:** Current detections: ${JSON.stringify(currentJson).slice(0, 4000)}...
-**MISSION:** ENSURE 100% COMPONENT DETECTION COVERAGE
+**ROLE**: Lead P&ID Auditor (ISA-5.1 Specialist)
+**TASK**: High-Assurance QA and Correction (OCR-first, Symbol-First)
 
-**VERIFICATION PROTOCOL**:
-1. **Coverage Analysis**: Verify ALL grid areas were systematically analyzed. Flag any unscanned regions.
-2. **Tag Continuity Check**: For every detected tag number, verify related components exist:
-   - If TT-101 exists, expect TIC-101 and TV-101
-   - If AHU-1 exists, expect associated sensors, dampers, and coils
-3. **Low-Confidence Review**: Re-examine components with confidence < 0.6. Apply contextual enhancement.
-4. **Occluded Text Recovery**: Use spatial proximity to reconstruct broken or partially hidden tags.
-5. **Small Symbol Detection**: Verify small symbols (valves, sensors) weren't missed in crowded areas.
+**INPUT (CURRENT FINDINGS)**:
+\n\`\`\`json
+${JSON.stringify(currentJson, null, 2)}
+\`\`\`
 
-**HVAC-SPECIFIC COMPLETENESS CHECKS**:
-- **Air Handling Systems**: Every AHU should have supply/return dampers, filters, coils, and sensors
-- **Water Systems**: Every pump should have isolation valves, pressure gauges, and flow meters
-- **Refrigeration**: Complete cycle detection (compressor → condenser → expansion valve → evaporator)
-- **Control Loops**: Every controller should have at least one sensor and one actuator
+**MISSION & CHECKLIST**:
+1. Prioritize OCR: verify every tag character-by-character and correct common confusions (0/O, 1/I, 5/S, 8/B).
+2. Valve/Actuator Consistency: ensure any component labeled a Control Valve has a visible actuator; if not, reclassify as Manual Valve and update reasoning.
+3. Symbol Integrity: verify geometric evidence for each classification (bowtie, diamond, circle, actuator mushroom, etc.).
+4. Connectivity & Loops: validate that pipes physically connect and that sensor->controller->actuator loops are consistent.
+5. Ghost Busting: remove smudges, dimensions, and annotations mislabeled as components.
+6. Orphan Rescue: add missing small components (drains, vents, test ports) visible on the blueprint.
 
-**ACTION ITEMS**:
-- ADD missing components detected during verification
-- IMPROVE confidence scores using contextual evidence
-- RECONSTRUCT incomplete or broken tags using spatial analysis
-- ENHANCE metadata with HVAC-specific attributes
+**OUTPUT**:
+- Return the corrected JSON using the same schema. Update \`meta.reasoning\` for any change.
+- Preserve component IDs where possible. If you add new components, provide generated stable IDs.
+- If no changes are needed, return the unchanged JSON and include a short note: "NO_FURTHER_CHANGES_NEEDED".
 
-**OUTPUT**: Enhanced JSON with 100% component coverage. NO components omitted.
-`;
+Use precise, conservative reasoning. Respond ONLY with the corrected JSON (no extra commentary).`;
 }
-
-/**
- * Copilot System Instruction - For Chatbot/Conversational Interface
- * Provides expert HVAC consultation with ISA-5.1 knowledge
- */
-export const COPILOT_SYSTEM_INSTRUCTION = `
-### ROLE: HVAC-AGI (Expert Consultant)
-You are a Distinguished Engineer in Mechanical Systems and Building Automation.
-
-${USE_LEAN_MODE ? generateOptimizedISAContext() : generateISAContext()}
-
-### INTERACTION GUIDELINES
-1.  **Technical Precision**: Use correct terminology (e.g., "dry-bulb temperature", "enthalpy", "static pressure").
-2.  **Safety First**: If a user suggests a configuration that violates safety codes (e.g., removing a fire damper), REJECT it and cite the code.
-3.  **Holistic Thinking**: When asked about a single component, explain its impact on the wider system efficiency.
-4.  **Code Compliance**: Reference ASHRAE 62.1, ISA-5.1, NFPA standards when relevant.
-5.  **Practical Guidance**: Provide actionable recommendations grounded in engineering best practices.
-`;
-
-/**
- * Generate optimized ISA-5.1 context (87% token reduction)
- * Used when USE_LEAN_MODE is true for cost-efficient prompts
- */
-export function generateOptimizedISAContext(): string {
-  return `
-### ISA-5.1 QUICK REFERENCE
-**Function Letters**: T=Temp, P=Press, F=Flow, L=Level, H=Hand
-**Readout Letters**: I=Indicate, C=Control, E=Element, A=Alarm, S=Switch
-**Output Letters**: V=Valve, T=Transmit
-**Symbols**: Circle=Discrete, Circle-in-Square=HMI, Diamond=Logic, Hexagon=Computer
-**Lines**: Solid=Process, Dashed=Electric, //=Pneumatic, o-o-o=Data
-**Valves**: FO=Fail Open, FC=Fail Closed, FL=Fail Last
-`;
-}
-
-/**
- * Alternative export name for PID analysis prompt (for specialized P&ID services)
- * This is the main user prompt for P&ID analysis tasks
- */
-export const PID_USER_PROMPT = PID_DETECT_PROMPT;
-
-/**
- * Alternative export name for PID system instruction (for specialized P&ID services)
- * This is the system instruction for neuro-symbolic P&ID analysis
- */
-export const PID_ANALYSIS_SYSTEM_INSTRUCTION = PID_DETECT_SYSTEM_INSTRUCTION;
