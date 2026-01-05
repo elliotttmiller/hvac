@@ -153,14 +153,13 @@ For EVERY identified control loop, document:
 - **Signal Paths**: Electric (4-20mA), pneumatic (3-15psi), or digital (BACnet/Modbus)
 
 **Example Format:**
-```
-CONTROL LOOP 101: Supply Air Temperature Control
-- Sensor: TT-101 (Supply Air Temperature Transmitter) → 4-20mA signal
-- Controller: TIC-101 (Temperature Indicator Controller) → PID algorithm
-- Actuator: TV-101 (Chilled Water Control Valve) → Modulating 0-100%
-- Function: Maintains supply air temperature at 55°F setpoint
-- Strategy: Feedback PID with discharge air temperature reset
-```
+
+    CONTROL LOOP 101: Supply Air Temperature Control
+    - Sensor: TT-101 (Supply Air Temperature Transmitter) → 4-20mA signal
+    - Controller: TIC-101 (Temperature Indicator Controller) → PID algorithm
+    - Actuator: TV-101 (Chilled Water Control Valve) → Modulating 0-100%
+    - Function: Maintains supply air temperature at 55°F setpoint
+    - Strategy: Feedback PID with discharge air temperature reset
 
 **4.2 Equipment Sequences and Flow Paths**
 For major process flows, document complete component chains:
@@ -171,15 +170,14 @@ For major process flows, document complete component chains:
 - **Operating Conditions**: Typical flow rates, temperatures, pressures
 
 **Example Format:**
-```
-CHILLED WATER PRIMARY LOOP
-Flow Path: Chiller CH-1 → Isolation Valve CHW-V-101 → Primary Pump CHW-P-1A → 
-           Flow Meter CHW-FIT-102 → Heat Exchanger HX-1 → Check Valve CHW-CV-103 → 
-           Return to Chiller
-Medium: Chilled water at 42°F supply / 54°F return
-Purpose: Provide cooling capacity to secondary loop via heat exchanger
-Design Flow: 500 GPM at 12°F ΔT
-```
+
+    CHILLED WATER PRIMARY LOOP
+    Flow Path: Chiller CH-1 → Isolation Valve CHW-V-101 → Primary Pump CHW-P-1A → 
+               Flow Meter CHW-FIT-102 → Heat Exchanger HX-1 → Check Valve CHW-CV-103 → 
+               Return to Chiller
+    Medium: Chilled water at 42°F supply / 54°F return
+    Purpose: Provide cooling capacity to secondary loop via heat exchanger
+    Design Flow: 500 GPM at 12°F ΔT
 
 **4.3 Component Relationships Matrix**
 For each major component, document:
@@ -191,15 +189,14 @@ For each major component, document:
 - **Redundancy**: Backup or parallel components
 
 **Example Format:**
-```
-COMPONENT: CHW-P-1A (Primary Chilled Water Pump)
-- Upstream: Chiller CH-1 (chilled water supply), Valve CHW-V-101 (isolation)
-- Downstream: Flow meter CHW-FIT-102, Heat exchanger HX-1
-- Controls: Chilled water flow to secondary loop
-- Controlled By: VFD CHW-VFD-1A (speed control), Pressure sensor CHW-PT-105 (differential pressure)
-- Subsystem: Chilled water primary loop (lead pump in lead/lag configuration)
-- Redundancy: Backup pump CHW-P-1B on standby
-```
+
+    COMPONENT: CHW-P-1A (Primary Chilled Water Pump)
+    - Upstream: Chiller CH-1 (chilled water supply), Valve CHW-V-101 (isolation)
+    - Downstream: Flow meter CHW-FIT-102, Heat exchanger HX-1
+    - Controls: Chilled water flow to secondary loop
+    - Controlled By: VFD CHW-VFD-1A (speed control), Pressure sensor CHW-PT-105 (differential pressure)
+    - Subsystem: Chilled water primary loop (lead pump in lead/lag configuration)
+    - Redundancy: Backup pump CHW-P-1B on standby
 
 **4.4 Subsystem Integration Points**
 Document how different subsystems connect and coordinate:
@@ -209,14 +206,13 @@ Document how different subsystems connect and coordinate:
 - **Control Dependencies**: Cross-subsystem control logic
 
 **Example Format:**
-```
-INTEGRATION: Air Handling ↔ Chilled Water Systems
-- Integration Point: AHU-1 Cooling Coil (CC-101) served by secondary CHW loop
-- Control Coordination: AHU supply air temperature controller (TIC-201) modulates 
-  chilled water valve (CHW-TV-202) based on discharge air temperature
-- Load Cascade: Multiple AHUs on secondary loop, load balanced by primary/secondary 
-  differential pressure control
-```
+
+    INTEGRATION: Air Handling ↔ Chilled Water Systems
+    - Integration Point: AHU-1 Cooling Coil (CC-101) served by secondary CHW loop
+    - Control Coordination: AHU supply air temperature controller (TIC-201) modulates 
+      chilled water valve (CHW-TV-202) based on discharge air temperature
+    - Load Cascade: Multiple AHUs on secondary loop, load balanced by primary/secondary 
+      differential pressure control
 
 **4.5 Redundancy and Backup Systems**
 Identify and explain:
