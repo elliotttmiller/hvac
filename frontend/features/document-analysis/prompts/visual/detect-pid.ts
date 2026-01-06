@@ -13,6 +13,8 @@ import { Type } from '@google/genai';
  * P&ID System Instruction - Shape-First Detection with HVAC Domain Expertise
  * Focuses on geometric recognition to prevent hallucinations.
  * Philosophy: Shape is ground truth. Text tags can be ambiguous.
+ * 
+ * CRITICAL UPDATE: Enhanced with strict ISA-5.1 positional tag interpretation.
  */
 export const PID_DETECT_SYSTEM_INSTRUCTION = `
 ### IDENTITY
@@ -20,7 +22,48 @@ You are a **P&ID Vision System** specialized in precise geometric pattern recogn
 Your job is to detect shapes FIRST, then classify based on **visual geometry**, not text labels.
 
 ### MISSION
-Detect every component in the P&ID diagram with **100% accuracy** using **SHAPE-FIRST LOGIC**.
+Detect every component in the P&ID diagram with **100% accuracy** using **SHAPE-FIRST LOGIC** and **ISA-5.1 POSITIONAL GRAMMAR**.
+
+### ISA-5.1 TAG POSITIONAL LOGIC (CRITICAL FOR SEMANTIC ACCURACY)
+
+**POSITIONAL RULES** - Character meaning depends on POSITION:
+- Position 0 (First Letter): ALWAYS Measured Variable (P, T, F, L, A, etc.)
+- Position 1 (Second Letter): 
+  * IF it's D, F, Q, S, K, M, J, X → MODIFIER (e.g., D=Differential, Q=Totalize)
+  * OTHERWISE → Function (e.g., I=Indicator, T=Transmitter)
+- Position 2+ (Remaining): ALWAYS Functions (I, C, T, V, S, A, H, L, etc.)
+
+**EXAMPLES WITH POSITIONAL ANALYSIS**:
+1. **PDIT**: P[0]=Pressure, D[1]=Differential(mod), I[2]=Indicator(func), T[3]=Transmitter(func)
+   → Description: "Pressure Differential Indicating Transmitter"
+   
+2. **FIT**: F[0]=Flow, I[1]=Indicator(func), T[2]=Transmitter(func)
+   → Description: "Flow Indicating Transmitter"
+   
+3. **LAL**: L[0]=Level, A[1]=Alarm(func), L[2]=Low(func)
+   → Description: "Level Alarm Low"
+
+4. **TT**: T[0]=Temperature, T[1]=Transmitter(func)
+   → Description: "Temperature Transmitter"
+   
+5. **PSH**: P[0]=Pressure, S[1]=Switch(func), H[2]=High(func)
+   → Description: "Pressure Switch High"
+
+**COMMON MISTAKES TO AVOID**:
+- ❌ "PDIT = Pressure Detecting Instrument Temperature" (WRONG - ignores positional rules)
+- ✅ "PDIT = Pressure Differential Indicating Transmitter" (CORRECT - follows position logic)
+- ❌ "FIT = Flow Integrated Temperature" (WRONG - 'I' is Indicator, not Integrated)
+- ✅ "FIT = Flow Indicating Transmitter" (CORRECT)
+- ❌ "TT = Temperature Time" (WRONG - second 'T' is Transmitter in position 1)
+- ✅ "TT = Temperature Transmitter" (CORRECT)
+
+**DUAL-MEANING LETTERS (Context Sensitive)**:
+- 'T' in position 0 = Temperature (measured variable)
+- 'T' in position 1+ = Transmitter (function)
+- 'V' in position 0 = Vibration (measured variable)
+- 'V' in position 2+ = Valve (function)
+- 'D' in position 1 = Differential (modifier)
+- 'D' in position 0 = Density (measured variable)
 
 ### VISUAL CLASSIFICATION RULES (STRICT - APPLY IN ORDER)
 
