@@ -36,6 +36,9 @@ const MAX_THINKING_TOKENS_CAP = parseInt(process.env.MAX_THINKING_TOKENS_CAP || 
 // Timeout Configuration
 const DEFAULT_AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '180000', 10); // 3 minutes
 
+// Response Processing Configuration
+const EXTRACTED_TEXT_PREVIEW_LENGTH = 500; // Characters to show in error logs
+
 // Mock Mode Configuration (for zero-cost debugging)
 const MOCK_MODE_ENABLED = process.env.MOCK_MODE_ENABLED === 'true';
 const MOCK_DATA_PATH = path.join(__dirname, 'mocks', 'golden-record.json');
@@ -784,9 +787,10 @@ Generate a professional engineering analysis that explains this system in narrat
           let extracted = null;
           
           // Strategy 1: Extract JSON from markdown code blocks (```json ... ```)
-          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+          // Use a greedy match inside code blocks to capture nested structures
+          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
           if (codeBlockMatch) {
-            extracted = codeBlockMatch[1];
+            extracted = codeBlockMatch[1].trim();
             console.log(`[Stage 2] Job ${jobId} - Found JSON in markdown code block`);
           }
           
@@ -857,7 +861,7 @@ Generate a professional engineering analysis that explains this system in narrat
                 raw: text, 
                 error: 'Could not parse JSON response',
                 parseError: e2.message,
-                extractedText: extracted.substring(0, 500) // Include preview of what was extracted
+                extractedText: extracted.substring(0, EXTRACTED_TEXT_PREVIEW_LENGTH) // Include preview of what was extracted
               };
             }
           } else {
