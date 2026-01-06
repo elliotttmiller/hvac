@@ -6,6 +6,7 @@ import ProjectsPage from '@/components/ProjectsPage';
 import CopilotModal from '@/components/CopilotModal';
 import Copilot from '@/components/Copilot';
 import { ViewState } from '@/features/document-analysis/types';
+import { ToastProvider } from '@/lib/hooks/useToast';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
@@ -92,27 +93,29 @@ const App: React.FC = () => {
   };
 
   return (
-    <UnifiedLayout
-      currentView={currentView}
-      onChangeView={handleChangeView}
-      projects={projects}
-      activeProject={activeProject}
-      onSelectProject={(id) => setActiveProject(id)}
-      onProjectsChange={(list) => setProjects(list)}
-      onOpenProject={(id) => {
-        setActiveProject(id);
-        setCurrentView(ViewState.ANALYZER);
-      }}
-      onAnalyzeFile={handleAnalyzeFile}
-    >
-        {renderView()}
+    <ToastProvider>
+      <UnifiedLayout
+        currentView={currentView}
+        onChangeView={handleChangeView}
+        projects={projects}
+        activeProject={activeProject}
+        onSelectProject={(id) => setActiveProject(id)}
+        onProjectsChange={(list) => setProjects(list)}
+        onOpenProject={(id) => {
+          setActiveProject(id);
+          setCurrentView(ViewState.ANALYZER);
+        }}
+        onAnalyzeFile={handleAnalyzeFile}
+      >
+          {renderView()}
 
-        {/* Copilot modal — mounted at app root so it overlays content seamlessly */}
-  <CopilotModal open={showCopilot} onClose={() => setShowCopilot(false)} />
+          {/* Copilot modal — mounted at app root so it overlays content seamlessly */}
+    <CopilotModal open={showCopilot} onClose={() => setShowCopilot(false)} />
 
-  {/* Floating, moveable Copilot button + panel (always mounted) */}
-  <Copilot />
-    </UnifiedLayout>
+    {/* Floating, moveable Copilot button + panel (always mounted) */}
+    <Copilot />
+      </UnifiedLayout>
+    </ToastProvider>
   );
 };
 
