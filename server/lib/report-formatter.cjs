@@ -2,7 +2,8 @@
  * Professional Report Formatter
  * 
  * Transforms the final analysis JSON into a properly formatted, 
- * professional engineering report in markdown format.
+ * professional HVAC engineering report in markdown format.
+ * Updated to include industry-standard HVAC report sections.
  */
 
 /**
@@ -34,11 +35,31 @@ function formatFinalAnalysisReport(report) {
     sections.push('');
   }
 
+  // Design Overview
+  if (report.design_overview) {
+    sections.push('## DESIGN OVERVIEW');
+    sections.push('');
+    sections.push(formatParagraph(report.design_overview));
+    sections.push('');
+    sections.push(line('-'));
+    sections.push('');
+  }
+
   // System Workflow Narrative
   if (report.system_workflow_narrative) {
     sections.push('## SYSTEM WORKFLOW');
     sections.push('');
     sections.push(formatParagraph(report.system_workflow_narrative));
+    sections.push('');
+    sections.push(line('-'));
+    sections.push('');
+  }
+
+  // Ventilation Design
+  if (report.ventilation_design) {
+    sections.push('## VENTILATION DESIGN');
+    sections.push('');
+    sections.push(formatParagraph(report.ventilation_design));
     sections.push('');
     sections.push(line('-'));
     sections.push('');
@@ -54,8 +75,38 @@ function formatFinalAnalysisReport(report) {
     sections.push('');
   }
 
-  // Technical Specifications
-  if (report.specifications_and_details) {
+  // Equipment Selection & Specifications
+  if (report.equipment_specifications) {
+    sections.push('## EQUIPMENT SELECTION & SPECIFICATIONS');
+    sections.push('');
+    sections.push(formatParagraph(report.equipment_specifications));
+    sections.push('');
+    sections.push(line('-'));
+    sections.push('');
+  }
+
+  // Heating & Cooling Loads
+  if (report.heating_cooling_loads) {
+    sections.push('## HEATING & COOLING LOADS');
+    sections.push('');
+    sections.push(formatParagraph(report.heating_cooling_loads));
+    sections.push('');
+    sections.push(line('-'));
+    sections.push('');
+  }
+
+  // Standards Compliance
+  if (report.standards_compliance) {
+    sections.push('## STANDARDS COMPLIANCE');
+    sections.push('');
+    sections.push(formatParagraph(report.standards_compliance));
+    sections.push('');
+    sections.push(line('-'));
+    sections.push('');
+  }
+
+  // Technical Specifications (legacy field for backwards compatibility)
+  if (report.specifications_and_details && !report.equipment_specifications) {
     sections.push('## TECHNICAL SPECIFICATIONS');
     sections.push('');
     sections.push(formatParagraph(report.specifications_and_details));

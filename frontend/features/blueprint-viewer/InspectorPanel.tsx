@@ -177,7 +177,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
    /**
     * Build professional formatted report text for copying
-    * Formats the report in a clean, industry-standard structure
+    * Formats the report in a clean, industry-standard HVAC structure
     */
    const buildReportText = (report: any) => {
       if (!report) return '';
@@ -203,11 +203,31 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          sections.push('');
       }
       
+      // Design Overview
+      if (report.design_overview) {
+         sections.push('## DESIGN OVERVIEW');
+         sections.push('');
+         sections.push(report.design_overview);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
       // System Workflow
       if (report.system_workflow_narrative) {
          sections.push('## SYSTEM WORKFLOW');
          sections.push('');
          sections.push(report.system_workflow_narrative);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Ventilation Design
+      if (report.ventilation_design) {
+         sections.push('## VENTILATION DESIGN');
+         sections.push('');
+         sections.push(report.ventilation_design);
          sections.push('');
          sections.push(line('-'));
          sections.push('');
@@ -223,8 +243,38 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          sections.push('');
       }
       
-      // Technical Specifications
-      if (report.specifications_and_details) {
+      // Equipment Specifications
+      if (report.equipment_specifications) {
+         sections.push('## EQUIPMENT SELECTION & SPECIFICATIONS');
+         sections.push('');
+         sections.push(report.equipment_specifications);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Heating & Cooling Loads
+      if (report.heating_cooling_loads) {
+         sections.push('## HEATING & COOLING LOADS');
+         sections.push('');
+         sections.push(report.heating_cooling_loads);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Standards Compliance
+      if (report.standards_compliance) {
+         sections.push('## STANDARDS COMPLIANCE');
+         sections.push('');
+         sections.push(report.standards_compliance);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Technical Specifications (legacy field for backwards compatibility)
+      if (report.specifications_and_details && !report.equipment_specifications) {
          sections.push('## TECHNICAL SPECIFICATIONS');
          sections.push('');
          sections.push(report.specifications_and_details);
@@ -620,6 +670,21 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </div>
                            )}
 
+                           {/* Design Overview */}
+                           {finalAnalysisReport.design_overview && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wide">Design Overview</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.design_overview}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
                            {/* System Workflow Narrative */}
                            {finalAnalysisReport.system_workflow_narrative && (
                               <div>
@@ -630,6 +695,21 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
                                     <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
                                        {finalAnalysisReport.system_workflow_narrative}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Ventilation Design */}
+                           {finalAnalysisReport.ventilation_design && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-sky-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-sky-400 uppercase tracking-wide">Ventilation Design</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.ventilation_design}
                                     </p>
                                  </div>
                               </div>
@@ -650,8 +730,53 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </div>
                            )}
 
-                           {/* Specifications and Details */}
-                           {finalAnalysisReport.specifications_and_details && (
+                           {/* Equipment Specifications */}
+                           {finalAnalysisReport.equipment_specifications && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Equipment Selection & Specifications</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.equipment_specifications}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Heating & Cooling Loads */}
+                           {finalAnalysisReport.heating_cooling_loads && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-orange-400 uppercase tracking-wide">Heating & Cooling Loads</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.heating_cooling_loads}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Standards Compliance */}
+                           {finalAnalysisReport.standards_compliance && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-green-400 uppercase tracking-wide">Standards Compliance</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.standards_compliance}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Specifications and Details (Legacy - for backwards compatibility) */}
+                           {finalAnalysisReport.specifications_and_details && !finalAnalysisReport.equipment_specifications && (
                               <div>
                                  <div className="flex items-center gap-2 mb-3">
                                     <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>

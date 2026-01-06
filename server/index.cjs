@@ -458,6 +458,7 @@ Professional, technical, authoritative. Use standard engineering terminology (AS
 /**
  * Normalize AI final analysis output into a canonical report shape.
  * Keeps the original raw payload under `_raw` for debugging.
+ * Updated to support HVAC industry-standard report sections.
  */
 function normalizeFinalReport(raw) {
   if (!raw) return null;
@@ -479,8 +480,14 @@ function normalizeFinalReport(raw) {
   const normalized = {
     report_title: find(['report_title', 'title', 'reportTitle', 'Report Title', 'report']) || null,
     executive_summary: find(['executive_summary', 'executiveSummary', 'Executive Summary', 'Executive_Summary']) || null,
+    design_overview: find(['design_overview', 'designOverview', 'Design Overview']) || null,
     system_workflow_narrative: find(['system_workflow_narrative', 'systemWorkflowNarrative', 'System Workflow Narrative']) || null,
+    ventilation_design: find(['ventilation_design', 'ventilationDesign', 'Ventilation Design']) || null,
     control_logic_analysis: find(['control_logic_analysis', 'controlLogicAnalysis', 'Control Logic Analysis']) || null,
+    equipment_specifications: find(['equipment_specifications', 'equipmentSpecifications', 'Equipment Specifications']) || null,
+    heating_cooling_loads: find(['heating_cooling_loads', 'heatingCoolingLoads', 'Heating Cooling Loads']) || null,
+    standards_compliance: find(['standards_compliance', 'standardsCompliance', 'Standards Compliance']) || null,
+    // Legacy field for backwards compatibility
     specifications_and_details: find(['specifications_and_details', 'specificationsAndDetails', 'Specifications and Details']) || null,
     critical_equipment: find(['critical_equipment', 'criticalEquipment', 'Critical Equipment']) || null,
     engineering_observations: find(['engineering_observations', 'engineeringObservations', 'Engineering Observations']) || null,
@@ -506,29 +513,46 @@ function normalizeFinalReport(raw) {
 /**
  * JSON Schema for final analysis report response.
  * Enforces the structure that normalizeFinalReport() expects.
+ * Updated with HVAC industry-standard sections.
  */
 const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
     report_title: {
       type: "string",
-      description: "A concise title for the analysis report (e.g., 'Hydraulic Pump System Analysis')"
+      description: "A concise title for the analysis report (e.g., 'Commercial Chilled Water System Analysis')"
     },
     executive_summary: {
       type: "string",
-      description: "A high-level overview (2-3 sentences) describing the system type and primary purpose"
+      description: "A high-level overview (2-3 sentences) describing the HVAC system type and primary purpose"
+    },
+    design_overview: {
+      type: "string",
+      description: "Paragraph describing the overall HVAC system design approach, mechanical ventilation strategy, and system architecture"
     },
     system_workflow_narrative: {
       type: "string",
       description: "Detailed paragraph describing the complete process flow from start to finish, following physical connections"
     },
+    ventilation_design: {
+      type: "string",
+      description: "Paragraph describing ventilation system design including outdoor airflow rates, exhaust rates, and fresh air intake strategy"
+    },
     control_logic_analysis: {
       type: "string",
       description: "Paragraph explaining control strategies, showing how instruments send signals to controllers which modulate final control elements"
     },
-    specifications_and_details: {
+    equipment_specifications: {
       type: "string",
-      description: "Paragraph summarizing engineering details like pipe sizes, material specs, equipment ratings, or special notes"
+      description: "Paragraph detailing HVAC equipment specifications, controls strategy, efficiency considerations, and capacity requirements"
+    },
+    heating_cooling_loads: {
+      type: "string",
+      description: "Paragraph discussing the system's approach to meeting thermal loads, referencing ACCA Manual J or ASHRAE Fundamentals where applicable"
+    },
+    standards_compliance: {
+      type: "string",
+      description: "Paragraph discussing applicable industry standards and codes (ASHRAE, ISA-5.1, ACCA, ANSI/RESNET/ACCA 310, building codes, ENERGY STAR)"
     },
     critical_equipment: {
       type: "array",
@@ -547,7 +571,7 @@ const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
       description: "Optional paragraph with additional engineering insights or observations"
     }
   },
-  required: ["report_title", "executive_summary", "system_workflow_narrative", "control_logic_analysis", "specifications_and_details"]
+  required: ["report_title", "executive_summary", "design_overview", "system_workflow_narrative", "control_logic_analysis", "equipment_specifications", "standards_compliance"]
 };
 
 /**
