@@ -177,145 +177,250 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
    /**
     * Build professional formatted report text for copying
-    * Formats the report in a clean, industry-standard HVAC structure
+    * Formats the report in industry-standard HVAC/engineering document format
+    * following ASHRAE and professional engineering documentation standards
     */
    const buildReportText = (report: any) => {
       if (!report) return '';
       
       const sections: string[] = [];
-      const line = (char: string = '=', length: number = 80) => char.repeat(length);
+      const WIDTH = 100;
       
-      // Title Section
-      if (report.report_title) {
-         sections.push(line('='));
-         sections.push(report.report_title.toUpperCase());
-         sections.push(line('='));
-         sections.push('');
-      }
-      
-      // Executive Summary
-      if (report.executive_summary) {
-         sections.push('## EXECUTIVE SUMMARY');
-         sections.push('');
-         sections.push(report.executive_summary);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Design Overview
-      if (report.design_overview) {
-         sections.push('## DESIGN OVERVIEW');
-         sections.push('');
-         sections.push(report.design_overview);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // System Workflow
-      if (report.system_workflow_narrative) {
-         sections.push('## SYSTEM WORKFLOW');
-         sections.push('');
-         sections.push(report.system_workflow_narrative);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Ventilation Design
-      if (report.ventilation_design) {
-         sections.push('## VENTILATION DESIGN');
-         sections.push('');
-         sections.push(report.ventilation_design);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Control Logic
-      if (report.control_logic_analysis) {
-         sections.push('## CONTROL LOGIC ANALYSIS');
-         sections.push('');
-         sections.push(report.control_logic_analysis);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Equipment Specifications
-      if (report.equipment_specifications) {
-         sections.push('## EQUIPMENT SELECTION & SPECIFICATIONS');
-         sections.push('');
-         sections.push(report.equipment_specifications);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Heating & Cooling Loads
-      if (report.heating_cooling_loads) {
-         sections.push('## HEATING & COOLING LOADS');
-         sections.push('');
-         sections.push(report.heating_cooling_loads);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Standards Compliance
-      if (report.standards_compliance) {
-         sections.push('## STANDARDS COMPLIANCE');
-         sections.push('');
-         sections.push(report.standards_compliance);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Technical Specifications (legacy field for backwards compatibility)
-      if (report.specifications_and_details && !report.equipment_specifications) {
-         sections.push('## TECHNICAL SPECIFICATIONS');
-         sections.push('');
-         sections.push(report.specifications_and_details);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
-      
-      // Critical Equipment
-      if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
-         sections.push('## CRITICAL EQUIPMENT');
-         sections.push('');
-         report.critical_equipment.forEach((equip: any) => {
-            const tag = equip.tag || equip.name || '';
-            const role = equip.role || '';
-            sections.push(`**${tag}**`);
-            sections.push(`  ${role}`);
-            sections.push('');
+      // Helper function to wrap text to specified width
+      const wrapText = (text: string, width: number = WIDTH, indent: string = ''): string[] => {
+         const words = text.split(/\s+/);
+         const lines: string[] = [];
+         let currentLine = indent;
+         
+         words.forEach(word => {
+            if ((currentLine + word).length > width) {
+               if (currentLine.trim()) lines.push(currentLine);
+               currentLine = indent + word + ' ';
+            } else {
+               currentLine += word + ' ';
+            }
          });
-         sections.push(line('-'));
-         sections.push('');
+         
+         if (currentLine.trim()) lines.push(currentLine.trimEnd());
+         return lines;
+      };
+      
+      // Helper to create section divider
+      const divider = () => '─'.repeat(WIDTH);
+      
+      // Helper to format section heading
+      const sectionHeading = (num: string, title: string) => {
+         return `${num}. ${title.toUpperCase()}`;
+      };
+      
+      // ============================================================================
+      // REPORT HEADER
+      // ============================================================================
+      sections.push('╔' + '═'.repeat(WIDTH - 2) + '╗');
+      
+      if (report.report_title) {
+         const titleLines = wrapText(report.report_title, WIDTH - 6, '  ');
+         titleLines.forEach(line => {
+            sections.push('║  ' + line.padEnd(WIDTH - 4) + '║');
+         });
+      } else {
+         sections.push('║  ' + 'HVAC SYSTEM ANALYSIS REPORT'.padEnd(WIDTH - 4) + '║');
       }
       
-      // Engineering Observations
-      if (report.engineering_observations) {
-         sections.push('## ENGINEERING OBSERVATIONS');
-         sections.push('');
-         sections.push(report.engineering_observations);
-         sections.push('');
-         sections.push(line('-'));
-         sections.push('');
-      }
+      sections.push('╠' + '═'.repeat(WIDTH - 2) + '╣');
       
-      // Footer
+      // Report metadata
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timeStr = today.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      
+      sections.push('║  ' + `Report Date: ${dateStr}`.padEnd(WIDTH - 4) + '║');
+      sections.push('║  ' + `Generated: ${timeStr}`.padEnd(WIDTH - 4) + '║');
+      sections.push('║  ' + `Document ID: ${Date.now().toString(36).toUpperCase()}`.padEnd(WIDTH - 4) + '║');
+      sections.push('╚' + '═'.repeat(WIDTH - 2) + '╝');
       sections.push('');
-      sections.push(line('='));
-      sections.push(`Report Generated: ${new Date().toISOString().split('T')[0]}`);
-      sections.push(line('='));
+      sections.push('');
       
-      // Fallback to raw data if no sections were added
-      if (sections.length <= 3 && report._raw) {
+      // ============================================================================
+      // 1. EXECUTIVE SUMMARY
+      // ============================================================================
+      if (report.executive_summary) {
+         sections.push(sectionHeading('1', 'EXECUTIVE SUMMARY'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.executive_summary).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+      }
+      
+      // ============================================================================
+      // 2. SYSTEM DESIGN & OVERVIEW
+      // ============================================================================
+      let sectionNum = 2;
+      
+      if (report.design_overview) {
+         sections.push(sectionHeading(sectionNum.toString(), 'SYSTEM DESIGN & OVERVIEW'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.design_overview).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 3. SYSTEM WORKFLOW & OPERATION
+      // ============================================================================
+      if (report.system_workflow_narrative) {
+         sections.push(sectionHeading(sectionNum.toString(), 'SYSTEM WORKFLOW & OPERATION'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.system_workflow_narrative).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 4. VENTILATION SYSTEM DESIGN
+      // ============================================================================
+      if (report.ventilation_design) {
+         sections.push(sectionHeading(sectionNum.toString(), 'VENTILATION SYSTEM DESIGN'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.ventilation_design).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 5. CONTROL SYSTEM ANALYSIS
+      // ============================================================================
+      if (report.control_logic_analysis) {
+         sections.push(sectionHeading(sectionNum.toString(), 'CONTROL SYSTEM ANALYSIS'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.control_logic_analysis).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 6. EQUIPMENT SPECIFICATIONS
+      // ============================================================================
+      if (report.equipment_specifications) {
+         sections.push(sectionHeading(sectionNum.toString(), 'EQUIPMENT SELECTION & SPECIFICATIONS'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.equipment_specifications).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      } else if (report.specifications_and_details) {
+         // Legacy field support
+         sections.push(sectionHeading(sectionNum.toString(), 'TECHNICAL SPECIFICATIONS'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.specifications_and_details).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 7. THERMAL LOAD ANALYSIS
+      // ============================================================================
+      if (report.heating_cooling_loads) {
+         sections.push(sectionHeading(sectionNum.toString(), 'THERMAL LOAD ANALYSIS'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.heating_cooling_loads).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 8. CRITICAL EQUIPMENT SUMMARY
+      // ============================================================================
+      if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
+         sections.push(sectionHeading(sectionNum.toString(), 'CRITICAL EQUIPMENT SUMMARY'));
+         sections.push(divider());
+         sections.push('');
+         
+         // Create equipment table
+         sections.push('┌' + '─'.repeat(24) + '┬' + '─'.repeat(WIDTH - 28) + '┐');
+         sections.push('│ ' + 'EQUIPMENT TAG'.padEnd(23) + '│ ' + 'FUNCTIONAL ROLE'.padEnd(WIDTH - 28) + '│');
+         sections.push('├' + '─'.repeat(24) + '┼' + '─'.repeat(WIDTH - 28) + '┤');
+         
+         report.critical_equipment.forEach((equip: any, idx: number) => {
+            const tag = (equip.tag || equip.name || 'N/A').substring(0, 22);
+            const roleLines = wrapText(equip.role || 'No description', WIDTH - 30);
+            
+            // First line with tag
+            sections.push('│ ' + tag.padEnd(23) + '│ ' + (roleLines[0] || '').padEnd(WIDTH - 28) + '│');
+            
+            // Additional lines for wrapped role text
+            for (let i = 1; i < roleLines.length; i++) {
+               sections.push('│ ' + ''.padEnd(23) + '│ ' + roleLines[i].padEnd(WIDTH - 28) + '│');
+            }
+            
+            // Separator between equipment (except last)
+            if (idx < report.critical_equipment.length - 1) {
+               sections.push('├' + '─'.repeat(24) + '┼' + '─'.repeat(WIDTH - 28) + '┤');
+            }
+         });
+         
+         sections.push('└' + '─'.repeat(24) + '┴' + '─'.repeat(WIDTH - 28) + '┘');
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 9. STANDARDS & COMPLIANCE
+      // ============================================================================
+      if (report.standards_compliance) {
+         sections.push(sectionHeading(sectionNum.toString(), 'STANDARDS & COMPLIANCE'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.standards_compliance).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // 10. ENGINEERING OBSERVATIONS & RECOMMENDATIONS
+      // ============================================================================
+      if (report.engineering_observations) {
+         sections.push(sectionHeading(sectionNum.toString(), 'ENGINEERING OBSERVATIONS & RECOMMENDATIONS'));
+         sections.push(divider());
+         sections.push('');
+         wrapText(report.engineering_observations).forEach(line => sections.push(line));
+         sections.push('');
+         sections.push('');
+         sectionNum++;
+      }
+      
+      // ============================================================================
+      // REPORT FOOTER
+      // ============================================================================
+      sections.push('');
+      sections.push('═'.repeat(WIDTH));
+      sections.push('END OF REPORT'.padStart((WIDTH + 13) / 2).padEnd(WIDTH));
+      sections.push('═'.repeat(WIDTH));
+      sections.push('');
+      sections.push('This report was generated by automated HVAC analysis software.');
+      sections.push('All technical interpretations should be verified by a licensed professional engineer.');
+      sections.push('');
+      sections.push(`Document prepared in accordance with ASHRAE standards and industry best practices.`);
+      sections.push(`© ${new Date().getFullYear()} HVAC Analysis Platform`);
+      
+      // Fallback to raw data if no sections were added (only header + footer)
+      if (sections.length <= 20 && report._raw) {
          if (typeof report._raw === 'string') return report._raw;
          return JSON.stringify(report._raw, null, 2);
       }
