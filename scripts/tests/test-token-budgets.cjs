@@ -11,17 +11,17 @@ const OLD_TOKEN_BUDGET = 69632; // Previous excessive budget (65k output + 4k th
 
 // Simulate the token budget calculation logic (Updated with new limits)
 function calculateTokenBudgets(componentCount) {
-  // Output tokens: ~100 tokens per component for comprehensive narrative
-  // INCREASED: To ensure complete reports without truncation
-  const tokensPerComponent = 100;
-  const baseTokens = 1000;
+  // Output tokens: ~150 tokens per component for comprehensive narrative
+  // INCREASED: To ensure complete reports with all required HVAC sections without truncation
+  const tokensPerComponent = 150;
+  const baseTokens = 2000;
   const maxOutputTokens = Math.min(
     baseTokens + (componentCount * tokensPerComponent),
-    8192 // Increased cap to 8k tokens for comprehensive reports
+    16384 // Increased cap to 16k tokens to accommodate all required HVAC report sections
   );
   
   // Thinking tokens: Dynamic based on complexity
-  const thinkingBudget = Math.min(2048 + (componentCount * 100), 6144);
+  const thinkingBudget = Math.min(2048 + (componentCount * 100), 8192);
   
   return { maxOutputTokens, thinkingBudget };
 }
@@ -46,7 +46,7 @@ testCases.forEach(testCase => {
   console.log(`  Total budget: ${budgets.maxOutputTokens + budgets.thinkingBudget} tokens`);
   
   // Validate constraints (Updated limits)
-  const valid = budgets.maxOutputTokens <= 8192 && budgets.thinkingBudget <= 6144;
+  const valid = budgets.maxOutputTokens <= 16384 && budgets.thinkingBudget <= 8192;
   console.log(`  Status: ${valid ? '✅ Within limits' : '❌ Exceeds limits'}`);
   console.log();
 });
