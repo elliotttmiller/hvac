@@ -60,6 +60,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('COMPONENTS');
   const [searchQuery, setSearchQuery] = useState('');
       const [copied, setCopied] = useState(false);
+         const [copiedReport, setCopiedReport] = useState(false);
       // Streaming log state — starts with the prop snapshot and then appends live events
       const [streamingLog, setStreamingLog] = useState<string>(analysis || '');
       
@@ -173,6 +174,48 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
     return { className: 'text-zinc-300', prefix: '' };
   };
+
+   const buildReportText = (report: any) => {
+      if (!report) return '';
+      const parts: string[] = [];
+      if (report.report_title) parts.push(report.report_title);
+      if (report.executive_summary) parts.push(`Executive Summary:\n${report.executive_summary}`);
+      if (report.system_workflow_narrative) parts.push(`System Workflow:\n${report.system_workflow_narrative}`);
+      if (report.control_logic_analysis) parts.push(`Control Logic:\n${report.control_logic_analysis}`);
+      if (report.specifications_and_details) parts.push(`Specifications:\n${report.specifications_and_details}`);
+      if (report.critical_equipment && Array.isArray(report.critical_equipment)) {
+         const ce = report.critical_equipment.map((c: any, i: number) => `${i+1}. ${c.tag || c.name || ''} - ${c.role || ''}`).join('\n');
+         if (ce) parts.push(`Critical Equipment:\n${ce}`);
+      }
+      if (report.engineering_observations) parts.push(`Engineering Observations:\n${report.engineering_observations}`);
+      // Fallback: include raw string if present
+      if (parts.length === 0 && report._raw) {
+         if (typeof report._raw === 'string') parts.push(report._raw);
+         else parts.push(JSON.stringify(report._raw, null, 2));
+      }
+      return parts.join('\n\n');
+   };
+
+   const copyFinalReport = async () => {
+      try {
+         const toCopy = buildReportText(finalAnalysisReport) || '';
+         if (!toCopy) return;
+         if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(toCopy);
+         } else {
+            const ta = document.createElement('textarea');
+            ta.value = toCopy;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+         }
+         setCopiedReport(true);
+         setTimeout(() => setCopiedReport(false), 1500);
+      } catch (e) {
+         console.warn('Copy report failed', e);
+      }
+   };
 
   // Memoize parsed log lines for performance
   const parsedLogLines = useMemo(() => {
@@ -464,109 +507,122 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <div className="text-sm font-semibold text-zinc-400 mb-2">No Analysis Available</div>
               <div className="text-xs text-zinc-500">Run document analysis to generate a comprehensive report</div>
             </div>
-          ) : hasFinalReport ? (
-            // NARRATIVE-FOCUSED FINAL ANALYSIS REPORT
-            <>
-              {/* Report Title */}
-              {finalAnalysisReport.report_title && (
-                <div className="bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 rounded-xl p-4">
-                  <h2 className="text-lg font-bold text-cyan-300">{finalAnalysisReport.report_title}</h2>
-                </div>
-              )}
+               ) : hasFinalReport ? (
+                  // NARRATIVE-FOCUSED FINAL ANALYSIS REPORT (with copy + scroll)
+                  <>
+                     <div className="flex items-center justify-end gap-2">
+                        <button onClick={copyFinalReport} aria-label="Copy final report" title="Copy final report" className="text-zinc-400 hover:text-white p-2 rounded-md transition-colors">
+                           <Copy size={14} />
+                        </button>
+                        {copiedReport && (
+                           <div className="text-[10px] bg-emerald-600/95 text-white px-2 py-0.5 rounded-full">Report copied</div>
+                        )}
+                     </div>
 
-              {/* Executive Summary */}
-              {finalAnalysisReport.executive_summary && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Executive Summary</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
-                    <p className="text-sm text-zinc-300 leading-relaxed">
-                      {finalAnalysisReport.executive_summary}
-                    </p>
-                  </div>
-                </div>
-              )}
+                     <div className="max-h-[60vh] overflow-y-auto space-y-4">
+                        {/* Report Title */}
+                        {finalAnalysisReport.report_title && (
+                           <div className="bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 rounded-xl p-4">
+                              <h2 className="text-lg font-bold text-cyan-300">{finalAnalysisReport.report_title}</h2>
+                           </div>
+                        )}
 
-              {/* System Workflow Narrative */}
-              {finalAnalysisReport.system_workflow_narrative && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide">System Workflow</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
-                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                      {finalAnalysisReport.system_workflow_narrative}
-                    </p>
-                  </div>
-                </div>
-              )}
+                        <div className="space-y-4 px-1">
+                           {/* Executive Summary */}
+                           {finalAnalysisReport.executive_summary && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Executive Summary</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.executive_summary}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
 
-              {/* Control Logic Analysis */}
-              {finalAnalysisReport.control_logic_analysis && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-purple-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">Control Logic</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
-                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                      {finalAnalysisReport.control_logic_analysis}
-                    </p>
-                  </div>
-                </div>
-              )}
+                           {/* System Workflow Narrative */}
+                           {finalAnalysisReport.system_workflow_narrative && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide">System Workflow</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.system_workflow_narrative}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
 
-              {/* Specifications and Details */}
-              {finalAnalysisReport.specifications_and_details && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Technical Specifications</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
-                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                      {finalAnalysisReport.specifications_and_details}
-                    </p>
-                  </div>
-                </div>
-              )}
+                           {/* Control Logic Analysis */}
+                           {finalAnalysisReport.control_logic_analysis && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-purple-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wide">Control Logic</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.control_logic_analysis}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
 
-              {/* Critical Equipment (Optional) */}
-              {finalAnalysisReport.critical_equipment && finalAnalysisReport.critical_equipment.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">Critical Equipment</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
-                    {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
-                      <div key={idx} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
-                        <div className="text-xs font-bold text-amber-300 mb-1">{equip.tag}</div>
-                        <div className="text-xs text-zinc-400 leading-relaxed">{equip.role}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                           {/* Specifications and Details */}
+                           {finalAnalysisReport.specifications_and_details && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Technical Specifications</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.specifications_and_details}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
 
-              {/* Engineering Observations (Optional) */}
-              {finalAnalysisReport.engineering_observations && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-1 h-6 bg-teal-500 rounded-full"></div>
-                    <h3 className="text-sm font-bold text-teal-400 uppercase tracking-wide">Engineering Observations</h3>
-                  </div>
-                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
-                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
-                      {finalAnalysisReport.engineering_observations}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
+                           {/* Critical Equipment (Optional) */}
+                           {finalAnalysisReport.critical_equipment && finalAnalysisReport.critical_equipment.length > 0 && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">Critical Equipment</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
+                                    {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
+                                       <div key={idx} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
+                                          <div className="text-xs font-bold text-amber-300 mb-1">{equip.tag}</div>
+                                          <div className="text-xs text-zinc-400 leading-relaxed">{equip.role}</div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Engineering Observations (Optional) */}
+                           {finalAnalysisReport.engineering_observations && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-teal-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-teal-400 uppercase tracking-wide">Engineering Observations</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.engineering_observations}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                  </>
           ) : (
             // LOADING STATE - Show placeholder while background analysis is running
             <div className="space-y-4">
