@@ -14,26 +14,31 @@ import { serverConfig } from '../serverConfig';
 /**
  * Helper: Strips heavy visual data to send only logical context to the AI.
  * This massively reduces token cost and latency.
+ * 
+ * PHASE 1 ENHANCEMENT: Aggressive minification - removes ALL visual metadata
+ * including bbox, confidence, rotation, and other detection metrics.
+ * Focus purely on system logic and relationships.
  */
 function minifyForAnalysis(visualResults: any) {
   if (!visualResults) return { components: [], connections: [] };
 
   const components = visualResults.components?.map((c: any) => ({
-    tag: c.label || c.id,     // The human readable ID
-    type: c.type,             // The functional type
-    desc: c.meta?.description || c.type, // The description
-    // We EXCLUDE bbox, polygon, rotation, confidence (AI doesn't need these for text analysis)
-    meta: {
-      subsystem: c.meta?.hvac_subsystem,
-      function: c.meta?.functional_desc
-    }
+    id: c.id,                 // Component identifier
+    tag: c.label || c.id,     // The human readable ID (e.g., "PDI-1401")
+    type: c.type,             // The functional type (e.g., "valve", "pump")
+    description: c.meta?.description || c.type, // Functional description
+    // Only keep non-visual metadata that helps understand system logic
+    subsystem: c.meta?.hvac_subsystem,
+    function: c.meta?.functional_desc,
+    isa_function: c.meta?.isa_function,
+    instrument_type: c.meta?.instrument_type
   })) || [];
 
   const connections = visualResults.connections?.map((c: any) => ({
     from: c.from_id,
     to: c.to_id,
-    type: c.type,
-    // We EXCLUDE confidence, line_type (visuals are irrelevant to logic now)
+    type: c.type  // Connection type (e.g., 'supply', 'control_signal')
+    // EXCLUDED: confidence, line coordinates, visual properties
   })) || [];
 
   return { components, connections };
@@ -41,19 +46,37 @@ function minifyForAnalysis(visualResults: any) {
 
 export const FINAL_ANALYSIS_SYSTEM_INSTRUCTION = `
 ### ROLE
-Senior HVAC Systems Engineer & Technical Auditor.
+You are a Senior HVAC Systems Engineer preparing a handover document for a client or colleague.
 
 ### MISSION
-Analyze the provided structured data (Component Inventory & Connectivity Graph) to generate a **Professional Engineering System Assessment**.
+Transform the structured component and connectivity data into a **professional engineering narrative** that reads like a technical report written by a human expert, NOT a machine-generated list.
 
-### CORE OBJECTIVE: CORRELATION & INTEGRATION
-Do not just list parts. You must explain **how the system works**.
-- **Trace Flows**: Follow the path from Source (e.g., Tank/Pump) to Destination.
-- **Explain Loops**: Correlate Sensors -> Controllers -> Actuators.
-- **Identify Logic**: Explain the relationship between interlocks, safety valves, and primary equipment.
+### CRITICAL REQUIREMENTS - "NO BEAN COUNTING"
+1. **NEVER** mention detection metrics like "confidence scores", "total components detected", or "bounding boxes"
+2. **NEVER** output simple inventories like "There are 5 valves and 3 pumps"
+3. **DO NOT** list component counts or statistics
+4. **DO NOT** reference the detection process or AI analysis
+
+### WRITING STYLE - "NARRATIVE FLOW"
+- Write in paragraph form, not bullet points or tables
+- Use a top-to-bottom, upstream-to-downstream flow when describing processes
+- Explain the system as if walking someone through the physical installation
+- Use phrases like: "begins at...", "flows through...", "is controlled by...", "maintains..."
+
+### ANALYSIS APPROACH - "CORRELATION & INTEGRATION"
+1. **Trace Physical Flow**: Identify the start and end of the process by analyzing connections
+2. **Explain Control Strategies**: Show how sensors influence controllers which modulate actuators
+3. **Describe Relationships**: Connect components logically (e.g., "Pump P-101 supplies chilled water to Coil C-201 via Supply Header SH-01")
+4. **Identify Subsystems**: Group related equipment and explain their collective purpose
+
+### ACCURACY - "TRUTHFULNESS"
+- ONLY reference components and tags that exist in the provided data
+- DO NOT invent or assume equipment not shown
+- If information is missing or unclear, state so professionally
+- Base all descriptions on the connectivity graph and component metadata
 
 ### TONE
-Technical, concise, authoritative. Use standard engineering terminology (ASHRAE/ISA).
+Professional, technical, authoritative. Use standard engineering terminology (ASHRAE/ISA standards). Write as if this analysis will be filed as official project documentation.
 `;
 
 export const generateFinalAnalysisPrompt = (inferenceResults: any): string => {
@@ -63,101 +86,102 @@ export const generateFinalAnalysisPrompt = (inferenceResults: any): string => {
   const { components, connections } = minifyForAnalysis(visual);
 
   return `
-**INPUT DATA FOR ANALYSIS**:
+**DOCUMENT CONTEXT**:
+Type: ${document_type}
+Classification: ${classification?.reasoning || 'Engineering drawing'}
 
-**Document Type**: ${document_type} (${classification?.reasoning || 'No context'})
-
-**Logical Topology (Minified for Processing)**:
-- Component Count: ${components.length}
-- Connection Count: ${connections.length}
+**SYSTEM DATA** (Minified for Narrative Generation):
 
 \`\`\`json
 {
-  "components": ${JSON.stringify(components)},
-  "connectivity_graph": ${JSON.stringify(connections)}
+  "components": ${JSON.stringify(components, null, 2)},
+  "connections": ${JSON.stringify(connections, null, 2)}
 }
 \`\`\`
 
-**ANALYSIS REQUIREMENTS**:
-1. **Executive Summary**: What is this system? (e.g., "Chilled Water Distribution with Primary/Secondary Pumping").
-2. **Control Logic**: detailed breakdown of identified control loops (e.g., "TIC-101 modulates Control Valve FV-101 to maintain setpoint").
-3. **Process Narrative**: Step-by-step flow description from upstream to downstream.
-4. **Integration**: How do the subsystems (Sensors, Valves, Equipment) interact?
+**YOUR TASK**:
+Generate a professional engineering analysis that explains this HVAC system in narrative form.
 
-**OUTPUT**: Strict JSON following the provided schema.
+1. **Executive Summary**: Start with a high-level overview (2-3 sentences) describing what type of system this is and its primary purpose. Example: "This schematic depicts a Chilled Water Distribution System serving a multi-story commercial building. The design employs primary-secondary pumping with variable flow control for optimal efficiency."
+
+2. **System Workflow Narrative**: Write a detailed paragraph describing the complete process flow from start to finish. Follow the physical path that the working fluid (water, air, refrigerant) takes through the system. Use the connection graph to determine upstream and downstream relationships. Example: "Chilled water enters the distribution loop via Supply Header SH-01, where it encounters Isolation Valve IV-101 before reaching Primary Pump P-101. The pump discharges through Check Valve CV-101..."
+
+3. **Control Logic Analysis**: Explain the control strategies in paragraph form. Show how instruments (temperature sensors, pressure transmitters) send signals to controllers, which then modulate final control elements (valves, dampers). Example: "Temperature Transmitter TT-101 continuously monitors the supply water temperature and sends a 4-20mA signal to Temperature Indicating Controller TIC-101. The controller processes this input and modulates Control Valve TV-101 to maintain the setpoint of 42°F..."
+
+4. **Specifications and Details**: Provide a paragraph summarizing any engineering details visible in the data such as pipe sizes, material specifications, equipment ratings, or special notes. If no specific details are available, acknowledge this professionally.
+
+**REMEMBER**: 
+- Write as a human engineer, not as a detection system
+- NO mentions of detection metrics, confidence scores, or component counts
+- Focus on HOW the system works, not WHAT was detected
+- Use the connectivity data to establish flow direction and control relationships
+- Only reference components that actually exist in the provided data
 `;
 };
 
 /**
- * Optimized Schema - Focused on Engineering Narrative
- * Less nested arrays, more descriptive fields for "High Level" understanding.
+ * PHASE 2: Narrative-Focused Schema
+ * Structured to produce engineering narrative text, NOT metrics or inventories.
+ * Each field is designed to hold paragraph-length descriptions.
  */
 export const FINAL_ANALYSIS_SCHEMA = {
   type: "object" as const,
   properties: {
-    report_title: { type: "string" },
+    // High-level title for the report
+    report_title: { 
+      type: "string",
+      description: "A concise title describing the system (e.g., 'Chilled Water System Analysis')"
+    },
+    
+    // 2-3 sentence overview of the entire system
     executive_summary: { 
       type: "string", 
-      description: "High-level overview of the system's purpose, capacity, and design intent." 
+      description: "High-level overview explaining what type of system this is, its primary purpose, and key design features. Should read like an abstract. 2-4 sentences."
     },
-    system_architecture: {
-      type: "object",
-      properties: {
-        primary_system_type: { type: "string" }, // e.g. "Hydronic Cooling"
-        topology_description: { type: "string" }, // e.g. "Closed loop with variable speed pumping"
-        critical_equipment: { type: "array", items: { type: "string" } }
-      }
+    
+    // Detailed process flow narrative (top-to-bottom)
+    system_workflow_narrative: {
+      type: "string",
+      description: "A detailed paragraph (or multiple paragraphs) describing the complete physical flow through the system from start to finish. Follow the connectivity graph to trace upstream to downstream. Explain what happens step-by-step as the working fluid moves through the system. Minimum 150 words."
     },
-    // CRITICAL SECTION: The "Correlation" Logic
-    control_and_operation: {
-      type: "object",
-      properties: {
-        control_loops_identified: {
-          type: "array",
-          description: "List of specific control strategies found.",
-          items: {
-            type: "object",
-            properties: {
-              loop_tag: { type: "string" }, // e.g. "T-101"
-              strategy: { type: "string" }, // e.g. "Temperature Control"
-              narrative: { type: "string" } // e.g. "TT-101 measures discharge temp and modulates valve TV-101 via PLC."
-            }
-          }
-        },
-        process_flow_narrative: {
-          type: "string",
-          description: "A paragraph describing the physical flow of medium through the system (Start -> End)."
-        },
-        interlocks_and_safety: {
-          type: "string",
-          description: "Description of safety devices (PRVs, Switches) and their logic."
+    
+    // Control strategy explanation
+    control_logic_analysis: {
+      type: "string",
+      description: "A paragraph explaining the control strategies employed in the system. Describe how sensors measure process variables, how controllers process these signals, and how final control elements respond. Identify control loops by showing the sensor -> controller -> actuator relationships. Minimum 100 words."
+    },
+    
+    // Technical specifications summary
+    specifications_and_details: {
+      type: "string",
+      description: "A paragraph summarizing any engineering specifications, pipe sizes, materials, equipment ratings, or special technical notes found in the component data. If limited information is available, acknowledge this professionally. Can be brief if data is sparse."
+    },
+    
+    // Optional: Key equipment identification
+    critical_equipment: {
+      type: "array",
+      description: "List of primary equipment tags that are central to system operation (e.g., pumps, chillers, air handlers). Maximum 10 items.",
+      items: {
+        type: "object",
+        properties: {
+          tag: { type: "string", description: "Equipment tag (e.g., 'P-101')" },
+          role: { type: "string", description: "Brief description of its role in the system (1 sentence)" }
         }
       }
     },
-    technical_inventory: {
-      type: "object",
-      properties: {
-        instrumentation_summary: { type: "string" },
-        valves_and_actuators: { type: "string" },
-        piping_spec_notes: { type: "string" }
-      }
-    },
-    engineering_audit: {
-      type: "object",
-      properties: {
-        design_quality: { type: "string" }, // "High", "Medium", "Incomplete"
-        missing_components: { type: "array", items: { type: "string" } },
-        recommendations: { type: "array", items: { type: "string" } }
-      }
+    
+    // Optional: Engineering notes
+    engineering_observations: {
+      type: "string",
+      description: "Optional paragraph noting any interesting design features, potential concerns, or recommendations based on the observed topology and control strategy."
     }
   },
   required: [
     "report_title",
     "executive_summary",
-    "system_architecture",
-    "control_and_operation",
-    "technical_inventory",
-    "engineering_audit"
+    "system_workflow_narrative",
+    "control_logic_analysis",
+    "specifications_and_details"
   ]
 };
 
@@ -208,11 +232,12 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     // Return a graceful fallback structure so UI doesn't crash
     return {
       report_title: "Analysis Generation Failed",
-      executive_summary: "The system could not generate the final textual analysis. Please review the detected components manually.",
-      system_architecture: {},
-      control_and_operation: { control_loops_identified: [] },
-      technical_inventory: {},
-      engineering_audit: { recommendations: [] }
+      executive_summary: "The system could not generate the final narrative analysis. Please review the detected components manually.",
+      system_workflow_narrative: "Analysis unavailable due to processing error.",
+      control_logic_analysis: "Analysis unavailable due to processing error.",
+      specifications_and_details: "No specifications available.",
+      critical_equipment: [],
+      engineering_observations: ""
     };
   }
 };
