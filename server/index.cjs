@@ -503,6 +503,53 @@ function normalizeFinalReport(raw) {
 }
 
 /**
+ * JSON Schema for final analysis report response.
+ * Enforces the structure that normalizeFinalReport() expects.
+ */
+const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    report_title: {
+      type: "string",
+      description: "A concise title for the analysis report (e.g., 'Hydraulic Pump System Analysis')"
+    },
+    executive_summary: {
+      type: "string",
+      description: "A high-level overview (2-3 sentences) describing the system type and primary purpose"
+    },
+    system_workflow_narrative: {
+      type: "string",
+      description: "Detailed paragraph describing the complete process flow from start to finish, following physical connections"
+    },
+    control_logic_analysis: {
+      type: "string",
+      description: "Paragraph explaining control strategies, showing how instruments send signals to controllers which modulate final control elements"
+    },
+    specifications_and_details: {
+      type: "string",
+      description: "Paragraph summarizing engineering details like pipe sizes, material specs, equipment ratings, or special notes"
+    },
+    critical_equipment: {
+      type: "array",
+      description: "Optional list of critical equipment with their roles",
+      items: {
+        type: "object",
+        properties: {
+          tag: { type: "string", description: "Equipment tag identifier" },
+          role: { type: "string", description: "Brief description of equipment's critical role" }
+        },
+        required: ["tag", "role"]
+      }
+    },
+    engineering_observations: {
+      type: "string",
+      description: "Optional paragraph with additional engineering insights or observations"
+    }
+  },
+  required: ["report_title", "executive_summary", "system_workflow_narrative", "control_logic_analysis", "specifications_and_details"]
+};
+
+/**
  * PHASE 3: Background Analysis Queue with Enhanced Observability
  * Implements lifecycle logging, explicit error handling, and timeout support
  */
@@ -557,10 +604,12 @@ app.post('/api/analysis/queue', async (req, res) => {
           }
           
           const mockAnalysis = {
-            "Executive Summary": `This is a mock ${payload.document_type || 'SCHEMATIC'} analysis with ${components.length} components and ${connections.length} connections.`,
-            "System Workflow Narrative": "Mock workflow: The system processes flow from upstream equipment through control valves to downstream destinations. Key components are interconnected via process piping and control signals.",
-            "Control Logic Analysis": "Mock control logic: Instrumentation sensors monitor process variables and send signals to programmable logic controllers, which modulate final control elements to maintain desired setpoints.",
-            "Specifications and Details": "Mock specifications: System includes standard industrial equipment with typical ratings and specifications as shown in the provided data."
+            "report_title": `Mock ${payload.document_type || 'SCHEMATIC'} Analysis Report`,
+            "executive_summary": `This is a mock analysis of a ${payload.document_type || 'SCHEMATIC'} system with ${components.length} components and ${connections.length} connections. The system demonstrates standard industrial process control architecture with instrumentation, control logic, and final control elements.`,
+            "system_workflow_narrative": "The system processes flow from upstream equipment through control valves to downstream destinations. Material enters through the inlet manifold, passes through measurement instrumentation for flow and temperature monitoring, and is distributed via automated control valves to multiple process lines. Each line features independent control loops with feedback from field sensors to maintain optimal operating conditions.",
+            "control_logic_analysis": "The control strategy employs cascaded control loops with primary process variable monitoring feeding into proportional-integral-derivative (PID) controllers. Instrumentation sensors continuously monitor process variables including flow, temperature, and pressure, transmitting 4-20mA signals to programmable logic controllers. The PLCs execute control algorithms to modulate final control elements (control valves and variable frequency drives) maintaining desired setpoints while preventing unsafe operating conditions through interlock logic.",
+            "specifications_and_details": "The system includes standard industrial equipment with ANSI/ISA compliant instrumentation. Process piping follows ASME B31.3 specifications with appropriate material grades for the service conditions. Control valves are sized per ISA-75 standards with fail-safe positions configured for process safety. All instrumentation conforms to ISA-5.1 identification standards with unique tag identifiers.",
+            "engineering_observations": "The design demonstrates industry best practices with redundant measurement points for critical process variables. The control architecture provides both manual and automatic operation modes, allowing operators to override automated control when necessary. Safety instrumented functions are properly segregated from basic process control per IEC 61511 guidelines."
           };
           
           const mockDuration = Date.now() - aiStart;
@@ -662,11 +711,12 @@ Generate a professional engineering analysis that explains this system in narrat
         );
         console.log(`[Stage 2] Job ${jobId} - Thinking budget: ${thinkingBudget} tokens`);
         
-        // Configure AI with timeout support
+        // Configure AI with timeout support and response schema
         const geminiModel = genAI.getGenerativeModel({ 
           model: AI_MODEL_DEFAULT,
           generationConfig: { 
             responseMimeType: 'application/json',
+            responseSchema: FINAL_ANALYSIS_RESPONSE_SCHEMA,
             temperature: 0.2,
             maxOutputTokens: maxOutputTokens
           },
