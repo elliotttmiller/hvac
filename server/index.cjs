@@ -506,14 +506,34 @@ Generate a professional engineering analysis that explains this system in narrat
         console.log(`[Stage 2] Job ${jobId} - Sending to AI (model: ${AI_MODEL_DEFAULT})...`);
         const aiStart = Date.now();
         
+        // OPTIMIZED TOKEN BUDGET: Calculate based on component count
+        // Rule of thumb: ~50-100 tokens per component for comprehensive narrative
+        // + 500 tokens base for executive summary and conclusions
+        const componentCount = components.length;
+        const tokensPerComponent = 75; // Balanced: detailed but not verbose
+        const baseTokens = 500;
+        const maxOutputTokens = Math.min(
+          baseTokens + (componentCount * tokensPerComponent),
+          4096 // Hard cap at 4k tokens for narrative reports
+        );
+        
+        console.log(`[Stage 2] Job ${jobId} - Token budget: ${maxOutputTokens} tokens (${componentCount} components * ${tokensPerComponent} + ${baseTokens} base, cap: 4096)`);
+        
+        // OPTIMIZED THINKING BUDGET: Dynamic based on complexity
+        // Simple diagrams (<10 components): 2048 tokens
+        // Medium diagrams (10-30 components): 4096 tokens  
+        // Complex diagrams (>30 components): 6144 tokens (max)
+        const thinkingBudget = Math.min(2048 + (componentCount * 100), 6144);
+        console.log(`[Stage 2] Job ${jobId} - Thinking budget: ${thinkingBudget} tokens`);
+        
         // Configure AI with timeout support for large token generation
-        const AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '300000', 10); // 5 minutes default
+        const AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '180000', 10); // 3 minutes default (reduced from 5)
         const geminiModel = genAI.getGenerativeModel({ 
           model: AI_MODEL_DEFAULT,
           generationConfig: { 
             responseMimeType: 'application/json',
             temperature: 0.2,
-            maxOutputTokens: parseInt(process.env.MAX_OUTPUT_TOKENS || '8192', 10)
+            maxOutputTokens: maxOutputTokens
           },
           systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION
         });

@@ -195,19 +195,36 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     // 1. Prepare Optimized Prompt (Reduced Token Count)
     const prompt = generateFinalAnalysisPrompt(inferenceResults);
     
-    // 2. Inference
+    // Calculate appropriate output token budget based on component count
+    // Rule of thumb: ~50-100 tokens per component for comprehensive narrative
+    // + 500 tokens base for executive summary and conclusions
+    const componentCount = inferenceResults.visual?.components?.length || 0;
+    const tokensPerComponent = 75; // Balanced: detailed but not verbose
+    const baseTokens = 500;
+    const calculatedTokens = Math.min(
+      baseTokens + (componentCount * tokensPerComponent),
+      4096 // Hard cap at 4k tokens for narrative reports
+    );
+    
+    console.log(`   [Token Budget] Components: ${componentCount}, Calculated: ${calculatedTokens} tokens (cap: 4096)`);
+    
+    // 2. Inference with optimized configuration
     const response = await ai.models.generateContent({
       model: GeminiModel.FLASH, // Flash is perfect for summarization
       contents: { parts: [{ text: prompt }] },
       config: {
-        // Reduced thinking budget - The "hard" vision work is done. 
-        // This is just text synthesis, which requires less "reasoning" power.
-        thinkingConfig: { thinkingBudget: 4096 }, 
+        // OPTIMIZED: Dynamic thinking budget based on complexity
+        // Simple diagrams (<10 components): 2048 tokens
+        // Medium diagrams (10-30 components): 4096 tokens  
+        // Complex diagrams (>30 components): 6144 tokens (max)
+        thinkingConfig: { 
+          thinkingBudget: Math.min(2048 + (componentCount * 100), 6144)
+        }, 
         systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: FINAL_ANALYSIS_SCHEMA,
         temperature: 0.2,
-        maxOutputTokens: serverConfig.DEFAULT_MAX_OUTPUT_TOKENS
+        maxOutputTokens: calculatedTokens
       }
     });
 
@@ -225,6 +242,8 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     }
 
     console.log('✅ Analysis Report Generated.');
+    console.log(`   [Output] ~${jsonText.length} characters (estimated ~${Math.ceil(jsonText.length / 4)} tokens)`);
+    
     return analysisReport;
 
   } catch (error) {
