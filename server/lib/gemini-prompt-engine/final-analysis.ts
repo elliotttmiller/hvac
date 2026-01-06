@@ -307,21 +307,32 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
       'standards_compliance'
     ];
     
-    const missingFields = requiredFields.filter(field => !analysisReport[field] || analysisReport[field].trim().length === 0);
+    // Optional fields that should be present for HVAC diagrams (but may be "N/A" for P&IDs)
+    const optionalHvacFields = [
+      'ventilation_design',
+      'heating_cooling_loads'
+    ];
     
-    if (missingFields.length > 0) {
-      console.warn(`⚠️  Response may be incomplete. Missing or empty fields: ${missingFields.join(', ')}`);
+    const missingRequiredFields = requiredFields.filter(field => !analysisReport[field] || analysisReport[field].trim().length === 0);
+    const missingOptionalFields = optionalHvacFields.filter(field => !analysisReport[field] || analysisReport[field].trim().length === 0);
+    
+    if (missingRequiredFields.length > 0) {
+      console.warn(`⚠️  Response is incomplete. Missing or empty required fields: ${missingRequiredFields.join(', ')}`);
       console.warn(`   [Token Budget] Current: ${calculatedTokens} tokens. Consider increasing if truncation occurs.`);
     }
     
+    if (missingOptionalFields.length > 0) {
+      console.log(`ℹ️  Optional HVAC fields not populated: ${missingOptionalFields.join(', ')} (may be N/A for non-HVAC diagrams)`);
+    }
+    
     // Check for truncation indicators (incomplete sentences in narrative fields)
-    const narrativeFields = ['system_workflow_narrative', 'control_logic_analysis', 'design_overview'];
+    const narrativeFields = ['system_workflow_narrative', 'control_logic_analysis', 'design_overview', 'equipment_specifications'];
     for (const field of narrativeFields) {
       if (analysisReport[field]) {
         const text = analysisReport[field].trim();
         const lastChar = text[text.length - 1];
-        // Check if ends with incomplete sentence (not ending with . ! ? or ")
-        if (lastChar && !'.!?"'.includes(lastChar)) {
+        // Check if ends with incomplete sentence (not ending with . ! ? " or ))
+        if (lastChar && !'.!?")'.includes(lastChar)) {
           console.warn(`⚠️  Field '${field}' may be truncated (doesn't end with sentence terminator)`);
           console.warn(`   Last 50 chars: "${text.slice(-50)}"`);
         }
