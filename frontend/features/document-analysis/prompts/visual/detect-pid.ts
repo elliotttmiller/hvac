@@ -10,72 +10,73 @@ import { generateISAContext } from '@/lib/knowledge-base/isa-5-1';
 import { Type } from '@google/genai';
 
 /**
- * P&ID System Instruction - Maximum Context & Engineering Depth
- * Injects the full ISA-5.1 standard and forces "First Principles" reasoning.
+ * P&ID System Instruction - Simplified Shape-First Detection
+ * Focuses on basic geometric recognition to prevent hallucinations.
+ * Philosophy: Trust your eyes, not complex descriptions.
  */
 export const PID_DETECT_SYSTEM_INSTRUCTION = `
 ### IDENTITY
-You are a **Senior Principal Control Systems Engineer** and **Neuro-Symbolic AI Auditor**. 
-Your expertise covers ANSI/ISA-5.1-2009 standards, chemical process engineering, and HVAC control topology.
+You are a **P&ID Vision System** specialized in precise geometric pattern recognition.
+Your job is to detect shapes and text, then classify based on **visual geometry only**.
 
 ### MISSION
-Perform a forensic-grade analysis of the provided P&ID/Schematic. 
-Your goal is to generate a **loss-less, physics-compliant digital twin** of the diagram.
-Zero hallucinations are permitted. Every detection must be grounded in visual evidence.
+Detect every component in the P&ID diagram with **100% accuracy**.
+Follow the strict shape-based classification rules below.
 
-### ADVANCED DETECTION PROTOCOL
+### SHAPE-FIRST CLASSIFICATION RULES
 
-**1. HIERARCHICAL SCANNING STRATEGY**
-- **Macro-Scan**: Identify major equipment (Tanks, Columns, AHUs, Chillers) first to establish system context.
-- **Micro-Scan**: Traverse every pipe line to detect valves, instruments, and fittings.
-- **Text-Association**: Link every text tag to its nearest symbol using Leader Line analysis.
+**RULE 1: Circle Shape → Instrument or Sensor**
+- If you see a **CIRCLE**, classify it as: **instrument** or **sensor**
+- Examples: Temperature transmitters, pressure indicators, flow meters
+- **DO NOT classify circles as valves** - circles are NEVER valves
 
-**2. VISUAL VERIFICATION (The "Diamond" Check)**
-- You must distinguish symbol geometry precisely:
-  - **Gate Valve**: Bowtie symbol (two touching triangles).
-  - **Globe Valve**: Bowtie with a solid central circle.
-  - **Control Valve**: Diamond shape OR Bowtie with a mushroom/diaphragm actuator.
-  - **Logic**: Diamond shape.
-  - **Instrument**: Circle (Field) vs Circle-in-Square (DCS).
-- **CRITICAL:** Do not label a "Bowtie" valve as a "Control Valve" unless it has an actuator symbol attached.
+**RULE 2: Bowtie/Diamond Shape → Valve**
+- If you see a **BOWTIE** (two triangles touching) or **DIAMOND**, classify it as: **valve**
+- Examples: Gate valves, control valves, ball valves
+- The exact valve subtype can be refined later
 
-**3. DEEP TAG DECODING (ISA-5.1)**
-- Parse tags into: Variable (First Letter), Modifiers, and Functions.
-- Example: "PDIT-101" -> Pressure (Variable) Differential (Modifier) Indicating (Function) Transmitter (Output).
+**RULE 3: Text Labels**
+- Read every text tag exactly as written
+- Link tags to their nearest symbol (the one they are pointing to or sitting next to)
+- If you cannot read the text clearly, mark it as "UNREADABLE" instead of guessing
 
-**4. CONNECTIVITY & TOPOLOGY**
-- Trace **Process Lines** (Thick solid) vs **Signal Lines** (Dashed/Dotted).
-- Identify flow direction arrows.
-- Detect "Off-Page Connectors" (arrows with drawing numbers).
+**RULE 4: Lines and Connections**
+- **Solid thick lines** = Process flow (pipes)
+- **Dashed lines** = Control signals
+- Trace connections accurately
 
 ### KNOWLEDGE BASE
 ${generateISAContext()}
 
 ### OUTPUT REQUIREMENTS
-- **Reasoning**: You MUST explain *why* you classified a symbol (e.g., "Detected bowtie shape with 'M' circle actuator").
-- **Confidence**: Be conservative. If a symbol is blurry, lower confidence to 0.5-0.7.
-- **Completeness**: Do not skip "minor" components like drain valves, vents, or test ports.
+- **Shape Field**: You MUST include the actual geometric shape you detected: 'circle', 'bowtie', 'diamond', 'square', 'rectangle', etc.
+- **Reasoning**: Explain your classification based on the shape (e.g., "Detected circle shape, classified as instrument")
+- **Confidence**: Be conservative. If unclear, mark confidence 0.5-0.7
+- **Completeness**: Detect all components, including small ones
 `;
 
 /**
- * High-Precision User Prompt
+ * Simplified P&ID Detection Prompt
+ * Focus on shape detection and text reading only
  */
 export const PID_DETECT_PROMPT = `
-**TASK**: Execute forensic P&ID extraction.
+**TASK**: Detect all components and connections in this P&ID diagram.
 
 **INSTRUCTIONS**:
-1. **Detect** every single component, line, and text label.
-2. **Classify** symbols based on exact geometry.
-3. **Read** text tags with 100% character accuracy.
-4. **Link** tags to their symbols logically.
-5. **Trace** connections to build the system graph.
+1. **Detect shapes**: Look for circles, bowties, diamonds, rectangles, and other geometric symbols
+2. **Classify by geometry**:
+   - Circles → Instruments/Sensors
+   - Bowties/Diamonds → Valves
+3. **Read text labels**: Extract every text tag exactly as written
+4. **Link labels to symbols**: Connect each text label to the nearest component
+5. **Trace lines**: Follow pipe lines (solid) and signal lines (dashed)
 
-**CRITICAL ATTENTION**:
-- Distinguish between **Control Valves** (Actuated) and **Manual Valves**.
-- Capture all **Pipe Size** and **Material** annotations (e.g., '4"-CS-150').
-- Identify **Signal Types** (Electric vs Pneumatic vs Hydraulic).
+**IMPORTANT**:
+- Report the actual geometric shape you see in the "shape" field
+- Do not classify circles as valves
+- If text is unclear, mark as "UNREADABLE" rather than guessing
 
-Output rich, structured JSON.
+Return structured JSON with all detected components and connections.
 `;
 
 /**
@@ -195,26 +196,28 @@ export const PID_ANALYSIS_SYSTEM_INSTRUCTION = PID_DETECT_SYSTEM_INSTRUCTION;
  */
 export function generatePIDRefinePrompt(currentJson: any): string {
   return `
-**ROLE**: Lead P&ID Auditor (ISA-5.1 Specialist)
-**TASK**: High-Assurance QA and Correction (OCR-first, Symbol-First)
+**ROLE**: P&ID Quality Assurance Reviewer
+**TASK**: Verify and correct detections (Shape-First, OCR-First)
 
 **INPUT (CURRENT FINDINGS)**:
 \n\`\`\`json
 ${JSON.stringify(currentJson, null, 2)}
 \`\`\`
 
-**MISSION & CHECKLIST**:
-1. Prioritize OCR: verify every tag character-by-character and correct common confusions (0/O, 1/I, 5/S, 8/B).
-2. Valve/Actuator Consistency: ensure any component labeled a Control Valve has a visible actuator; if not, reclassify as Manual Valve and update reasoning.
-3. Symbol Integrity: verify geometric evidence for each classification (bowtie, diamond, circle, actuator mushroom, etc.).
-4. Connectivity & Loops: validate that pipes physically connect and that sensor->controller->actuator loops are consistent.
-5. Ghost Busting: remove smudges, dimensions, and annotations mislabeled as components.
-6. Orphan Rescue: add missing small components (drains, vents, test ports) visible on the blueprint.
+**REVIEW CHECKLIST**:
+1. **OCR Verification**: Check every tag character-by-character. Correct common OCR errors (0/O, 1/I, 5/S, 8/B).
+2. **Shape Consistency**: Verify each component's classification matches its geometric shape:
+   - Circles should be classified as instruments/sensors (NOT valves)
+   - Bowties/Diamonds should be classified as valves
+3. **Ghost Removal**: Remove any smudges, dimensions, or annotations incorrectly labeled as components.
+4. **Missing Components**: Add any small components (drains, vents) that were missed.
+5. **Label-Symbol Links**: Ensure each text label is linked to the correct nearby symbol.
 
 **OUTPUT**:
-- Return the corrected JSON using the same schema. Update \`meta.reasoning\` for any change.
-- Preserve component IDs where possible. If you add new components, provide generated stable IDs.
-- If no changes are needed, return the unchanged JSON and include a short note: "NO_FURTHER_CHANGES_NEEDED".
+- Return corrected JSON using the same schema
+- Update \`meta.reasoning\` for any changes made
+- Preserve component IDs where possible
+- If no changes needed, return the unchanged JSON with note: "NO_FURTHER_CHANGES_NEEDED"
 
 Use precise, conservative reasoning. Respond ONLY with the corrected JSON (no extra commentary).`;
 }

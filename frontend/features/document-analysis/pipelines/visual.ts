@@ -643,6 +643,17 @@ function extractISAFunction(tag?: string): string | null {
 function enhanceHVACComponent(comp: any): any {
   const enhanced = normalizeHVACComponentType(comp);
   
+  // Normalize reasoning text to avoid hardcoded shape references
+  // Replace legacy "Detected diamond shape" with generic ISA-5.1 reference
+  if (enhanced.meta?.reasoning) {
+    const reasoning = enhanced.meta.reasoning;
+    if (reasoning.toLowerCase().includes('detected diamond shape') || 
+        reasoning.toLowerCase().includes('diamond-shaped') ||
+        reasoning.toLowerCase().includes('diamond shape')) {
+      enhanced.meta.reasoning = 'Identified based on standard ISA-5.1 symbology.';
+    }
+  }
+  
   // Add HVAC-specific metadata
   enhanced.meta = {
     ...enhanced.meta,
