@@ -13,6 +13,8 @@ import {
   traceConnectionPaths,
   validateAndCorrectConnectionTypes
 } from '../../../lib/utils/connection-engine';
+import { applySpatialAssociation } from '../../../lib/utils/spatial-association';
+import { normalizeComponents, normalizeConnections } from '../../../lib/utils/type-normalization';
 import type { VisualAnalysisResult, DetectedComponent, Connection } from '../types';
 
 /**
@@ -25,13 +27,15 @@ export async function enhanceVisualAnalysis(
     enableConnectionInference?: boolean;
     enableLoopDetection?: boolean;
     enableValidation?: boolean;
+    enableSpatialAssociation?: boolean;
   } = {}
 ): Promise<VisualAnalysisResult> {
   const {
     enableISADetection = true,
     enableConnectionInference = true,
     enableLoopDetection = true,
-    enableValidation = true
+    enableValidation = true,
+    enableSpatialAssociation = true
   } = options;
   
   console.log('[Enhancement] Starting post-processing enhancements...');
@@ -39,6 +43,30 @@ export async function enhanceVisualAnalysis(
   
   let components = [...result.components];
   let connections = [...result.connections];
+  
+  // Step -1: Normalize AI output types to schema enums (ZERO-HITL Data Integrity)
+  console.log('[Enhancement] Normalizing component and connection types...');
+  components = normalizeComponents(components);
+  connections = normalizeConnections(connections);
+  console.log('[Enhancement] Type normalization complete');
+  
+  // Step 0: Apply spatial association to merge orphaned labels (ZERO-HITL Priority)
+  // This must run BEFORE ISA detection to ensure proper tagging
+  if (enableSpatialAssociation) {
+    console.log('[Enhancement] Applying spatial association to merge orphaned labels...');
+    const beforeMerge = components.length;
+    components = applySpatialAssociation(components, {
+      maxDistance: 0.08, // 8% of normalized image size
+      useEdgeDistance: true,
+      minConfidence: 0.5
+    });
+    const afterMerge = components.length;
+    const mergeCount = beforeMerge - afterMerge;
+    console.log(
+      `[Enhancement] Spatial association complete: ${mergeCount} orphaned labels merged, ` +
+      `${components.length} total components remain`
+    );
+  }
   
   // Step 1: Enhance ISA function detection
   if (enableISADetection) {
@@ -122,6 +150,8 @@ export async function enhanceVisualAnalysis(
     metadata: {
       ...result.metadata,
       enhancement: {
+        spatial_association_enabled: enableSpatialAssociation,
+        orphaned_labels_merged: components.filter(c => c.meta?.merged_from_orphaned_label).length,
         isa_detection_enabled: enableISADetection,
         isa_functions_detected: components.filter(c => c.meta?.isa_function).length,
         isa_detection_rate: components.filter(c => c.meta?.isa_function).length / components.length,

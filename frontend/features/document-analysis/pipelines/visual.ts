@@ -96,6 +96,7 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     // ENHANCEMENT: Apply post-processing enhancements
     console.log('[Visual Pipeline] Applying enhancements...');
     result = await enhanceVisualAnalysis(result, {
+      enableSpatialAssociation: true, // ZERO-HITL: Merge orphaned labels
       enableISADetection: true,
       enableConnectionInference: true,
       enableLoopDetection: true,

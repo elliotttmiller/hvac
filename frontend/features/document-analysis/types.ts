@@ -114,7 +114,8 @@ export interface Connection {
   id: string;
   from_id: string;
   to_id: string;
-  type: 'supply' | 'return' | 'electric' | 'pneumatic' | 'signal' | 'process';
+  type: 'supply' | 'return' | 'electric' | 'pneumatic' | 'signal' | 'process' | 
+        'control_signal' | 'electric_signal' | 'process_flow' | 'hydraulic' | 'unknown';
   confidence?: number;
 }
 
