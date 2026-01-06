@@ -210,111 +210,38 @@ export interface CorrelationResult {
 }
 
 // ============================================================================
-// FINAL ANALYSIS REPORT
+// FINAL ANALYSIS REPORT (NARRATIVE-FOCUSED)
 // ============================================================================
 
+/**
+ * Final Analysis Report - Narrative Engineering Assessment
+ * This structure emphasizes human-readable text over metrics and inventories.
+ * The output should read like a professional handover document.
+ */
 export interface FinalAnalysisReport {
+  // Report identification
   report_title: string;
-  document_overview: {
-    classification: string;
-    purpose: string;
-    scope: string;
-    complexity_assessment: string;
-  };
-  system_architecture: {
-    system_description: string;
-    primary_function: string;
-    major_subsystems: Array<{
-      name: string;
-      function: string;
-      key_components: string[];
-    }>;
-    topology_overview: string;
-  };
-  component_analysis: {
-    equipment_summary: Array<{
-      category: string;
-      count: number;
-      examples: string[];
-      significance: string;
-    }>;
-    critical_components: Array<{
-      tag: string;
-      type: string;
-      function: string;
-      importance: string;
-    }>;
-  };
-  component_correlation: {
-    control_loops: Array<{
-      loop_name: string;
-      loop_number: string;
-      function: string;
-      sensor: string;
-      controller: string;
-      actuator: string;
-      description: string;
-    }>;
-    equipment_sequences: Array<{
-      sequence_name: string;
-      flow_path: string[];
-      purpose: string;
-      medium: string;
-    }>;
-    component_relationships: Array<{
-      component: string;
-      upstream_components: string[];
-      downstream_components: string[];
-      controls: string[];
-      controlled_by: string[];
-      subsystem_role: string;
-    }>;
-    subsystem_integration?: Array<{
-      subsystem_name: string;
-      integrates_with: string[];
-      integration_points: string[];
-      coordination_strategy: string;
-    }>;
-    redundancy_analysis?: string;
-  };
-  process_flow_analysis: {
-    flow_description: string;
-    primary_flows: Array<{
-      path: string;
-      medium: string;
-      purpose: string;
-    }>;
-    control_strategy: string;
-    safety_systems: string;
-  };
-  standards_compliance: {
-    isa_compliance: string;
-    industry_standards: string;
-    best_practices: string;
-    documentation_quality: string;
-  };
-  technical_specifications?: {
-    piping_materials: string[];
-    sizing_information: string;
-    operating_parameters: string;
-    equipment_ratings: string;
-  };
-  quality_assessment?: {
-    completeness: string;
-    clarity: string;
-    identified_issues: string[];
-    verification_needs: string[];
-  };
-  key_findings: Array<{
-    category: string;
-    finding: string;
-    significance: string;
+  
+  // High-level system overview (2-4 sentences)
+  executive_summary: string;
+  
+  // Detailed process flow narrative (paragraph format)
+  system_workflow_narrative: string;
+  
+  // Control strategy explanation (paragraph format)
+  control_logic_analysis: string;
+  
+  // Technical specifications summary (paragraph format)
+  specifications_and_details: string;
+  
+  // Optional: Key equipment with their roles
+  critical_equipment?: Array<{
+    tag: string;
+    role: string;
   }>;
-  recommendations?: Array<{
-    area: string;
-    recommendation: string;
-    priority: string;
-  }>;
+  
+  // Optional: Engineering observations and recommendations
+  engineering_observations?: string;
 }
 
 // ============================================================================
