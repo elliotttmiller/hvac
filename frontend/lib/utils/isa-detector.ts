@@ -105,7 +105,7 @@ const TAG_NORMALIZATION_PATTERN = /[_\s]+/g;
 
 /**
  * Extract ISA function from component label/tag
- * Now uses the enhanced parseISATag function from knowledge base
+ * Now uses enhanced parseISATag with strict positional logic
  */
 export function detectISAFunction(
   label: string,
@@ -115,15 +115,25 @@ export function detectISAFunction(
   // Clean the label: remove underscores/spaces and convert to uppercase
   const cleanLabel = label.trim().toUpperCase().replace(TAG_NORMALIZATION_PATTERN, '-');
   
-  // First, try the comprehensive parseISATag function
+  // First, try the comprehensive parseISATag function with positional logic
   const parsed = parseISATag(cleanLabel);
-  if (parsed.confidence > 0.6) {
+  
+  if (parsed.confidence > 0.6 && parsed.description) {
+    // Build the ISA function string from parsed components
+    let isaFunction = parsed.measuredVariable || '';
+    if (parsed.modifier) {
+      isaFunction += parsed.modifier;
+    }
+    if (parsed.functions.length > 0) {
+      isaFunction += parsed.functions.join('');
+    }
+    
     return {
-      isa_function: parsed.functions.length > 0 ? parsed.measuredVariable + parsed.functions.join('') : parsed.measuredVariable,
-      measured_variable: parsed.measuredVariable,
-      modifier: parsed.modifier,
+      isa_function: isaFunction || null,
+      measured_variable: parsed.measuredVariableName,
+      modifier: parsed.modifierName,
       confidence: parsed.confidence,
-      reasoning: parsed.reasoning
+      reasoning: parsed.description || parsed.reasoning
     };
   }
   

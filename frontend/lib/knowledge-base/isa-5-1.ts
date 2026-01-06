@@ -1,10 +1,22 @@
 /**
  * ISA-5.1 & ASHRAE HVAC Knowledge Base (Reference: ANSI/ISA-5.1-2009)
  * Optimized for Gemini 3.0 Pro Neuro-Symbolic Context Injection.
+ * 
+ * CRITICAL UPDATE: Enhanced with strict positional logic parsing.
+ * Uses deterministic tag-parser.ts for semantic interpretation.
+ * 
+ * References:
+ * - https://instrunexus.com/isa-5-1-instrumentation-symbols-and-identifications-detailed-analysis/
+ * - https://www.engineeringtoolbox.com/isa-intrumentation-codes-d_415.html
+ * - https://www.engineeringtoolbox.com/piping-hvac-abbreviations-d_1694.html
  */
 
 // --- 1. IDENTIFICATION LETTERS (FUNCTIONAL ID) ---
 
+/**
+ * FIRST LETTER: Measured/Initiating Variable (Position 0)
+ * This letter ALWAYS appears first and indicates what is being measured.
+ */
 export const ISA_FIRST_LETTER: Record<string, string> = {
   'A': "Analysis (Composition/Property)",
   'B': "Burner / Combustion",
@@ -34,8 +46,18 @@ export const ISA_FIRST_LETTER: Record<string, string> = {
   'Z': "Position / Dimension"
 };
 
+/**
+ * MODIFIER LETTERS: (Position 1 ONLY - Second Letter After Measured Variable)
+ * These modify the measured variable and appear BEFORE function letters.
+ * 
+ * CRITICAL: These are ONLY modifiers when in position 1 (second letter).
+ * Example: PDIT = P(Pressure) D(Differential) I(Indicator) T(Transmitter)
+ *          Here 'D' is a modifier because it's in position 1.
+ * Example: TID = T(Temperature) I(Indicator) D(??? - not a standard function)
+ *          Here 'D' would NOT be interpreted as Differential.
+ */
 export const ISA_MODIFIER_FIRST: Record<string, string> = {
-  'D': "Differential (e.g., PD = Pressure Diff)",
+  'D': "Differential (e.g., PD = Pressure Diff, FD = Flow Diff)",
   'F': "Ratio / Fraction (e.g., FF = Flow Ratio)",
   'J': "Scan",
   'K': "Time Rate of Change",
@@ -116,16 +138,38 @@ export const ISA_TAG_PATTERNS = {
   'AIC': 'Analysis Indicator Controller'
 };
 
+/**
+ * SUCCEEDING LETTERS: Functions (Position 2+ or Position 1 if no modifier)
+ * These describe what the instrument DOES - its output or passive function.
+ * They appear AFTER the measured variable and any modifier.
+ * 
+ * CRITICAL POSITIONAL RULES:
+ * - Position 0: ALWAYS Measured Variable (P, T, F, L, etc.)
+ * - Position 1: Modifier IF it's D, F, Q, S, K, M, J, X; otherwise Function
+ * - Position 2+: ALWAYS Functions
+ * 
+ * Examples with position analysis:
+ * - PDIT: P[0]=Pressure, D[1]=Differential(mod), I[2]=Indicator(func), T[3]=Transmitter(func)
+ * - FIT:  F[0]=Flow, I[1]=Indicator(func), T[2]=Transmitter(func)
+ * - LAL:  L[0]=Level, A[1]=Alarm(func), L[2]=Low(func)
+ * - TT:   T[0]=Temperature, T[1]=Transmitter(func)
+ * 
+ * Note: Some letters have dual meanings based on context:
+ * - 'T' in position 0 = Temperature (measured variable)
+ * - 'T' in position 1+ = Transmitter (function)
+ * - 'V' in position 0 = Vibration (measured variable)
+ * - 'V' in position 2+ = Valve (function)
+ */
 export const ISA_SUCCEEDING_LETTERS: Record<string, string> = {
   'A': "Alarm",
   'B': "User's Choice",
   'C': "Controller",
   'E': "Sensor / Primary Element",
   'G': "Glass / Viewing Device",
-  'H': "High (Modifier)",
-  'I': "Indicator (Readout)",
+  'H': "High (Alarm/Switch Setpoint)",
+  'I': "Indicator (Readout/Display)",
   'K': "Control Station (Manual/Auto)",
-  'L': "Low (Modifier) or Light (Pilot)",
+  'L': "Low (Alarm/Switch Setpoint) or Light",
   'M': "Middle / Intermediate",
   'O': "Orifice / Restriction",
   'P': "Test Point",
@@ -535,11 +579,18 @@ export interface ParsedISATag {
   suffix: string | null;
   confidence: number;
   reasoning: string;
+  description?: string; // Added for compatibility with new parser
 }
 
 /**
- * Parse an ISA-5.1 tag with fuzzy matching support
- * Examples: "TIC-101", "FV-202A", "PDSH-303", "T/IC-101" (broken)
+ * Parse an ISA-5.1 tag with positional logic
+ * 
+ * IMPORTANT: This is now a wrapper around the deterministic tag-parser.ts
+ * Use parseISATag from '@/lib/utils/tag-parser' for full functionality.
+ * 
+ * Examples: "TIC-101", "FV-202A", "PDSH-303", "LAL-404"
+ * 
+ * @deprecated Use parseISATag from '@/lib/utils/tag-parser' for better accuracy
  */
 export function parseISATag(rawTag: string): ParsedISATag {
   // Clean the tag - remove line breaks, spaces, normalize
@@ -547,7 +598,7 @@ export function parseISATag(rawTag: string): ParsedISATag {
   
   // Try to match standard ISA pattern: [Letters]-[Number][Suffix]
   // Pattern: 1-4 letters, optional dash, 1-6 digits, optional letter suffix
-  const match = cleanTag.match(/^([A-Z]{1,4})-?(\d{1,6})([A-Z]?)$/);
+  const match = cleanTag.match(/^([A-Z]{1,6})-?(\d{1,6})?([A-Z]?)$/);
   
   if (!match) {
     return {
@@ -566,23 +617,43 @@ export function parseISATag(rawTag: string): ParsedISATag {
   
   // Check if it's a known pattern first
   if (ISA_TAG_PATTERNS[letters]) {
+    const firstLetter = letters.charAt(0);
+    const hasModifier = letters.length > 1 && ISA_MODIFIER_FIRST[letters.charAt(1)];
+    const modifier = hasModifier ? letters.charAt(1) : null;
+    const functionStart = hasModifier ? 2 : 1;
+    const functions = letters.slice(functionStart).split('');
+    
     return {
       tag: cleanTag,
-      measuredVariable: letters.charAt(0),
-      modifier: letters.length > 1 && ISA_MODIFIER_FIRST[letters.charAt(1)] ? letters.charAt(1) : null,
-      functions: letters.slice(letters.length > 1 && ISA_MODIFIER_FIRST[letters.charAt(1)] ? 2 : 1).split(''),
-      loopNumber: number,
+      measuredVariable: firstLetter,
+      modifier: modifier,
+      functions: functions,
+      loopNumber: number || null,
       suffix: suffix || null,
       confidence: 0.95,
-      reasoning: `Known ISA pattern: ${ISA_TAG_PATTERNS[letters]}`
+      reasoning: `Known ISA pattern: ${ISA_TAG_PATTERNS[letters]}`,
+      description: ISA_TAG_PATTERNS[letters]
     };
   }
   
-  // Parse letter by letter
+  // Parse letter by letter using STRICT POSITIONAL LOGIC
   const firstLetter = letters.charAt(0);
   const measuredVariable = ISA_FIRST_LETTER[firstLetter] ? firstLetter : null;
   
-  // Check for modifier in second position
+  if (!measuredVariable) {
+    return {
+      tag: cleanTag,
+      measuredVariable: null,
+      modifier: null,
+      functions: [],
+      loopNumber: number || null,
+      suffix: suffix || null,
+      confidence: 0.3,
+      reasoning: `Unknown first letter: ${firstLetter}`
+    };
+  }
+  
+  // Check for modifier in second position (Position 1)
   let modifier: string | null = null;
   let functionStart = 1;
   if (letters.length > 1 && ISA_MODIFIER_FIRST[letters.charAt(1)]) {
@@ -590,22 +661,32 @@ export function parseISATag(rawTag: string): ParsedISATag {
     functionStart = 2;
   }
   
-  // Remaining letters are functions
+  // Remaining letters are functions (Position 2+)
   const functions = letters.slice(functionStart).split('').filter(l => ISA_SUCCEEDING_LETTERS[l]);
   
-  const confidence = measuredVariable ? 0.7 : 0.3;
+  // Build description
+  let description = ISA_FIRST_LETTER[firstLetter];
+  if (modifier && ISA_MODIFIER_FIRST[modifier]) {
+    description += ` ${ISA_MODIFIER_FIRST[modifier].split('(')[0].trim()}`;
+  }
+  if (functions.length > 0) {
+    description += ` ${functions.map(f => ISA_SUCCEEDING_LETTERS[f]).join(' ')}`;
+  }
+  
+  const confidence = measuredVariable ? 0.8 : 0.3;
   
   return {
     tag: cleanTag,
     measuredVariable,
     modifier,
     functions,
-    loopNumber: number,
+    loopNumber: number || null,
     suffix: suffix || null,
     confidence,
     reasoning: measuredVariable 
-      ? `Parsed ISA tag: ${ISA_FIRST_LETTER[firstLetter]}${modifier ? ` ${ISA_MODIFIER_FIRST[modifier]}` : ''}${functions.map(f => ` ${ISA_SUCCEEDING_LETTERS[f]}`).join('')}`
-      : `Partial ISA pattern match from label: ${cleanTag}`
+      ? `Parsed: ${ISA_FIRST_LETTER[firstLetter]}${modifier ? ` + ${ISA_MODIFIER_FIRST[modifier].split('(')[0].trim()}` : ''}${functions.map(f => ` + ${ISA_SUCCEEDING_LETTERS[f]}`).join('')}`
+      : `Partial ISA pattern match from label: ${cleanTag}`,
+    description
   };
 }
 

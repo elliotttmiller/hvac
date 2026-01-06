@@ -284,6 +284,113 @@ function isInstrumentType(type: string): boolean {
 }
 
 /**
+ * Apply HVAC domain-specific tag-shape conflict resolution
+ * Handles edge cases where text tags might conflict with visual geometry.
+ * 
+ * Examples:
+ * - PV on Circle → Pressure Indicator (NOT Pressure Valve)
+ * - RV on Circle → Could be Radiation instrument (NOT Relief Valve)
+ * - TV on Bowtie with actuator → Temperature Control Valve
+ * 
+ * @param component - Component to check
+ * @param shape - Normalized shape
+ * @returns Corrected type if conflict detected, null otherwise
+ */
+function resolveTagShapeConflict(
+  component: DetectedComponent,
+  shape: ValidShape
+): { correctedType: string; reason: string } | null {
+  const label = component.label?.toUpperCase() || '';
+  const type = component.type?.toLowerCase() || '';
+  
+  // Edge Case 1: PV on Circle = Pressure Indicator (HVAC convention)
+  // In HVAC/BAS context, PV often means "Pressure View/Indicator" not "Pressure Valve"
+  if (shape === 'circle' && label.match(/^PV[-\s]?\d+/)) {
+    if (isValveType(type)) {
+      return {
+        correctedType: 'instrument_indicator',
+        reason: 'HVAC Rule: PV tag on circle shape indicates Pressure Indicator/View, not Pressure Valve'
+      };
+    }
+  }
+  
+  // Edge Case 2: Any "*I" tag on Circle must be Indicator
+  // PI, TI, FI, LI, etc. are ALWAYS indicators, never valves
+  if (shape === 'circle' && label.match(/^[A-Z]{1,2}I[-\s]?\d+/)) {
+    if (isValveType(type)) {
+      const varLetter = label.charAt(0);
+      const varMap: Record<string, string> = {
+        'P': 'Pressure',
+        'T': 'Temperature',
+        'F': 'Flow',
+        'L': 'Level',
+        'H': 'Humidity',
+        'A': 'Analysis'
+      };
+      const varName = varMap[varLetter] || 'Unknown';
+      
+      return {
+        correctedType: 'instrument_indicator',
+        reason: `ISA Rule: ${label} = ${varName} Indicator (circles with "I" suffix are indicators, never valves)`
+      };
+    }
+  }
+  
+  // Edge Case 3: RV on Circle could be Radiation instrument (not Relief Valve)
+  // Relief valves typically have bowtie or triangle shapes with spring symbol
+  if (shape === 'circle' && label.match(/^RV[-\s]?\d+/)) {
+    if (type.includes('relief') || type.includes('pressure_relief')) {
+      return {
+        correctedType: 'sensor_radiation',
+        reason: 'Shape Rule: RV on circle likely indicates Radiation sensor (relief valves use bowtie/triangle with spring)'
+      };
+    }
+  }
+  
+  // Edge Case 4: TV/FV/PV on Bowtie WITHOUT actuator = should not be control valve
+  // If it's a bowtie but no actuator, it should be gate or globe, not control
+  if (shape === 'bowtie' && type.includes('control')) {
+    const hasActuator = component.meta?.visual_signature?.includes('actuator') || 
+                        component.meta?.description?.toLowerCase().includes('actuator');
+    if (!hasActuator) {
+      return {
+        correctedType: 'valve_gate',
+        reason: 'Shape Rule: Bowtie without actuator is Gate valve (control valves require actuator symbol)'
+      };
+    }
+  }
+  
+  // Edge Case 5: Circle without internal line can NEVER be gate/globe/control valve
+  // Only ball (diagonal line) or butterfly (bar) valves use circle shapes
+  if (shape === 'circle' && (type.includes('gate') || type.includes('globe') || 
+      (type.includes('control') && !type.includes('controller')))) {
+    const visual = component.meta?.visual_signature || '';
+    const hasDiagonal = visual.includes('diagonal');
+    const hasBar = visual.includes('bar');
+    
+    if (hasDiagonal) {
+      return {
+        correctedType: 'valve_ball',
+        reason: 'Shape Rule: Circle with diagonal line = Ball valve'
+      };
+    } else if (hasBar) {
+      return {
+        correctedType: 'valve_butterfly',
+        reason: 'Shape Rule: Circle with bar = Butterfly valve'
+      };
+    } else {
+      // No internal actuating element - must be instrument
+      return {
+        correctedType: 'instrument_indicator',
+        reason: 'Shape Rule: Circle without internal actuating element = Instrument (never gate/globe/control valve)'
+      };
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Validate and correct a single component based on shape-type consistency
  * 
  * @param component - Component to validate
@@ -310,6 +417,32 @@ export function validateComponentShape(component: DetectedComponent): DetectedCo
   
   const type = component.type || 'unknown';
   const rules = SHAPE_TYPE_RULES[shape];
+  
+  // CRITICAL: Apply HVAC domain-specific conflict resolution FIRST
+  // This handles edge cases like PV on Circle = Pressure Indicator
+  const conflict = resolveTagShapeConflict(component, shape);
+  if (conflict) {
+    console.log(
+      `[Shape Validator] ${component.id}: Conflict resolved - ${conflict.reason}`
+    );
+    
+    return {
+      ...component,
+      type: conflict.correctedType,
+      meta: {
+        ...component.meta,
+        original_type: type,
+        shape_validation: {
+          validated: true,
+          corrected: true,
+          original_shape: rawShape,
+          normalized_shape: shape,
+          correction_reason: conflict.reason,
+          reasoning: `Tag-Shape Conflict Resolution: ${conflict.reason}`
+        }
+      }
+    };
+  }
   
   // Check if type is forbidden for this shape
   const isForbidden = rules.forbidden.some(forbidden => 
