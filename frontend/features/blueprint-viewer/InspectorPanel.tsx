@@ -92,6 +92,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          window.addEventListener('analysis-log', handler as EventListener);
          return () => window.removeEventListener('analysis-log', handler as EventListener);
       }, []);
+      
+      // Listen for tab switch event from toast click
+      useEffect(() => {
+         const handler = () => {
+            setActiveTab('ANALYSIS');
+         };
+         window.addEventListener('switch-to-analysis-tab', handler);
+         return () => window.removeEventListener('switch-to-analysis-tab', handler);
+      }, []);
 
    const copyProcessLog = async () => {
       try {

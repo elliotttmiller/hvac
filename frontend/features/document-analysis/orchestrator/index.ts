@@ -16,6 +16,7 @@ export interface AnalysisOptions {
 
 /**
  * Main orchestrator function - entry point for document analysis
+ * STAGE 1: Fast visual analysis and component detection
  */
 export async function analyzeDocument(
   imageData: string,
@@ -95,27 +96,8 @@ export async function analyzeDocument(
       components: result.visual?.components?.length || 0
     }]);
 
-    // Step 5: Generate comprehensive final analysis report
-    // Only generate for visual documents (BLUEPRINT/SCHEMATIC) with components
-    if ((classification.type === 'BLUEPRINT' || classification.type === 'SCHEMATIC') && 
-        result.visual?.components && result.visual.components.length > 0) {
-      try {
-        emit('Step 4: Generating comprehensive final analysis report...');
-        
-        // Dynamically import to avoid bundling issues
-        const { generateFinalAnalysis } = await import('../../../lib/gemini-prompt-engine/final-analysis');
-        
-        const finalAnalysisReport = await generateFinalAnalysis(result);
-        result.final_analysis = finalAnalysisReport;
-        
-        emit('Final analysis report generated successfully');
-      } catch (error) {
-        console.warn('Failed to generate final analysis report:', error);
-        emit('Warning: Final analysis report generation failed, continuing with basic analysis');
-        // Don't fail the entire pipeline if final analysis fails
-      }
-    }
-
+    // STAGE 1 COMPLETE: Return visual results immediately
+    // Stage 2 (final analysis) will be triggered separately as a background job
     return result;
   } catch (error) {
     console.error('Analysis error:', error);
@@ -141,5 +123,54 @@ export async function analyzeDocument(
         },
       ],
     };
+  }
+}
+
+/**
+ * STAGE 2: Background final analysis generation
+ * Triggered after Stage 1 completes successfully
+ * Runs asynchronously and does not block user interaction
+ */
+export async function generateBackgroundAnalysis(
+  documentResult: UniversalDocumentResult,
+  options?: {
+    onProgress?: (msg: string) => void;
+    onComplete?: (report: any) => void;
+    onError?: (error: Error) => void;
+  }
+): Promise<string> {
+  // Only generate for visual documents with components
+  const shouldGenerate = 
+    (documentResult.document_type === 'BLUEPRINT' || documentResult.document_type === 'SCHEMATIC') &&
+    documentResult.visual?.components && 
+    documentResult.visual.components.length > 0;
+  
+  if (!shouldGenerate) {
+    console.log('[Stage 2] Skipping final analysis - not applicable for this document type');
+    options?.onComplete?.(null);
+    return 'skipped';
+  }
+  
+  try {
+    console.log('[Stage 2] Starting background final analysis...');
+    options?.onProgress?.('Starting background analysis...');
+    
+    // Import background worker
+    const { queueFinalAnalysis } = await import('../../../lib/ai/background-worker');
+    
+    // Queue the job
+    const jobId = await queueFinalAnalysis(
+      documentResult,
+      options?.onProgress,
+      options?.onComplete,
+      options?.onError
+    );
+    
+    console.log(`[Stage 2] Background analysis queued with job ID: ${jobId}`);
+    return jobId;
+  } catch (error) {
+    console.error('[Stage 2] Failed to queue background analysis:', error);
+    options?.onError?.(error instanceof Error ? error : new Error(String(error)));
+    throw error;
   }
 }

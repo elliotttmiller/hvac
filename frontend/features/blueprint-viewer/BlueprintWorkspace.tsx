@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import InteractiveViewer from '@/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
-import { analyzeDocument } from '@/features/document-analysis/orchestrator';
+import { analyzeDocument, generateBackgroundAnalysis } from '@/features/document-analysis/orchestrator';
 import startConsoleCapture from '@/lib/consoleCapture';
 import { config } from '@/app/config';
 import { DetectedComponent, ValidationIssue} from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
+import { useToastHelpers } from '@/lib/hooks/useToast';
 
 const BlueprintWorkspace: React.FC<{
   fileToAnalyze?: string | null;
@@ -26,6 +27,13 @@ const BlueprintWorkspace: React.FC<{
   // Interactivity State
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  
+  // Background analysis state
+  const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
+  const [isBackgroundRunning, setIsBackgroundRunning] = useState(false);
+  
+  // Toast notifications
+  const toast = useToastHelpers();
 
   // Auto-run analysis when a file is selected from the sidebar
   useEffect(() => {
@@ -63,10 +71,11 @@ const BlueprintWorkspace: React.FC<{
     loadAndMaybeAnalyze();
   }, [fileToAnalyze, onAnalyzed]);
 
-  // Main analysis function
+  // Main analysis function - STAGE 1: Fast visual analysis
   const runAnalysisInternal = async (file: File, url: string) => {
     setIsProcessing(true);
     setProcessingPhase('classifying');
+    setFinalAnalysisReport(null); // Clear previous final analysis
 
     // Append-only log helper for the inspector panel
     const appendLog = (msg: string) => {
@@ -82,8 +91,10 @@ const BlueprintWorkspace: React.FC<{
     try {
       const base64Data = url.split(',')[1] || await blobToBase64(file);
       setProcessingPhase('analyzing');
+      
+      // STAGE 1: Fast visual analysis
       const result = await analyzeDocument(base64Data, { fileName: file.name, onProgress: appendLog });
-      console.log('Analysis result:', result);
+      console.log('Stage 1 (Visual Analysis) complete:', result);
 
       setProcessingPhase('refining');
 
@@ -102,15 +113,76 @@ const BlueprintWorkspace: React.FC<{
 
       setExecutiveSummary(result.executive_summary || `Document classified as: ${result.document_type}`);
       setValidationIssues(result.validation_issues || []);
-      setFinalAnalysisReport(result.final_analysis || null);
       setAnalysisRaw((prev) => `${prev}\n\n${JSON.stringify(result, null, 2)}`);
 
+      // STAGE 1 COMPLETE - Release UI
       setTimeout(() => setIsProcessing(false), 500);
+      
+      // STAGE 2: Background final analysis
+      // Show toast notification that background analysis is starting
+      toast.info(
+        'Visual analysis complete',
+        'Generating comprehensive report in the background...',
+        { duration: 4000 }
+      );
+      
+      setIsBackgroundRunning(true);
+      
+      // Trigger background analysis
+      generateBackgroundAnalysis(result, {
+        onProgress: (msg) => {
+          console.log('[Stage 2]', msg);
+          appendLog(`[Background] ${msg}`);
+        },
+        onComplete: (report) => {
+          console.log('[Stage 2] Final analysis complete:', report);
+          setFinalAnalysisReport(report);
+          setIsBackgroundRunning(false);
+          
+          // Show completion toast with click to view
+          toast.success(
+            'Comprehensive analysis ready',
+            'Click to view the detailed report',
+            {
+              duration: 8000,
+              clickable: true,
+              onClick: () => {
+                // Trigger event to switch to Analysis tab in InspectorPanel
+                window.dispatchEvent(new CustomEvent('switch-to-analysis-tab'));
+              }
+            }
+          );
+        },
+        onError: (error) => {
+          console.error('[Stage 2] Final analysis failed:', error);
+          setIsBackgroundRunning(false);
+          
+          toast.error(
+            'Background analysis failed',
+            error.message || 'Unable to generate comprehensive report',
+            { duration: 6000 }
+          );
+        }
+      }).then(jobId => {
+        setBackgroundJobId(jobId);
+        console.log('[Stage 2] Background job queued:', jobId);
+      }).catch(err => {
+        console.error('[Stage 2] Failed to queue background job:', err);
+        setIsBackgroundRunning(false);
+      });
+
     } catch (error) {
         console.error(error);
         const msg = `Error: ${error instanceof Error ? error.message : "Pipeline Failed"}`;
         setAnalysisRaw((prev) => (prev ? `${prev}\n${msg}` : msg));
         setIsProcessing(false);
+        
+        // Show error toast
+        toast.error(
+          'Analysis failed',
+          error instanceof Error ? error.message : 'Unknown error occurred',
+          { duration: 6000 }
+        );
     } finally {
       try { stopCapture(); } catch (_) {}
     }
