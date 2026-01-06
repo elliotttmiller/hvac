@@ -145,9 +145,10 @@ export const INSTRUMENT_SYMBOLS = `
 VISUAL SHAPE DECODING (The "Four Quadrants" of ISA-5.1):
 
 1. **DISCRETE INSTRUMENTS** (Single physical device):
-   - Shape: **CIRCLE**
+   - Shape: **CIRCLE** (Simple circle)
    - Example: Field Thermostat, Pressure Gauge, Flow Transmitter.
    - Variations: May have internal markings or letters.
+   - **CRITICAL**: Circles are **NEVER** Gate/Globe/Control valves. Only Ball and Butterfly valves use circular geometry.
 
 2. **SHARED DISPLAY / CONTROL** (DCS / HMI / SCADA):
    - Shape: **CIRCLE INSIDE SQUARE**
@@ -222,24 +223,31 @@ VALVE FAIL MODES:
 - **FSC**: Fail Safe Closed.
 
 VALVE TYPES & PRECISE GEOMETRIC DEFINITIONS:
-- **Control Valve (Modulating)**: Triangle body (▽) with vertical stem line. NOT to be confused with gate valve (wedge shape) or check valve (arrow). Typical Cv range: 0.5-500.
-- **Ball Valve**: Circle (○) with diagonal line bisecting center (quarter-turn, 90°). Distinguishing feature: SINGLE diagonal, not double like butterfly.
-- **Globe Valve**: Circular body with PERPENDICULAR stem entering from top. Body has S-shaped internal path (not visible but implied by vertical stem + side ports).
-- **Butterfly Valve (BFV)**: Circle (○) with SINGLE horizontal or diagonal bar representing disc. Similar to ball valve but bar is centered, not edge-to-edge.
-- **Check Valve**: Solid triangle (►) or arrow pointing in flow direction. Single direction indicator, no stem. Distinguished from control valve by lack of stem and actuator.
-- **Gate Valve**: Rectangle body with wedge/gate symbol (perpendicular line inside). Full bore when open. NOT a diamond (that's logic/PLC).
+
+**BOWTIE VALVES** (Two touching triangles - PRIMARY VALVE GEOMETRY):
+- **Gate Valve**: Bowtie shape, EMPTY interior. Full bore when open. Isolating service.
+- **Globe Valve**: Bowtie shape with SOLID DOT in center. Throttling service. S-curve flow path.
+- **Control Valve**: Bowtie shape with ACTUATOR on top (Mushroom/Box). Modulating service. Automated control.
+
+**ROTARY VALVES** (The ONLY circular valves):
+- **Ball Valve**: Circle (○) with SINGLE DIAGONAL LINE bisecting center (quarter-turn, 90°). Full bore.
+- **Butterfly Valve (BFV)**: Circle (○) with SINGLE VERTICAL/HORIZONTAL BAR representing disc. Throttling or isolation.
 - **Plug Valve**: Circle with cylindrical plug representation (small rectangle or tapered shape inside).
-- **Three-Way Valve**: Y-shape or T-junction with diverter element. Three ports visible. Used for mixing or diverting flows.
-- **Pressure Relief Valve (PRV/PSV)**: Spring-loaded symbol - triangle with coil spring on top. Opens at setpoint pressure.
-- **Solenoid Valve**: Rectangle/box with electrical coil symbol (|||) or 'SOV' label. Fast-acting, on/off only.
-- **Needle Valve**: Small body with tapered needle stem for fine flow control (throttling).
+
+**OTHER VALVE TYPES**:
+- **Check Valve**: Solid triangle (►) or arrow pointing in flow direction. Passive, prevents backflow.
+- **Three-Way Valve**: Y-shape or T-junction with diverter element. Three ports visible.
+- **Pressure Relief Valve (PRV/PSV)**: Spring-loaded symbol - triangle with coil spring on top.
+- **Solenoid Valve**: Rectangle/box with electrical coil symbol (|||) or 'SOV' label.
+- **Needle Valve**: Small body with tapered needle stem for fine flow control.
 - **Diaphragm Valve**: Body with flexible diaphragm actuator shown as curved membrane.
 
 CRITICAL DISTINCTIONS (Common Confusion Points):
-1. **Diamond vs Triangle**: Diamond (◇) = PLC/Logic function. Triangle (▽) = Control valve body.
-2. **Ball vs Butterfly**: Ball has diagonal line. Butterfly has centered bar/disc.
-3. **Control Valve vs Check Valve**: Control valve has stem + actuator. Check valve is passive, arrow-shaped, no actuator.
-4. **Gate Valve vs Control Valve**: Gate is rectangular with internal wedge. Control is triangular with modulating actuator.
+1. **Circle vs Bowtie**: Circle = Instrument OR Ball/Butterfly valve (look for internal line). Bowtie = Gate/Globe/Control valve.
+2. **Gate vs Globe vs Control**: All use bowtie. Gate=Empty, Globe=Solid dot, Control=Has actuator.
+3. **Diamond vs Triangle**: Diamond (◇) = PLC/Logic function. Triangle/Bowtie (▽) = Control valve body.
+4. **Ball vs Butterfly**: Ball has diagonal line. Butterfly has centered bar/disc.
+5. **Control Valve vs Check Valve**: Control valve has stem + actuator. Check valve is passive, arrow-shaped, no actuator.
 
 ACTUATOR SYMBOLS:
 - **Diaphragm**: Semicircle/Mushroom top (spring-opposed or double-acting).
@@ -301,6 +309,79 @@ export const HVAC_EQUIPMENT_PATTERNS: Record<string, string> = {
   "STRN": "Strainer",
   "FLTR": "Filter",
   "SEP": "Separator"
+};
+
+// --- HVAC DOMAIN-SPECIFIC RULES ---
+
+export const HVAC_DOMAIN_RULES = `
+HVAC/BAS SPECIFIC CLASSIFICATION RULES:
+
+**DAMPERS vs BUTTERFLY VALVES**:
+- **Damper**: Used in DUCTWORK (airside systems). Rectangular or circular blade in air stream.
+  - Context: AHU, VAV, exhaust/supply ducts
+  - Tags: DMP, SD (Smoke Damper), FD (Fire Damper), MD (Motorized Damper)
+  - Symbol: Similar to butterfly valve but in duct context
+- **Butterfly Valve**: Used in PIPING (waterside systems). Circular disc in pipe.
+  - Context: Chilled water, condenser water, hydronic loops
+  - Tags: BFV, with CHW/HW/CW prefix
+  - Symbol: Circle with centered bar/disc
+
+**SENSORS - Mounting Context**:
+- **Duct-Mounted (Insertion)**: Probe extending into duct. Measures air properties.
+  - Applications: Supply air temp, return air temp, mixed air temp
+  - Tags: SAT, RAT, MAT, OAT
+  - Symbol: Sensor with extension into duct
+- **Pipe-Mounted (Well)**: Thermowell/probe in pipe. Measures fluid properties.
+  - Applications: Chilled water temp, hot water temp, condenser water temp
+  - Tags: CHWST, CHWRT, HWST, HWRT
+  - Symbol: Sensor with well extending into pipe
+
+**INSTRUMENTS vs VALVES**:
+- **Pressure Indicator (PI)**: ALWAYS a circular instrument. Displays pressure reading.
+  - Shape: CIRCLE with "PI" text
+  - Function: Indication/Display only, no control action
+  - NEVER classify as valve
+- **Pressure Valve (PV)**: Can be circular (Ball/Butterfly) OR bowtie (Control/Gate/Globe).
+  - Shape: If CIRCLE, must have internal actuating element (diagonal line for ball, bar for butterfly)
+  - Shape: If BOWTIE, standard valve body
+  - Function: Flow control/isolation
+`;
+
+export const HVAC_TAG_AMBIGUITY_TABLE: Record<string, { 
+  industrial_meaning: string; 
+  hvac_meaning: string; 
+  shape_rule: string;
+}> = {
+  "PV": {
+    industrial_meaning: "Pressure Valve (generic control valve)",
+    hvac_meaning: "Pressure Indicator/View (display instrument) OR Pressure Valve (if ball/butterfly)",
+    shape_rule: "IF CIRCLE without internal line → Pressure Indicator. IF CIRCLE with diagonal/bar → Ball/Butterfly Valve. IF BOWTIE → Control Valve."
+  },
+  "TV": {
+    industrial_meaning: "Temperature Valve",
+    hvac_meaning: "Temperature Valve (control valve for heating/cooling)",
+    shape_rule: "IF BOWTIE with actuator → Temperature Control Valve. IF CIRCLE → Check for Ball/Butterfly features."
+  },
+  "FV": {
+    industrial_meaning: "Flow Valve",
+    hvac_meaning: "Flow Valve (balancing or control valve)",
+    shape_rule: "IF BOWTIE → Flow Control Valve. IF CIRCLE with diagonal → Ball Valve."
+  },
+  "PI": {
+    industrial_meaning: "Pressure Indicator",
+    hvac_meaning: "Pressure Indicator (gauge, display)",
+    shape_rule: "ALWAYS CIRCLE. NEVER a valve. Display instrument only."
+  },
+  "TI": {
+    industrial_meaning: "Temperature Indicator",
+    hvac_meaning: "Temperature Indicator (display)",
+    shape_rule: "ALWAYS CIRCLE. Display instrument only."
+  },
+  "FI": {
+    industrial_meaning: "Flow Indicator",
+    hvac_meaning: "Flow Indicator (display)",
+    shape_rule: "ALWAYS CIRCLE. Display instrument only."
+  }
 };
 
 // --- ASHRAE & SMACNA STANDARDS (Token-Optimized) ---
@@ -566,6 +647,8 @@ export const generateISAContext = (): string => {
     
     [HVAC DOMAIN]
     EQUIPMENT_MAP: ${JSON.stringify(HVAC_EQUIPMENT_PATTERNS)}
+    ${HVAC_DOMAIN_RULES}
+    TAG_AMBIGUITY_TABLE: ${JSON.stringify(HVAC_TAG_AMBIGUITY_TABLE, null, 2)}
     ${ENGINEERING_FIRST_PRINCIPLES}
     
     [ASHRAE STANDARDS]
