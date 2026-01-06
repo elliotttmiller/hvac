@@ -26,8 +26,8 @@ const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MOD
 // Token Budget Configuration (Dynamic Calculation)
 // These values determine how token budgets scale with diagram complexity
 // Increased defaults to ensure complete report generation without truncation
-const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '150', 10);
-const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '2000', 10);
+const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '200', 10);
+const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '4000', 10);
 const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '16384', 10);
 const THINKING_TOKENS_PER_COMPONENT = parseInt(process.env.THINKING_TOKENS_PER_COMPONENT || '100', 10);
 const BASE_THINKING_TOKENS = parseInt(process.env.BASE_THINKING_TOKENS || '2048', 10);
@@ -765,28 +765,122 @@ Generate a professional engineering analysis that explains this system in narrat
           ? result.response.text() 
           : (result && result.text) || '{}';
 
+        // Log response length for debugging truncation issues
+        console.log(`[Stage 2] Job ${jobId} - Response length: ${text.length} characters`);
+        if (text.length > 500) {
+          console.log(`[Stage 2] Job ${jobId} - Response preview (first 200 chars): ${text.substring(0, 200)}...`);
+          console.log(`[Stage 2] Job ${jobId} - Response preview (last 200 chars): ...${text.substring(text.length - 200)}`);
+        }
+
         let parsed = {};
         try { 
           parsed = JSON.parse(text); 
+          console.log(`[Stage 2] Job ${jobId} - JSON parsed successfully`);
         } catch (e) { 
-          console.warn(`[Stage 2] Job ${jobId} - JSON parse error, attempting fallback extraction`);
-          // Try to extract JSON from markdown code blocks or text
-          const match = text.match(/\{[\s\S]*\}/);
-          if (match) {
+          console.warn(`[Stage 2] Job ${jobId} - JSON parse error: ${e.message}`);
+          console.warn(`[Stage 2] Job ${jobId} - Attempting fallback extraction...`);
+          
+          // Try multiple extraction strategies in order of preference
+          let extracted = null;
+          
+          // Strategy 1: Extract JSON from markdown code blocks (```json ... ```)
+          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+          if (codeBlockMatch) {
+            extracted = codeBlockMatch[1];
+            console.log(`[Stage 2] Job ${jobId} - Found JSON in markdown code block`);
+          }
+          
+          // Strategy 2: Find the first complete JSON object (non-greedy, balanced braces)
+          if (!extracted) {
+            // Find the first { and then match balanced braces
+            const firstBrace = text.indexOf('{');
+            if (firstBrace !== -1) {
+              let braceCount = 0;
+              let inString = false;
+              let escapeNext = false;
+              let endIndex = -1;
+              
+              for (let i = firstBrace; i < text.length; i++) {
+                const char = text[i];
+                
+                if (escapeNext) {
+                  escapeNext = false;
+                  continue;
+                }
+                
+                if (char === '\\') {
+                  escapeNext = true;
+                  continue;
+                }
+                
+                if (char === '"' && !escapeNext) {
+                  inString = !inString;
+                  continue;
+                }
+                
+                if (!inString) {
+                  if (char === '{') braceCount++;
+                  if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                      endIndex = i + 1;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              if (endIndex > firstBrace) {
+                extracted = text.substring(firstBrace, endIndex);
+                console.log(`[Stage 2] Job ${jobId} - Extracted balanced JSON object (${extracted.length} chars)`);
+              }
+            }
+          }
+          
+          // Strategy 3: Greedy match as last resort (original behavior)
+          if (!extracted) {
+            const greedyMatch = text.match(/\{[\s\S]*\}/);
+            if (greedyMatch) {
+              extracted = greedyMatch[0];
+              console.log(`[Stage 2] Job ${jobId} - Using greedy regex match (${extracted.length} chars)`);
+            }
+          }
+          
+          if (extracted) {
             try {
-              parsed = JSON.parse(match[0]);
+              parsed = JSON.parse(extracted);
               console.log(`[Stage 2] Job ${jobId} - Fallback extraction successful`);
             } catch (e2) {
-              console.error(`[Stage 2] Job ${jobId} - Fallback extraction also failed:`, e2.message);
+              console.error(`[Stage 2] Job ${jobId} - Fallback extraction parsing failed: ${e2.message}`);
+              console.error(`[Stage 2] Job ${jobId} - Extracted text preview: ${extracted.substring(0, 200)}...`);
               parsed = { 
                 raw: text, 
                 error: 'Could not parse JSON response',
-                parseError: e2.message 
+                parseError: e2.message,
+                extractedText: extracted.substring(0, 500) // Include preview of what was extracted
               };
             }
           } else {
+            console.error(`[Stage 2] Job ${jobId} - No JSON structure found in response`);
             parsed = { raw: text, error: 'No JSON structure found in response' };
           }
+        }
+
+        // Validate that parsed response has required fields
+        const requiredFields = ['report_title', 'executive_summary', 'system_workflow_narrative', 'control_logic_analysis'];
+        const missingFields = requiredFields.filter(field => !parsed[field] || parsed[field].length === 0);
+        
+        if (missingFields.length > 0) {
+          console.warn(`[Stage 2] Job ${jobId} - Response missing required fields: ${missingFields.join(', ')}`);
+          console.warn(`[Stage 2] Job ${jobId} - This may indicate response truncation or incomplete generation`);
+          
+          // If response appears truncated (has error field or missing required fields), log for debugging
+          if (parsed.error || missingFields.length > 2) {
+            console.error(`[Stage 2] Job ${jobId} - Response may be truncated or malformed`);
+            console.error(`[Stage 2] Job ${jobId} - Parsed keys: ${Object.keys(parsed).join(', ')}`);
+          }
+        } else {
+          console.log(`[Stage 2] Job ${jobId} - Response validation passed, all required fields present`);
         }
 
         // LIFECYCLE: Saving to DB (simulated - in-memory store)
