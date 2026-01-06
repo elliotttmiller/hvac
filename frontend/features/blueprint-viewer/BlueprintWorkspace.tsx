@@ -32,6 +32,47 @@ const BlueprintWorkspace: React.FC<{
   const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
   const [isBackgroundRunning, setIsBackgroundRunning] = useState(false);
   const finalAnalysisReportRef = useRef<any>(null);
+
+  // Normalize various server response shapes into the UI-friendly finalAnalysisReport
+  const normalizeFinalReport = (raw: any) => {
+    if (!raw) return null;
+
+    // Support both snake_case keys and human-friendly title keys from mock/AI
+    const get = (keys: string[]) => {
+      for (const k of keys) {
+        if (raw[k] !== undefined && raw[k] !== null) return raw[k];
+      }
+      return undefined;
+    };
+
+    const normalized: any = {
+      report_title: get(['report_title', 'title', 'reportTitle', 'Report Title', 'report']) || null,
+      executive_summary: get(['executive_summary', 'executiveSummary', 'Executive Summary']) || get(['executive_summary_text']) || null,
+      system_workflow_narrative: get(['system_workflow_narrative', 'systemWorkflowNarrative', 'System Workflow Narrative']) || null,
+      control_logic_analysis: get(['control_logic_analysis', 'controlLogicAnalysis', 'Control Logic Analysis']) || null,
+      specifications_and_details: get(['specifications_and_details', 'specificationsAndDetails', 'Specifications and Details']) || null,
+      critical_equipment: get(['critical_equipment', 'criticalEquipment', 'Critical Equipment']) || null,
+      engineering_observations: get(['engineering_observations', 'engineeringObservations', 'Engineering Observations']) || null,
+      // Keep the original payload for debugging/fallback
+      _raw: raw
+    };
+
+    // If no canonical fields found but raw has keys, try to infer common single-string report
+    const hasAny = Object.keys(normalized).some(k => normalized[k]);
+    if (!hasAny) {
+      // If raw looks like a single string or has a single top-level text field, map it to system_workflow_narrative
+      if (typeof raw === 'string') {
+        normalized.system_workflow_narrative = raw;
+      } else if (raw.raw && typeof raw.raw === 'string') {
+        normalized.system_workflow_narrative = raw.raw;
+      } else if (Object.keys(raw).length === 1) {
+        const val = raw[Object.keys(raw)[0]];
+        if (typeof val === 'string') normalized.system_workflow_narrative = val;
+      }
+    }
+
+    return normalized;
+  };
   
   // Toast notifications
   const toast = useToastHelpers();
@@ -107,8 +148,9 @@ const BlueprintWorkspace: React.FC<{
           
           // Update state with the final report
           if (projectData.finalReport) {
-            setFinalAnalysisReport(projectData.finalReport);
-            finalAnalysisReportRef.current = projectData.finalReport;
+            const normalized = normalizeFinalReport(projectData.finalReport);
+            setFinalAnalysisReport(normalized);
+            finalAnalysisReportRef.current = normalized;
             
             // Update analysis raw log with completion message
             setAnalysisRaw((prev) => `${prev}\n\n[Stage 2 Complete] Final analysis report generated successfully.`);
@@ -224,8 +266,9 @@ const BlueprintWorkspace: React.FC<{
           // Fallback in case socket fires before polling
           // Use ref to check latest state and avoid race condition
           if (report && !finalAnalysisReportRef.current) {
-            setFinalAnalysisReport(report);
-            finalAnalysisReportRef.current = report;
+            const normalized = normalizeFinalReport(report);
+            setFinalAnalysisReport(normalized);
+            finalAnalysisReportRef.current = normalized;
           }
         },
         onError: (error) => {

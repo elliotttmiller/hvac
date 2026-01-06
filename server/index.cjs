@@ -455,6 +455,54 @@ Professional, technical, authoritative. Use standard engineering terminology (AS
 `;
 
 /**
+ * Normalize AI final analysis output into a canonical report shape.
+ * Keeps the original raw payload under `_raw` for debugging.
+ */
+function normalizeFinalReport(raw) {
+  if (!raw) return null;
+
+  // Helper to try a list of keys and also perform a loose matching on prop names
+  const find = (candidates) => {
+    for (const k of candidates) {
+      if (raw[k] !== undefined && raw[k] !== null) return raw[k];
+    }
+    // Loose match: compare normalized prop names (lowercase, remove spaces/underscores)
+    const normCandidates = candidates.map(c => String(c).toLowerCase().replace(/[_\s]/g, ''));
+    for (const prop of Object.keys(raw)) {
+      const n = String(prop).toLowerCase().replace(/[_\s]/g, '');
+      if (normCandidates.includes(n)) return raw[prop];
+    }
+    return undefined;
+  };
+
+  const normalized = {
+    report_title: find(['report_title', 'title', 'reportTitle', 'Report Title', 'report']) || null,
+    executive_summary: find(['executive_summary', 'executiveSummary', 'Executive Summary', 'Executive_Summary']) || null,
+    system_workflow_narrative: find(['system_workflow_narrative', 'systemWorkflowNarrative', 'System Workflow Narrative']) || null,
+    control_logic_analysis: find(['control_logic_analysis', 'controlLogicAnalysis', 'Control Logic Analysis']) || null,
+    specifications_and_details: find(['specifications_and_details', 'specificationsAndDetails', 'Specifications and Details']) || null,
+    critical_equipment: find(['critical_equipment', 'criticalEquipment', 'Critical Equipment']) || null,
+    engineering_observations: find(['engineering_observations', 'engineeringObservations', 'Engineering Observations']) || null,
+    _raw: raw
+  };
+
+  // If nothing matched and raw is a string, map it to system_workflow_narrative
+  const hasAny = Object.keys(normalized).some(k => normalized[k] && k !== '_raw');
+  if (!hasAny) {
+    if (typeof raw === 'string') {
+      normalized.system_workflow_narrative = raw;
+    } else if (raw.raw && typeof raw.raw === 'string') {
+      normalized.system_workflow_narrative = raw.raw;
+    } else if (Object.keys(raw).length === 1) {
+      const val = raw[Object.keys(raw)[0]];
+      if (typeof val === 'string') normalized.system_workflow_narrative = val;
+    }
+  }
+
+  return normalized;
+}
+
+/**
  * PHASE 3: Background Analysis Queue with Enhanced Observability
  * Implements lifecycle logging, explicit error handling, and timeout support
  */
@@ -539,7 +587,13 @@ app.post('/api/analysis/queue', async (req, res) => {
           const project = projectsStore.get(job.projectId);
           if (project) {
             project.status = 'completed';
-            project.finalReport = parsed;
+            // Normalize and save canonical final report (keep raw payload)
+            try {
+              project.finalReport = normalizeFinalReport(parsed);
+            } catch (e) {
+              // Fallback to raw parsed payload if normalization fails
+              project.finalReport = { _raw: parsed };
+            }
             project.lastUpdated = Date.now();
             projectsStore.set(job.projectId, project);
             console.log(`[Stage 2] Project ${job.projectId} - Final report saved (MOCK MODE)`);
@@ -683,7 +737,12 @@ Generate a professional engineering analysis that explains this system in narrat
         const project = projectsStore.get(job.projectId);
         if (project) {
           project.status = 'completed';
-          project.finalReport = parsed;
+          // Normalize and save canonical final report (keep raw payload)
+          try {
+            project.finalReport = normalizeFinalReport(parsed);
+          } catch (e) {
+            project.finalReport = { _raw: parsed };
+          }
           project.lastUpdated = Date.now();
           projectsStore.set(job.projectId, project);
           console.log(`[Stage 2] Project ${job.projectId} - Final report saved`);

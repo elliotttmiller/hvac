@@ -1,5 +1,30 @@
+PS D:\AMD\secrets\hvac\extra\hvac> & C:/Users/AMD/AppData/Local/Programs/Python/Python311/python.exe d:/AMD/secrets/hvac/extra/hvac/start.py
+[INFO] ======================================================================
+[INFO] HVAC AI Platform - Startup Script v2.0
+[INFO] ======================================================================
+[INFO] Started: 2026-01-06 21:11:55 UTC
+[INFO] Working Directory: D:\AMD\secrets\hvac\extra\hvac
+[INFO] Log File: D:\AMD\secrets\hvac\extra\hvac\logs\start.log
+[INFO] 
+[INFO] Skipping pre-flight validations (startup summary mode)
+[INFO] Full verbose logs are still written to the rotating log file
+[INFO] 
+[INFO] Found local API server entry, starting backend + frontend dev servers
+[INFO] Passthrough mode: ENABLED
+[INFO] Starting development and API servers...
+[INFO] Frontend development server started.
+[INFO] Backend API server started.
 
-  VITE v6.4.1  ready in 474 ms
+> hvac-ai-platform@0.0.0 dev
+> vite
+
+
+> hvac-ai-platform@0.0.0 dev:api
+> node server/index.cjs
+
+[dotenv@17.2.3] injecting env (32) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+  VITE v6.4.1  ready in 487 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://172.30.208.1:3000/
@@ -11,46 +36,40 @@ Server running at http://localhost:4000
 Data Root: D:\AMD\secrets\hvac\extra\hvac\server\data
 AI Provider: gemini (Active)
 Mock Mode: DISABLED (live AI inference)
-1:41:10 PM [vite] (client) page reload index.html
-1:41:17 PM [vite] (client) hmr update /App.tsx
-1:41:23 PM [vite] (client) page reload index.html
-1:41:23 PM [vite] (client) hmr update /App.tsx
-AI Vision Request -> model=gemini-2.5-flash imageSize=295368 mimeType=image/png responseMimeType=unset
+AI Vision Request -> model=gemini-2.5-flash imageSize=327904 mimeType=image/png responseMimeType=unset
 AI Vision: retry settings -> attempts=2, baseDelayMs=800, exponential=true, timeoutMs=120000
 AI Vision Response: PID
-AI Vision Request -> model=gemini-2.5-flash imageSize=295368 mimeType=image/png responseMimeType=application/json
+AI Vision Request -> model=gemini-2.5-flash imageSize=327904 mimeType=image/png responseMimeType=application/json
 AI Vision: retry settings -> attempts=2, baseDelayMs=800, exponential=true, timeoutMs=120000
 AI Vision Response: {
   "components": [
     {
-      "id": "RV-025",
-      "label": "RV 025",
-      "type": "valve_pressure_relief",
-      "bbox": [0.390, 0.190, 0.420, 0.220],
-      "confidence": 1.0,
-      "meta": {
-   ...
-[Stage 2] Job analysis-job-1-1767728644522 queued for document 1767728532541-e5jomssi5
-[Stage 2] Job analysis-job-1-1767728644522 - Status: RUNNING
-[Stage 2] Job analysis-job-1-1767728644522 - Minifying payload...
-   [Minification] Token reduction: 94.4% (220442 → 12250 bytes)
-   [Minification] Components: 45, Connections: 105, Ghosts filtered: 0
-[Stage 2] Job analysis-job-1-1767728644522 - Minification complete in 3ms
-[Stage 2] Job analysis-job-1-1767728644522 - Sending to AI (model: gemini-2.5-flash)...
-[Stage 2] Job analysis-job-1-1767728644522 - Token budget: 3875 tokens (45 components × 75 + 500 base, cap: 4096)
-[Stage 2] Job analysis-job-1-1767728644522 - Thinking budget: 6144 tokens
-[Stage 2] Job analysis-job-1-1767728644522 - AI timeout configured: 180000ms
-[Stage 2] Job analysis-job-1-1767728644522 - AI Response received in 19021ms
-[Stage 2] Job analysis-job-1-1767728644522 - JSON parse error, attempting fallback extraction
-[Stage 2] Job analysis-job-1-1767728644522 - Status: COMPLETED
-[Stage 2] Job analysis-job-1-1767728644522 - Performance: Total=19028ms, AI=19021ms, Minify=3ms, DB=0ms
+      "id": "FIT_27216A",
+      "label": "1FIT 27216A",
+      "type": "instrument_indicator_transmitter",
+      "bbox": [0.200, 0.090, 0.270, 0.150],
+      "confidence": 1.0,...
+[Stage 2] Job analysis-job-1-1767734056545 queued for document 1767733939694-txa3a1z5x
+[Stage 2] Job analysis-job-1-1767734056545 - Status: RUNNING
+[Stage 2] Job analysis-job-1-1767734056545 - Minifying payload...
+   [Minification] Token reduction: 83.1% (56494 → 9566 bytes)
+   [Minification] Components: 51, Connections: 30, Ghosts filtered: 0
+[Stage 2] Job analysis-job-1-1767734056545 - Minification complete in 2ms
+[Stage 2] Job analysis-job-1-1767734056545 - Sending to AI (model: gemini-2.5-flash)...
+[Stage 2] Job analysis-job-1-1767734056545 - Token budget: 4096 tokens (51 components × 75 + 500 base, cap: 4096)
+[Stage 2] Job analysis-job-1-1767734056545 - Thinking budget: 6144 tokens
+[Stage 2] Job analysis-job-1-1767734056545 - AI timeout configured: 180000ms
+[Stage 2] Job analysis-job-1-1767734056545 - AI Response received in 15010ms
+[Stage 2] Job analysis-job-1-1767734056545 - Status: COMPLETED
+[Stage 2] Job analysis-job-1-1767734056545 - Performance: Total=15017ms, AI=15010ms, Minify=2ms, DB=0ms
 [Stage 2] Project default - Final report saved
+
 
 
 
 Step 1: Classifying document...
 classifier.ts:31 Classification cache hit
-index.ts:34 ["Classification result:",{"type":"SCHEMATIC","confidence":1,"reasoning":"The document clearly displays numerous instrumentation symbols (circles, diamonds, and other standard P&ID symbols) and process flow lines, which are characteristic of a P&ID or control logic diagram. This directly matches the primary criterion for a SCHEMATIC classification."}]
+index.ts:34 ["Classification result:",{"type":"SCHEMATIC","confidence":1,"reasoning":"The document displays numerous instrumentation symbols (circles, diamonds, squares) and process flow lines indicating hydraulic supply and return, along with control logic. This aligns perfectly with the definition of a SCHEMATIC, specifically resembling a P&ID or control diagram."}]
 index.ts:34 Step 2: Routing to pipeline...
 index.ts:34 ["Selected pipeline:","visual"]
 index.ts:34 Step 3: Executing pipeline...
@@ -61,89 +80,3440 @@ visual.ts:92 Using standard single-pass analysis
 visual.ts:97 [Visual Pipeline] Applying enhancements...
 visual-enhancements.ts:44 [Enhancement] Starting post-processing enhancements...
 visual-enhancements.ts:51 [Enhancement] Normalizing component and connection types...
+12type-normalization.ts:155  [Type Normalization] Unknown connection type: "signal_connection", defaulting to "unknown"
+normalizeConnectionType @ type-normalization.ts:155
+16type-normalization.ts:155  [Type Normalization] Unknown connection type: "process_connection", defaulting to "unknown"
+normalizeConnectionType @ type-normalization.ts:155
 visual-enhancements.ts:54 [Enhancement] Type normalization complete
 visual-enhancements.ts:59 [Enhancement] Applying spatial association to merge orphaned labels...
 spatial-association.ts:330 [Spatial Association] Starting spatial association post-processing...
 spatial-association.ts:196 [Spatial Association] Starting orphaned label detection...
-spatial-association.ts:213 [Spatial Association] Found 0 orphaned labels, 0 unlabeled components, 45 already labeled
+spatial-association.ts:213 [Spatial Association] Found 0 orphaned labels, 1 unlabeled components, 50 already labeled
 spatial-association.ts:220 [Spatial Association] No merging needed
-spatial-association.ts:341 [Spatial Association] Post-processing complete in 1ms: 45 → 45 components (0 merged)
-visual-enhancements.ts:68 [Enhancement] Spatial association complete: 0 orphaned labels merged, 45 total components remain
+spatial-association.ts:341 [Spatial Association] Post-processing complete in 0ms: 51 → 51 components (0 merged)
+visual-enhancements.ts:68 [Enhancement] Spatial association complete: 0 orphaned labels merged, 51 total components remain
 visual-enhancements.ts:77 [Enhancement] Applying strict geometric shape validation...
-shape-validator.ts:411 [Shape Validator] Starting shape validation...
-shape-validator.ts:445 [Shape Validator] All components passed shape validation
-shape-validator.ts:462 [Shape Validator] Validation complete: 0/45 validated, 0 corrected
+shape-validator.ts:544 [Shape Validator] Starting shape validation...
+shape-validator.ts:578 [Shape Validator] All components passed shape validation
+shape-validator.ts:595 [Shape Validator] Validation complete: 0/51 validated, 0 corrected
 visual-enhancements.ts:80 [Enhancement] Shape validation complete: 0 components corrected
 visual-enhancements.ts:87 [Enhancement] Detecting ISA functions...
-visual-enhancements.ts:92 [Enhancement] ISA detection complete: 36/45 components have ISA functions (80%)
+visual-enhancements.ts:92 [Enhancement] ISA detection complete: 19/51 components have ISA functions (37%)
 visual-enhancements.ts:100 [Enhancement] Enhancing connections...
 visual-enhancements.ts:106 [Enhancement] Inferring missing connections via control loops...
-visual-enhancements.ts:110 [Enhancement] Found 80 inferred control loop connections
 visual-enhancements.ts:115 [Enhancement] Tracing physical connection paths...
 visual-enhancements.ts:132 [Enhancement] Validating connections...
-visual-enhancements.ts:138  [Enhancement] Connection validation found 4 issues (0 errors, 4 warnings)
-enhanceVisualAnalysis @ visual-enhancements.ts:138
-analyzeVisual @ visual.ts:98
-visual-enhancements.ts:144 [Enhancement] Auto-correcting connection type mismatches...
-connection-engine.ts:932  Correcting connection type: 1767728642568-42oqzhwru from 'electric' to 'electric_signal'
-(anonymous) @ connection-engine.ts:932
-validateAndCorrectConnectionTypes @ connection-engine.ts:921
-enhanceVisualAnalysis @ visual-enhancements.ts:145
-analyzeVisual @ visual.ts:98
-connection-engine.ts:932  Correcting connection type: 1767728642568-81dvj6c7e from 'electric' to 'electric_signal'
-(anonymous) @ connection-engine.ts:932
-validateAndCorrectConnectionTypes @ connection-engine.ts:921
-enhanceVisualAnalysis @ visual-enhancements.ts:145
-analyzeVisual @ visual.ts:98
-connection-engine.ts:932  Correcting connection type: 1767728642568-obg05chej from 'electric' to 'electric_signal'
-(anonymous) @ connection-engine.ts:932
-validateAndCorrectConnectionTypes @ connection-engine.ts:921
-enhanceVisualAnalysis @ visual-enhancements.ts:145
-analyzeVisual @ visual.ts:98
-connection-engine.ts:932  Correcting connection type: 1767728642568-ore301t9r from 'electric' to 'control_signal'
-(anonymous) @ connection-engine.ts:932
-validateAndCorrectConnectionTypes @ connection-engine.ts:921
-enhanceVisualAnalysis @ visual-enhancements.ts:145
-analyzeVisual @ visual.ts:98
 visual-enhancements.ts:152 [Enhancement] Detecting control loops...
-visual-enhancements.ts:154 [Enhancement] Detected 5 control loops
-visual-enhancements.ts:158 [Enhancement] Post-processing complete in 14ms
-visual.ts:109 [Visual Pipeline] Quality Score: 0.92
+visual-enhancements.ts:154 [Enhancement] Detected 0 control loops
+visual-enhancements.ts:158 [Enhancement] Post-processing complete in 7ms
+visual.ts:109 [Visual Pipeline] Quality Score: 0.70
 index.ts:34 Pipeline execution complete
-index.ts:34 ["Analysis complete:",{"document_id":"1767728532541-e5jomssi5","type":"SCHEMATIC","processing_time_ms":110054,"components":45}]
-BlueprintWorkspace.tsx:180 Stage 1 (Visual Analysis) complete: {document_id: '1767728532541-e5jomssi5', document_type: 'SCHEMATIC', file_name: 'current-image', timestamp: 1767728642595, classification: {…}, …}cache_hit: falseclassification: confidence: 1reasoning: "The document clearly displays numerous instrumentation symbols (circles, diamonds, and other standard P&ID symbols) and process flow lines, which are characteristic of a P&ID or control logic diagram. This directly matches the primary criterion for a SCHEMATIC classification."type: "SCHEMATIC"[[Prototype]]: Objectdocument_id: "1767728532541-e5jomssi5"document_type: "SCHEMATIC"file_name: "current-image"processing_time_ms: 110054timestamp: 1767728642595visual: components: Array(45)0: {id: 'RV-025', type: 'valve_pressure_relief', label: 'RV 025', bbox: Array(4), confidence: 1, …}1: {id: 'GV-025-1', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}2: {id: 'GV-025-2', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}3: {id: 'GV-CSO-FP-1', type: 'valve_gate', label: 'CSO FP', bbox: Array(4), confidence: 1, …}4: {id: 'GV-CSO-FP-2', type: 'valve_gate', label: 'CSO FP', bbox: Array(4), confidence: 1, …}5: {id: 'GV-2-1', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}6: {id: 'GV-2-2', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}7: {id: 'RV-024', type: 'valve_pressure_relief', label: 'RV 024', bbox: Array(4), confidence: 1, …}8: {id: 'GV-024-1', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}9: {id: 'GV-024-2', type: 'valve_gate', label: '2"', bbox: Array(4), confidence: 1, …}10: {id: 'GV-CSO-FP-3', type: 'valve_gate', label: 'CSO FP', bbox: Array(4), confidence: 1, …}11: {id: 'GV-CSO-FP-4', type: 'valve_gate', label: 'CSO FP', bbox: Array(4), confidence: 1, …}12: {id: 'PC-111', type: 'instrument_controller', label: 'PC 111', bbox: Array(4), confidence: 1, …}13: {id: 'PT-111', type: 'sensor_pressure', label: 'PT 111', bbox: Array(4), confidence: 1, …}14: {id: 'FYE-001', type: 'instrument_transmitter', label: 'FYE 001', bbox: Array(4), confidence: 1, …}15: {id: 'E-001', type: 'sensor_primary_element', label: 'E 001', bbox: Array(4), confidence: 1, …}16: {id: 'FV-001', type: 'valve_control', label: 'FV 001', bbox: Array(4), confidence: 1, …}17: {id: 'FX-001', type: 'instrument_function', label: 'FX 001', bbox: Array(4), confidence: 1, …}18: {id: 'FC-001', type: 'instrument_controller', label: 'FC 001', bbox: Array(4), confidence: 1, …}19: {id: 'FT-001', type: 'sensor_flow', label: 'FT 001', bbox: Array(4), confidence: 1, …}20: {id: 'TT-001', type: 'sensor_temperature', label: 'TT 001', bbox: Array(4), confidence: 1, …}21: {id: 'FT-427', type: 'sensor_flow', label: 'FT 427', bbox: Array(4), confidence: 1, …}22: {id: 'FV-427', type: 'valve_control', label: 'FV 427', bbox: Array(4), confidence: 1, …}23: {id: 'FC-427', type: 'instrument_controller', label: 'FC 427', bbox: Array(4), confidence: 1, …}24: {id: 'GV-NC-1', type: 'valve_gate', label: 'NC', bbox: Array(4), confidence: 1, …}25: {id: 'GV-NNF', type: 'valve_gate', label: 'NNF', bbox: Array(4), confidence: 1, …}26: {id: 'GV-V2', type: 'valve_gate', label: 'V2"', bbox: Array(4), confidence: 1, …}27: {id: 'GV-NC-2', type: 'valve_gate', label: 'NC', bbox: Array(4), confidence: 1, …}28: {id: 'GV-MIN', type: 'valve_gate', label: 'MIN', bbox: Array(4), confidence: 1, …}29: {id: 'GV-UNREADABLE-1', type: 'valve_gate', label: 'UNREADABLE', bbox: Array(4), confidence: 0.8, …}30: {id: 'GV-UNREADABLE-2', type: 'valve_gate', label: 'UNREADABLE', bbox: Array(4), confidence: 0.8, …}31: {id: 'GV-UNREADABLE-3', type: 'valve_gate', label: 'UNREADABLE', bbox: Array(4), confidence: 0.8, …}32: {id: 'GV-UNREADABLE-4', type: 'valve_gate', label: 'UNREADABLE', bbox: Array(4), confidence: 0.8, …}33: {id: 'ET-50-1', type: 'equipment_tag', label: 'ET 50', bbox: Array(4), confidence: 1, …}34: {id: 'ET-50-2', type: 'equipment_tag', label: 'ET 50', bbox: Array(4), confidence: 1, …}35: {id: 'ET-50-3', type: 'equipment_tag', label: 'ET 50', bbox: Array(4), confidence: 1, …}36: {id: 'ET-50-4', type: 'equipment_tag', label: 'ET 50', bbox: Array(4), confidence: 1, …}37: {id: 'ET-10-1', type: 'equipment_tag', label: 'ET 10', bbox: Array(4), confidence: 1, …}38: {id: 'ET-10-2', type: 'equipment_tag', label: 'ET 10', bbox: Array(4), confidence: 1, …}39: {id: 'PUMP-AUTO-START-001', type: 'logic_function', label: '001', bbox: Array(4), confidence: 1, …}40: {id: 'OPL3-411-117', type: 'logic_function', label: 'OPL3 411-117', bbox: Array(4), confidence: 1, …}41: {id: 'HIGH-PRESS-OVERRIDE-001', type: 'logic_function', label: '001', bbox: Array(4), confidence: 1, …}42: {id: 'LINE-CONT-DILUTED-BITUMEN', type: 'line_continuation', label: 'DILUTED BITUMEN 411-049', bbox: Array(4), confidence: 1, …}43: {id: 'LINE-CONT-LGO-NAPHTHA', type: 'line_continuation', label: 'LGO/NAPHTHA LGO 411-118', bbox: Array(4), confidence: 1, …}44: {id: 'PROCESS-LABEL-PUMP-MIN-FLOW', type: 'pump', label: 'PUMP MINIMUM FLOW', bbox: Array(4), confidence: 1, …}length: 45[[Prototype]]: Array(0)connections: Array(105)[0 … 99]0: {id: '1767728642568-96ax93y6k', from_id: 'RV-025', to_id: 'GV-025-1', type: 'process_flow', confidence: 1, …}1: {id: '1767728642568-2gb8c7a3e', from_id: 'GV-025-1', to_id: 'GV-025-2', type: 'process_flow', confidence: 1, …}2: {id: '1767728642568-yjmxsf21l', from_id: 'GV-CSO-FP-1', to_id: 'GV-CSO-FP-2', type: 'process_flow', confidence: 1, …}3: {id: '1767728642568-rhoco36ua', from_id: 'GV-2-1', to_id: 'GV-2-2', type: 'process_flow', confidence: 1, …}4: {id: '1767728642568-5iufo6kg6', from_id: 'RV-024', to_id: 'GV-024-1', type: 'process_flow', confidence: 1, …}5: {id: '1767728642568-6ydjjr1ay', from_id: 'GV-024-1', to_id: 'GV-024-2', type: 'process_flow', confidence: 1, …}6: {id: '1767728642568-yj26lf1yj', from_id: 'GV-CSO-FP-3', to_id: 'GV-CSO-FP-4', type: 'process_flow', confidence: 1, …}7: {id: '1767728642568-42oqzhwru', from_id: 'PT-111', to_id: 'PC-111', type: 'electric_signal', confidence: 1, …}8: {id: '1767728642568-20us2ovt3', from_id: 'PC-111', to_id: 'PUMP-AUTO-START-001', type: 'electric', confidence: 1, …}9: {id: '1767728642568-c9t8gp4tm', from_id: 'E-001', to_id: 'FYE-001', type: 'electric', confidence: 1, …}10: {id: '1767728642568-v1bnq7zb5', from_id: 'FYE-001', to_id: 'FV-001', type: 'electric', confidence: 1, …}11: {id: '1767728642568-e4r9nhgqn', from_id: 'FV-001', to_id: 'FX-001', type: 'electric', confidence: 1, …}12: {id: '1767728642568-zc12m4trp', from_id: 'FX-001', to_id: 'FC-001', type: 'electric', confidence: 1, …}13: {id: '1767728642568-81dvj6c7e', from_id: 'FT-001', to_id: 'FC-001', type: 'electric_signal', confidence: 1, …}14: {id: '1767728642568-obg05chej', from_id: 'FT-427', to_id: 'FC-427', type: 'electric_signal', confidence: 1, …}15: {id: '1767728642568-ore301t9r', from_id: 'FC-427', to_id: 'FV-427', type: 'control_signal', confidence: 1, …}16: {id: '1767728642568-utzhuqx2n', from_id: 'FV-427', to_id: 'GV-NC-1', type: 'process_flow', confidence: 1, …}17: {id: '1767728642568-lcmvj7gnk', from_id: 'GV-NC-1', to_id: 'GV-NNF', type: 'process_flow', confidence: 1, …}18: {id: '1767728642568-ek4ar50ni', from_id: 'GV-NNF', to_id: 'GV-V2', type: 'process_flow', confidence: 1, …}19: {id: '1767728642568-t52zx9ypg', from_id: 'GV-V2', to_id: 'GV-NC-2', type: 'process_flow', confidence: 1, …}20: {id: '1767728642568-va1i9d84n', from_id: 'GV-NC-2', to_id: 'GV-MIN', type: 'process_flow', confidence: 1, …}21: {id: '1767728642568-a1s137to5', from_id: 'GV-MIN', to_id: 'GV-UNREADABLE-1', type: 'process_flow', confidence: 1, …}22: {id: '1767728642568-e5vqwngns', from_id: 'GV-UNREADABLE-1', to_id: 'GV-UNREADABLE-2', type: 'process_flow', confidence: 1, …}23: {id: '1767728642568-2ljf61y67', from_id: 'GV-UNREADABLE-2', to_id: 'GV-UNREADABLE-3', type: 'process_flow', confidence: 1, …}24: {id: '1767728642568-7m2whcv6y', from_id: 'GV-UNREADABLE-3', to_id: 'GV-UNREADABLE-4', type: 'process_flow', confidence: 1, …}25: {id: 'inferred-PT-111-FC-001', from_id: 'PT-111', to_id: 'FC-001', type: 'electric_signal', confidence: 0.85, …}26: {id: 'inferred-PT-111-FC-427', from_id: 'PT-111', to_id: 'FC-427', type: 'electric_signal', confidence: 0.85, …}27: {id: 'inferred-E-001-PC-111', from_id: 'E-001', to_id: 'PC-111', type: 'electric_signal', confidence: 0.85, …}28: {id: 'inferred-E-001-FC-001', from_id: 'E-001', to_id: 'FC-001', type: 'electric_signal', confidence: 0.85, …}29: {id: 'inferred-E-001-FC-427', from_id: 'E-001', to_id: 'FC-427', type: 'electric_signal', confidence: 0.85, …}30: {id: 'inferred-FT-001-PC-111', from_id: 'FT-001', to_id: 'PC-111', type: 'electric_signal', confidence: 0.85, …}31: {id: 'inferred-FT-001-FC-427', from_id: 'FT-001', to_id: 'FC-427', type: 'electric_signal', confidence: 0.85, …}32: {id: 'inferred-TT-001-PC-111', from_id: 'TT-001', to_id: 'PC-111', type: 'electric_signal', confidence: 0.85, …}33: {id: 'inferred-TT-001-FC-001', from_id: 'TT-001', to_id: 'FC-001', type: 'electric_signal', confidence: 0.85, …}34: {id: 'inferred-TT-001-FC-427', from_id: 'TT-001', to_id: 'FC-427', type: 'electric_signal', confidence: 0.85, …}35: {id: 'inferred-FT-427-PC-111', from_id: 'FT-427', to_id: 'PC-111', type: 'electric_signal', confidence: 0.85, …}36: {id: 'inferred-FT-427-FC-001', from_id: 'FT-427', to_id: 'FC-001', type: 'electric_signal', confidence: 0.85, …}37: {id: 'inferred-PC-111-RV-025', from_id: 'PC-111', to_id: 'RV-025', type: 'control_signal', confidence: 0.82, …}38: {id: 'inferred-PC-111-GV-025-1', from_id: 'PC-111', to_id: 'GV-025-1', type: 'control_signal', confidence: 0.82, …}39: {id: 'inferred-PC-111-GV-025-2', from_id: 'PC-111', to_id: 'GV-025-2', type: 'control_signal', confidence: 0.82, …}40: {id: 'inferred-PC-111-GV-CSO-FP-1', from_id: 'PC-111', to_id: 'GV-CSO-FP-1', type: 'control_signal', confidence: 0.82, …}41: {id: 'inferred-PC-111-GV-CSO-FP-2', from_id: 'PC-111', to_id: 'GV-CSO-FP-2', type: 'control_signal', confidence: 0.82, …}42: {id: 'inferred-PC-111-GV-2-1', from_id: 'PC-111', to_id: 'GV-2-1', type: 'control_signal', confidence: 0.82, …}43: {id: 'inferred-PC-111-GV-2-2', from_id: 'PC-111', to_id: 'GV-2-2', type: 'control_signal', confidence: 0.82, …}44: {id: 'inferred-PC-111-RV-024', from_id: 'PC-111', to_id: 'RV-024', type: 'control_signal', confidence: 0.82, …}45: {id: 'inferred-PC-111-GV-024-1', from_id: 'PC-111', to_id: 'GV-024-1', type: 'control_signal', confidence: 0.82, …}46: {id: 'inferred-PC-111-GV-024-2', from_id: 'PC-111', to_id: 'GV-024-2', type: 'control_signal', confidence: 0.82, …}47: {id: 'inferred-PC-111-GV-CSO-FP-3', from_id: 'PC-111', to_id: 'GV-CSO-FP-3', type: 'control_signal', confidence: 0.82, …}48: {id: 'inferred-PC-111-GV-CSO-FP-4', from_id: 'PC-111', to_id: 'GV-CSO-FP-4', type: 'control_signal', confidence: 0.82, …}49: {id: 'inferred-PC-111-FV-001', from_id: 'PC-111', to_id: 'FV-001', type: 'control_signal', confidence: 0.82, …}50: {id: 'inferred-PC-111-FV-427', from_id: 'PC-111', to_id: 'FV-427', type: 'control_signal', confidence: 0.82, …}51: {id: 'inferred-PC-111-GV-NC-1', from_id: 'PC-111', to_id: 'GV-NC-1', type: 'control_signal', confidence: 0.82, …}52: {id: 'inferred-PC-111-GV-NNF', from_id: 'PC-111', to_id: 'GV-NNF', type: 'control_signal', confidence: 0.82, …}53: {id: 'inferred-PC-111-GV-V2', from_id: 'PC-111', to_id: 'GV-V2', type: 'control_signal', confidence: 0.82, …}54: {id: 'inferred-PC-111-GV-NC-2', from_id: 'PC-111', to_id: 'GV-NC-2', type: 'control_signal', confidence: 0.82, …}55: {id: 'inferred-PC-111-GV-MIN', from_id: 'PC-111', to_id: 'GV-MIN', type: 'control_signal', confidence: 0.82, …}56: {id: 'inferred-PC-111-GV-UNREADABLE-1', from_id: 'PC-111', to_id: 'GV-UNREADABLE-1', type: 'control_signal', confidence: 0.82, …}57: {id: 'inferred-PC-111-GV-UNREADABLE-2', from_id: 'PC-111', to_id: 'GV-UNREADABLE-2', type: 'control_signal', confidence: 0.82, …}58: {id: 'inferred-PC-111-GV-UNREADABLE-3', from_id: 'PC-111', to_id: 'GV-UNREADABLE-3', type: 'control_signal', confidence: 0.82, …}59: {id: 'inferred-PC-111-GV-UNREADABLE-4', from_id: 'PC-111', to_id: 'GV-UNREADABLE-4', type: 'control_signal', confidence: 0.82, …}60: {id: 'inferred-FC-001-RV-025', from_id: 'FC-001', to_id: 'RV-025', type: 'control_signal', confidence: 0.82, …}61: {id: 'inferred-FC-001-GV-025-1', from_id: 'FC-001', to_id: 'GV-025-1', type: 'control_signal', confidence: 0.82, …}62: {id: 'inferred-FC-001-GV-025-2', from_id: 'FC-001', to_id: 'GV-025-2', type: 'control_signal', confidence: 0.82, …}63: {id: 'inferred-FC-001-GV-CSO-FP-1', from_id: 'FC-001', to_id: 'GV-CSO-FP-1', type: 'control_signal', confidence: 0.82, …}64: {id: 'inferred-FC-001-GV-CSO-FP-2', from_id: 'FC-001', to_id: 'GV-CSO-FP-2', type: 'control_signal', confidence: 0.82, …}65: {id: 'inferred-FC-001-GV-2-1', from_id: 'FC-001', to_id: 'GV-2-1', type: 'control_signal', confidence: 0.82, …}66: {id: 'inferred-FC-001-GV-2-2', from_id: 'FC-001', to_id: 'GV-2-2', type: 'control_signal', confidence: 0.82, …}67: {id: 'inferred-FC-001-RV-024', from_id: 'FC-001', to_id: 'RV-024', type: 'control_signal', confidence: 0.82, …}68: {id: 'inferred-FC-001-GV-024-1', from_id: 'FC-001', to_id: 'GV-024-1', type: 'control_signal', confidence: 0.82, …}69: {id: 'inferred-FC-001-GV-024-2', from_id: 'FC-001', to_id: 'GV-024-2', type: 'control_signal', confidence: 0.82, …}70: {id: 'inferred-FC-001-GV-CSO-FP-3', from_id: 'FC-001', to_id: 'GV-CSO-FP-3', type: 'control_signal', confidence: 0.82, …}71: {id: 'inferred-FC-001-GV-CSO-FP-4', from_id: 'FC-001', to_id: 'GV-CSO-FP-4', type: 'control_signal', confidence: 0.82, …}72: {id: 'inferred-FC-001-FV-001', from_id: 'FC-001', to_id: 'FV-001', type: 'control_signal', confidence: 0.82, …}73: {id: 'inferred-FC-001-FV-427', from_id: 'FC-001', to_id: 'FV-427', type: 'control_signal', confidence: 0.82, …}74: {id: 'inferred-FC-001-GV-NC-1', from_id: 'FC-001', to_id: 'GV-NC-1', type: 'control_signal', confidence: 0.82, …}75: {id: 'inferred-FC-001-GV-NNF', from_id: 'FC-001', to_id: 'GV-NNF', type: 'control_signal', confidence: 0.82, …}76: {id: 'inferred-FC-001-GV-V2', from_id: 'FC-001', to_id: 'GV-V2', type: 'control_signal', confidence: 0.82, …}77: {id: 'inferred-FC-001-GV-NC-2', from_id: 'FC-001', to_id: 'GV-NC-2', type: 'control_signal', confidence: 0.82, …}78: {id: 'inferred-FC-001-GV-MIN', from_id: 'FC-001', to_id: 'GV-MIN', type: 'control_signal', confidence: 0.82, …}79: {id: 'inferred-FC-001-GV-UNREADABLE-1', from_id: 'FC-001', to_id: 'GV-UNREADABLE-1', type: 'control_signal', confidence: 0.82, …}80: {id: 'inferred-FC-001-GV-UNREADABLE-2', from_id: 'FC-001', to_id: 'GV-UNREADABLE-2', type: 'control_signal', confidence: 0.82, …}81: {id: 'inferred-FC-001-GV-UNREADABLE-3', from_id: 'FC-001', to_id: 'GV-UNREADABLE-3', type: 'control_signal', confidence: 0.82, …}82: {id: 'inferred-FC-001-GV-UNREADABLE-4', from_id: 'FC-001', to_id: 'GV-UNREADABLE-4', type: 'control_signal', confidence: 0.82, …}83: {id: 'inferred-FC-427-RV-025', from_id: 'FC-427', to_id: 'RV-025', type: 'control_signal', confidence: 0.82, …}84: {id: 'inferred-FC-427-GV-025-1', from_id: 'FC-427', to_id: 'GV-025-1', type: 'control_signal', confidence: 0.82, …}85: {id: 'inferred-FC-427-GV-025-2', from_id: 'FC-427', to_id: 'GV-025-2', type: 'control_signal', confidence: 0.82, …}86: {id: 'inferred-FC-427-GV-CSO-FP-1', from_id: 'FC-427', to_id: 'GV-CSO-FP-1', type: 'control_signal', confidence: 0.82, …}87: {id: 'inferred-FC-427-GV-CSO-FP-2', from_id: 'FC-427', to_id: 'GV-CSO-FP-2', type: 'control_signal', confidence: 0.82, …}88: {id: 'inferred-FC-427-GV-2-1', from_id: 'FC-427', to_id: 'GV-2-1', type: 'control_signal', confidence: 0.82, …}89: {id: 'inferred-FC-427-GV-2-2', from_id: 'FC-427', to_id: 'GV-2-2', type: 'control_signal', confidence: 0.82, …}90: {id: 'inferred-FC-427-RV-024', from_id: 'FC-427', to_id: 'RV-024', type: 'control_signal', confidence: 0.82, …}91: {id: 'inferred-FC-427-GV-024-1', from_id: 'FC-427', to_id: 'GV-024-1', type: 'control_signal', confidence: 0.82, …}92: {id: 'inferred-FC-427-GV-024-2', from_id: 'FC-427', to_id: 'GV-024-2', type: 'control_signal', confidence: 0.82, …}93: {id: 'inferred-FC-427-GV-CSO-FP-3', from_id: 'FC-427', to_id: 'GV-CSO-FP-3', type: 'control_signal', confidence: 0.82, …}94: {id: 'inferred-FC-427-GV-CSO-FP-4', from_id: 'FC-427', to_id: 'GV-CSO-FP-4', type: 'control_signal', confidence: 0.82, …}95: {id: 'inferred-FC-427-FV-001', from_id: 'FC-427', to_id: 'FV-001', type: 'control_signal', confidence: 0.82, …}96: {id: 'inferred-FC-427-GV-NC-1', from_id: 'FC-427', to_id: 'GV-NC-1', type: 'control_signal', confidence: 0.82, …}97: {id: 'inferred-FC-427-GV-NNF', from_id: 'FC-427', to_id: 'GV-NNF', type: 'control_signal', confidence: 0.82, …}98: {id: 'inferred-FC-427-GV-V2', from_id: 'FC-427', to_id: 'GV-V2', type: 'control_signal', confidence: 0.82, …}99: {id: 'inferred-FC-427-GV-NC-2', from_id: 'FC-427', to_id: 'GV-NC-2', type: 'control_signal', confidence: 0.82, …}[100 … 104]100: {id: 'inferred-FC-427-GV-MIN', from_id: 'FC-427', to_id: 'GV-MIN', type: 'control_signal', confidence: 0.82, …}101: {id: 'inferred-FC-427-GV-UNREADABLE-1', from_id: 'FC-427', to_id: 'GV-UNREADABLE-1', type: 'control_signal', confidence: 0.82, …}102: {id: 'inferred-FC-427-GV-UNREADABLE-2', from_id: 'FC-427', to_id: 'GV-UNREADABLE-2', type: 'control_signal', confidence: 0.82, …}103: {id: 'inferred-FC-427-GV-UNREADABLE-3', from_id: 'FC-427', to_id: 'GV-UNREADABLE-3', type: 'control_signal', confidence: 0.82, …}104: {id: 'inferred-FC-427-GV-UNREADABLE-4', from_id: 'FC-427', to_id: 'GV-UNREADABLE-4', type: 'control_signal', confidence: 0.82, …}length: 105[[Prototype]]: Array(0)metadata: control_loops: Array(5)0: {id: 'loop-PT 111', name: 'PT Control Loop (PT 111)', components: Array(29), connections: Array(28), type: 'pt', …}1: {id: 'loop-E 001', name: 'E Control Loop (E 001)', components: Array(30), connections: Array(29), type: 'e', …}2: {id: 'loop-FT 001', name: 'FT Control Loop (FT 001)', components: Array(29), connections: Array(28), type: 'ft', …}3: {id: 'loop-TT 001', name: 'TT Control Loop (TT 001)', components: Array(29), connections: Array(28), type: 'tt', …}4: {id: 'loop-FT 427', name: 'FT Control Loop (FT 427)', components: Array(29), connections: Array(28), type: 'ft', …}length: 5[[Prototype]]: Array(0)enhancement: connection_inference_enabled: truecontrol_loops: 5enhancement_duration_ms: 14inferred_connections: 80isa_detection_enabled: trueisa_detection_rate: 0.8isa_functions_detected: 36loop_detection_enabled: trueorphaned_labels_merged: 0shape_validation_enabled: trueshape_violations_corrected: 0spatial_association_enabled: truevalidation_enabled: truevalidation_issues: 4[[Prototype]]: Objectprocess_log: "Detected 37 components including pressure relief valves, gate valves, control valves, various instruments (transmitters, controllers, functions), equipment tags, and logic functions. Identified 3 main control loops. Connections between components are primarily process flow lines and electrical signals."quality_metrics: confidence_avg: 0.9822222222222223connection_coverage: 1detection_quality: 0.9111111111111111isa_completeness: 0.8metrics: avg_confidence: 0.9822222222222223excellent_detections: 41isa_functions_detected: 36total_components: 45total_connections: 105[[Prototype]]: Objectoverall_score: 0.9224444444444445[[Prototype]]: Objecttotal_components: 45total_connections: 25validation_issues: Array(4)0: {connection: {…}, issue: 'Connection type mismatch: expected electric_signal, got electric', severity: 'warning'}1: {connection: {…}, issue: 'Connection type mismatch: expected electric_signal, got electric', severity: 'warning'}2: {connection: {…}, issue: 'Connection type mismatch: expected electric_signal, got electric', severity: 'warning'}3: {connection: {…}, issue: 'Connection type mismatch: expected control_signal, got electric', severity: 'warning'}length: 4[[Prototype]]: Array(0)[[Prototype]]: Object[[Prototype]]: Objectconstructor: ƒ Object()hasOwnProperty: ƒ hasOwnProperty()isPrototypeOf: ƒ isPrototypeOf()propertyIsEnumerable: ƒ propertyIsEnumerable()toLocaleString: ƒ toLocaleString()toString: ƒ toString()valueOf: ƒ valueOf()__defineGetter__: ƒ __defineGetter__()__defineSetter__: ƒ __defineSetter__()__lookupGetter__: ƒ __lookupGetter__()__lookupSetter__: ƒ __lookupSetter__()__proto__: (...)get __proto__: ƒ __proto__()set __proto__: ƒ __proto__()[[Prototype]]: Object
+index.ts:34 ["Analysis complete:",{"document_id":"1767733939694-txa3a1z5x","type":"SCHEMATIC","processing_time_ms":116305,"components":51}]
+BlueprintWorkspace.tsx:222 Stage 1 (Visual Analysis) complete: Objectcache_hit: falseclassification: confidence: 1reasoning: "The document displays numerous instrumentation symbols (circles, diamonds, squares) and process flow lines indicating hydraulic supply and return, along with control logic. This aligns perfectly with the definition of a SCHEMATIC, specifically resembling a P&ID or control diagram."type: "SCHEMATIC"[[Prototype]]: Objectdocument_id: "1767733939694-txa3a1z5x"document_type: "SCHEMATIC"file_name: "current-image"processing_time_ms: 116305timestamp: 1767734055999visual: components: Array(51)0: {id: 'FIT_27216A', type: 'instrument_indicator_transmitter', label: '1FIT 27216A', bbox: Array(4), confidence: 1, …}1: {id: 'FIT_27216B', type: 'instrument_indicator_transmitter', label: '1FIT 27216B', bbox: Array(4), confidence: 1, …}2: {id: 'GV_27216_TL', type: 'valve_gate', label: '3/4"', bbox: Array(4), confidence: 1, …}3: {id: 'GV_27216_BL', type: 'valve_gate', label: '3/4"', bbox: Array(4), confidence: 1, …}4: {id: 'GV_27216_TR', type: 'valve_gate', label: '3/4"', bbox: Array(4), confidence: 1, …}5: {id: 'GV_27216_BR', type: 'valve_gate', label: '3/4"', bbox: Array(4), confidence: 1, …}6: {id: 'FE_27216', type: 'sensor_flow', label: '1FE 27216', bbox: Array(4), confidence: 1, …}7: {id: 'TIT_27217A', type: 'instrument_indicator_transmitter', label: '1TIT 27217A', bbox: Array(4), confidence: 1, …}8: {id: 'TE_27217A', type: 'sensor_temperature', label: '1TE 27217A', bbox: Array(4), confidence: 1, …}9: {id: 'TE_27217B', type: 'sensor_temperature', label: '1TE 27217B', bbox: Array(4), confidence: 1, …}10: {id: 'PIT_27218A', type: 'instrument_indicator_transmitter', label: '1PIT 27218A', bbox: Array(4), confidence: 1, …}11: {id: 'PIT_27218B', type: 'instrument_indicator_transmitter', label: '1PIT 27218B', bbox: Array(4), confidence: 1, …}12: {id: 'PIT_27219A', type: 'instrument_indicator_transmitter', label: '1PIT 27219A', bbox: Array(4), confidence: 1, …}13: {id: 'PIT_27219B', type: 'instrument_indicator_transmitter', label: '1PIT 27219B', bbox: Array(4), confidence: 1, …}14: {id: 'HS_27221', type: 'instrument_switch', label: '1HS 27221', bbox: Array(4), confidence: 1, …}15: {id: 'HS_27225A', type: 'instrument_switch', label: '1HS 27225A', bbox: Array(4), confidence: 1, …}16: {id: 'VFD', type: 'equipment_drive', label: 'VFD', bbox: Array(4), confidence: 1, …}17: {id: 'LOGIC_1I_TOP', type: 'logic_function', label: '1I', bbox: Array(4), confidence: 1, …}18: {id: 'LOGIC_1I_BOTTOM', type: 'logic_function', label: '1I', bbox: Array(4), confidence: 1, …}19: {id: 'MOTOR', type: 'equipment_motor', label: 'M', bbox: Array(4), confidence: 1, …}20: {id: 'CHECK_VALVE', type: 'valve_check', label: 'unknown', bbox: Array(4), confidence: 1, …}21: {id: 'EQUIPMENT_1C_2803', type: 'equipment', label: '1C-2803', bbox: Array(4), confidence: 0.9, …}22: {id: 'TP_904', type: 'instrument_test_point', label: 'TP904', bbox: Array(4), confidence: 0.8, …}23: {id: 'OFF_PAGE_27175', type: 'off_page_connection', label: '27175', bbox: Array(4), confidence: 0.9, …}24: {id: 'OFF_PAGE_27217B_TOP', type: 'off_page_connection', label: '27217B', bbox: Array(4), confidence: 0.9, …}25: {id: 'JUNCTION_MANUAL_AUTO', type: 'signal_junction', label: 'MANUAL/AUTO', bbox: Array(4), confidence: 0.8, …}26: {id: 'JUNCTION_HAO', type: 'signal_junction', label: 'HAO', bbox: Array(4), confidence: 0.8, …}27: {id: 'OFF_PAGE_RIGHT_TYPE39', type: 'off_page_connection', label: 'TYPE 39', bbox: Array(4), confidence: 0.8, …}28: {id: 'OFF_PAGE_RIGHT_TYPE15', type: 'off_page_connection', label: 'TYPE 15', bbox: Array(4), confidence: 0.8, …}29: {id: 'OFF_PAGE_RIGHT_HH', type: 'off_page_connection', label: 'HH', bbox: Array(4), confidence: 0.8, …}30: {id: 'OFF_PAGE_RIGHT_HH_2', type: 'off_page_connection', label: 'HH', bbox: Array(4), confidence: 0.8, …}31: {id: 'PROCESS_LINE_1VA_271219', type: 'process_line', label: '1VA-271219', bbox: Array(4), confidence: 0.9, …}32: {id: 'PROCESS_LINE_1VA_271221', type: 'process_line', label: '1VA-271221', bbox: Array(4), confidence: 0.9, …}33: {id: 'PROCESS_LINE_1VA_271220', type: 'process_line', label: '1VA-271220', bbox: Array(4), confidence: 0.9, …}34: {id: 'PROCESS_LINE_1VA_271222', type: 'process_line', label: '1VA-271222', bbox: Array(4), confidence: 0.9, …}35: {id: 'PROCESS_LINE_1VA_271223', type: 'process_line', label: '1VA-271223', bbox: Array(4), confidence: 0.9, …}36: {id: 'PROCESS_LINE_1VA_271224', type: 'process_line', label: '1VA-271224', bbox: Array(4), confidence: 0.9, …}37: {id: 'PROCESS_LINE_1VA_271225', type: 'process_line', label: '1VA-271225', bbox: Array(4), confidence: 0.9, …}38: {id: 'PROCESS_LINE_1VA_271958', type: 'process_line', label: '1VA-271958', bbox: Array(4), confidence: 0.9, …}39: {id: 'PROCESS_LINE_1VA_271959', type: 'process_line', label: '1VA-271959', bbox: Array(4), confidence: 0.9, …}40: {id: 'PROCESS_LINE_1VA_270042', type: 'process_line', label: '1VA-270042', bbox: Array(4), confidence: 0.9, …}41: {id: 'PROCESS_LINE_101R1', type: 'process_line_identifier', label: '101R1', bbox: Array(4), confidence: 0.9, …}42: {id: 'PROCESS_LINE_101F1', type: 'process_line_identifier', label: '101F1', bbox: Array(4), confidence: 0.9, …}43: {id: 'PROCESS_LINE_LOW_POINT', type: 'process_line_feature', label: 'LOW POINT', bbox: Array(4), confidence: 0.9, …}44: {id: 'PROCESS_LINE_36x26', type: 'process_line_dimension', label: '36"x26"', bbox: Array(4), confidence: 0.9, …}45: {id: 'PROCESS_LINE_42x38x42', type: 'process_line_dimension', label: '42"x38"54"x42"', bbox: Array(4), confidence: 0.9, …}46: {id: 'NOTE_6_TOP', type: 'annotation_note', label: 'NOTE 6', bbox: Array(4), confidence: 0.9, …}47: {id: 'NOTE_6_BOTTOM', type: 'annotation_note', label: 'NOTE 6', bbox: Array(4), confidence: 0.9, …}48: {id: 'NOTE_2', type: 'annotation_note', label: 'NOTE 2', bbox: Array(4), confidence: 0.9, …}49: {id: 'NOTE_4', type: 'annotation_note', label: 'NOTE 4', bbox: Array(4), confidence: 0.9, …}50: {id: 'NOTE_7', type: 'annotation_note', label: 'NOTE 7', bbox: Array(4), confidence: 0.9, …}length: 51[[Prototype]]: Array(0)connections: Array(30)0: {id: '1767734055984-xfla45o5d', from_id: 'FIT_27216A', to_id: 'OFF_PAGE_27175', type: 'unknown', confidence: 0.9, …}1: {id: '1767734055984-vspuou0d4', from_id: 'FIT_27216B', to_id: 'OFF_PAGE_27175', type: 'unknown', confidence: 0.9, …}2: {id: '1767734055984-7ewslicyy', from_id: 'TIT_27217A', to_id: 'OFF_PAGE_27217B_TOP', type: 'unknown', confidence: 0.9, …}3: {id: '1767734055984-sb8ra56zp', from_id: 'TE_27217A', to_id: 'TIT_27217A', type: 'unknown', confidence: 0.8, …}4: {id: '1767734055984-9itag61wt', from_id: 'TE_27217B', to_id: 'OFF_PAGE_27217B_TOP', type: 'unknown', confidence: 0.9, …}5: {id: '1767734055984-f64pvcxio', from_id: 'HS_27221', to_id: 'JUNCTION_MANUAL_AUTO', type: 'unknown', confidence: 0.9, …}6: {id: '1767734055984-ofkz7ri7c', from_id: 'HS_27225A', to_id: 'JUNCTION_HAO', type: 'unknown', confidence: 0.9, …}7: {id: '1767734055984-tkbgk637t', from_id: 'JUNCTION_MANUAL_AUTO', to_id: 'VFD', type: 'unknown', confidence: 0.8, …}8: {id: '1767734055984-h4p2nbfk5', from_id: 'JUNCTION_HAO', to_id: 'VFD', type: 'unknown', confidence: 0.8, …}9: {id: '1767734055984-i09qtvn71', from_id: 'VFD', to_id: 'MOTOR', type: 'electric', confidence: 0.9, …}10: {id: '1767734055984-plympxiom', from_id: 'VFD', to_id: 'LOGIC_1I_TOP', type: 'unknown', confidence: 0.9, …}11: {id: '1767734055984-cjclu6e9x', from_id: 'LOGIC_1I_TOP', to_id: 'LOGIC_1I_BOTTOM', type: 'unknown', confidence: 0.9, …}12: {id: '1767734055984-k5o1058f5', from_id: 'LOGIC_1I_BOTTOM', to_id: 'OFF_PAGE_RIGHT_TYPE39', type: 'unknown', confidence: 0.8, …}13: {id: '1767734055984-9lysmfrqh', from_id: 'EQUIPMENT_1C_2803', to_id: 'MOTOR', type: 'control_signal', confidence: 0.8, …}14: {id: '1767734055984-3tfk91ogn', from_id: 'MOTOR', to_id: 'CHECK_VALVE', type: 'unknown', confidence: 0.9, …}15: {id: '1767734055984-t8tygty9j', from_id: 'TP_904', to_id: 'PROCESS_LINE_1VA_270042', type: 'unknown', confidence: 0.9, …}16: {id: '1767734055984-4dw8yk8nm', from_id: 'GV_27216_TL', to_id: 'PROCESS_LINE_1VA_271219', type: 'unknown', confidence: 0.9, …}17: {id: '1767734055984-2jh7gurlo', from_id: 'GV_27216_BL', to_id: 'PROCESS_LINE_1VA_271221', type: 'unknown', confidence: 0.9, …}18: {id: '1767734055984-41k86owwj', from_id: 'GV_27216_TR', to_id: 'PROCESS_LINE_1VA_271220', type: 'unknown', confidence: 0.9, …}19: {id: '1767734055984-jl4m0d4rl', from_id: 'GV_27216_BR', to_id: 'PROCESS_LINE_1VA_271222', type: 'unknown', confidence: 0.9, …}20: {id: '1767734055984-2nbb0zl65', from_id: 'PROCESS_LINE_1VA_271219', to_id: 'FIT_27216A', type: 'unknown', confidence: 0.9, …}21: {id: '1767734055984-qhg2ibwhu', from_id: 'PROCESS_LINE_1VA_271220', to_id: 'TIT_27217A', type: 'unknown', confidence: 0.9, …}22: {id: '1767734055984-8gi0t824r', from_id: 'PROCESS_LINE_1VA_271220', to_id: 'TE_27217A', type: 'unknown', confidence: 0.9, …}23: {id: '1767734055984-iyfjc20pi', from_id: 'PROCESS_LINE_1VA_271220', to_id: 'TE_27217B', type: 'unknown', confidence: 0.9, …}24: {id: '1767734055984-7a5w4ai7w', from_id: 'PROCESS_LINE_1VA_271221', to_id: 'FIT_27216B', type: 'unknown', confidence: 0.9, …}25: {id: '1767734055984-b2d9wj0mu', from_id: 'PROCESS_LINE_1VA_271222', to_id: 'FE_27216', type: 'unknown', confidence: 0.9, …}26: {id: '1767734055984-62r382hmv', from_id: 'PROCESS_LINE_1VA_271223', to_id: 'PIT_27218A', type: 'unknown', confidence: 0.9, …}27: {id: '1767734055984-7grzcbn35', from_id: 'PROCESS_LINE_1VA_271224', to_id: 'PIT_27218B', type: 'unknown', confidence: 0.9, …}28: {id: '1767734055984-arxyqd8vg', from_id: 'PROCESS_LINE_1VA_271225', to_id: 'PIT_27219A', type: 'unknown', confidence: 0.9, …}29: {id: '1767734055984-3vpnaqmae', from_id: 'PROCESS_LINE_1VA_271958', to_id: 'PIT_27219B', type: 'unknown', confidence: 0.9, …}length: 30[[Prototype]]: Array(0)metadata: control_loops: Array(0)length: 0[[Prototype]]: Array(0)enhancement: connection_inference_enabled: truecontrol_loops: 0enhancement_duration_ms: 7inferred_connections: 0isa_detection_enabled: trueisa_detection_rate: 0.37254901960784315isa_functions_detected: 19loop_detection_enabled: trueorphaned_labels_merged: 0shape_validation_enabled: trueshape_violations_corrected: 0spatial_association_enabled: truevalidation_enabled: truevalidation_issues: 0[[Prototype]]: Objectprocess_log: undefinedquality_metrics: confidence_avg: 0.9274509803921563connection_coverage: 0.5882352941176471detection_quality: 0.8627450980392157isa_completeness: 0.37254901960784315metrics: avg_confidence: 0.9274509803921563excellent_detections: 44isa_functions_detected: 19total_components: 51total_connections: 30[[Prototype]]: Objectoverall_score: 0.7047058823529411[[Prototype]]: Objecttotal_components: 51total_connections: 30validation_issues: Array(0)length: 0[[Prototype]]: Array(0)[[Prototype]]: Object[[Prototype]]: Object[[Prototype]]: Object
 index.ts:155 [Stage 2] Starting background final analysis...
-BlueprintWorkspace.tsx:217 [Stage 2] Starting background analysis...
-index.ts:169 [Stage 2] Background analysis queued with job ID: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:237 [Stage 2] Background job queued: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:217 [Stage 2] Queuing background analysis on server...
-BlueprintWorkspace.tsx:83 [Polling] Starting poll for job: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:151 [Polling] Cleanup: stopping poll
-BlueprintWorkspace.tsx:83 [Polling] Starting poll for job: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:151 [Polling] Cleanup: stopping poll
-BlueprintWorkspace.tsx:83 [Polling] Starting poll for job: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:151 [Polling] Cleanup: stopping poll
-BlueprintWorkspace.tsx:83 [Polling] Starting poll for job: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:151 [Polling] Cleanup: stopping poll
-BlueprintWorkspace.tsx:83 [Polling] Starting poll for job: analysis-job-1-1767728642849
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: processing
-BlueprintWorkspace.tsx:90 [Polling] Checking project status: default
-BlueprintWorkspace.tsx:99 [Polling] Project status: completed
-BlueprintWorkspace.tsx:102 [Polling] Project completed! Setting final analysis report
-BlueprintWorkspace.tsx:151 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:259 [Stage 2] Starting background analysis...
+index.ts:169 [Stage 2] Background analysis queued with job ID: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:280 [Stage 2] Background job queued: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:259 [Stage 2] Queuing background analysis on server...
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:131 [Polling] Checking project status: default
+BlueprintWorkspace.tsx:140 [Polling] Project status: processing
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:131 [Polling] Checking project status: default
+BlueprintWorkspace.tsx:140 [Polling] Project status: processing
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
+BlueprintWorkspace.tsx:124 [Polling] Starting poll for job: analysis-job-1-1767734056191
+BlueprintWorkspace.tsx:131 [Polling] Checking project status: default
+BlueprintWorkspace.tsx:140 [Polling] Project status: processing
+BlueprintWorkspace.tsx:131 [Polling] Checking project status: default
+BlueprintWorkspace.tsx:140 [Polling] Project status: processing
+BlueprintWorkspace.tsx:131 [Polling] Checking project status: default
+BlueprintWorkspace.tsx:140 [Polling] Project status: completed
+BlueprintWorkspace.tsx:143 [Polling] Project completed! Setting final analysis report
+BlueprintWorkspace.tsx:193 [Polling] Cleanup: stopping poll
 
 
+Step 1: Classifying document...
+Step 1: Classifying document...
+["Classification result:",{"type":"SCHEMATIC","confidence":1,"reasoning":"The document displays numerous instrumentation symbols (circles, diamonds, squares) and process flow lines indicating hydraulic supply and return, along with control logic. This aligns perfectly with the definition of a SCHEMATIC, specifically resembling a P&ID or control diagram."}]
+Step 2: Routing to pipeline...
+["Selected pipeline:","visual"]
+Step 3: Executing pipeline...
+Pipeline execution complete
+["Analysis complete:",{"document_id":"1767733939694-txa3a1z5x","type":"SCHEMATIC","processing_time_ms":116305,"components":51}]
 
+{
+  "document_id": "1767733939694-txa3a1z5x",
+  "document_type": "SCHEMATIC",
+  "file_name": "current-image",
+  "timestamp": 1767734055999,
+  "classification": {
+    "type": "SCHEMATIC",
+    "confidence": 1,
+    "reasoning": "The document displays numerous instrumentation symbols (circles, diamonds, squares) and process flow lines indicating hydraulic supply and return, along with control logic. This aligns perfectly with the definition of a SCHEMATIC, specifically resembling a P&ID or control diagram."
+  },
+  "processing_time_ms": 116305,
+  "cache_hit": false,
+  "visual": {
+    "components": [
+      {
+        "id": "FIT_27216A",
+        "type": "instrument_indicator_transmitter",
+        "label": "1FIT 27216A",
+        "bbox": [
+          0.2,
+          0.09,
+          0.27,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'FIT' follows ISA-5.1 positional grammar (F=Flow, I=Indicator, T=Transmitter), confirming it's a Flow Indicating Transmitter.",
+          "description": "Flow Indicating Transmitter",
+          "tag": "1FIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.2,
+            0.09,
+            0.27,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.982Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.2,
+                  0.09,
+                  0.27,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.2,
+                  0.09,
+                  0.27,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1FIT-27216A (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "FIT_27216B",
+        "type": "instrument_indicator_transmitter",
+        "label": "1FIT 27216B",
+        "bbox": [
+          0.2,
+          0.38,
+          0.27,
+          0.44
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'FIT' follows ISA-5.1 positional grammar (F=Flow, I=Indicator, T=Transmitter), confirming it's a Flow Indicating Transmitter.",
+          "description": "Flow Indicating Transmitter",
+          "tag": "1FIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.2,
+            0.38,
+            0.27,
+            0.44
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.2,
+                  0.38,
+                  0.27,
+                  0.44
+                ],
+                "normalized_bbox": [
+                  0.2,
+                  0.38,
+                  0.27,
+                  0.44
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1FIT-27216B (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "GV_27216_TL",
+        "type": "valve_gate",
+        "label": "3/4\"",
+        "bbox": [
+          0.26,
+          0.2,
+          0.3,
+          0.24
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a bowtie shape with an empty interior, which is the visual signature for a Gate Valve. The label '3/4\"' indicates its size.",
+          "description": "Gate Valve, 3/4 inch",
+          "raw_backend_output": [
+            0.26,
+            0.2,
+            0.3,
+            0.24
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.26,
+                  0.2,
+                  0.3,
+                  0.24
+                ],
+                "normalized_bbox": [
+                  0.26,
+                  0.2,
+                  0.3,
+                  0.24
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "controls",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 3/4\" (type: valve_gate)"
+        }
+      },
+      {
+        "id": "GV_27216_BL",
+        "type": "valve_gate",
+        "label": "3/4\"",
+        "bbox": [
+          0.26,
+          0.25,
+          0.3,
+          0.29
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a bowtie shape with an empty interior, which is the visual signature for a Gate Valve. The label '3/4\"' indicates its size.",
+          "description": "Gate Valve, 3/4 inch",
+          "raw_backend_output": [
+            0.26,
+            0.25,
+            0.3,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.26,
+                  0.25,
+                  0.3,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.26,
+                  0.25,
+                  0.3,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "controls",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 3/4\" (type: valve_gate)"
+        }
+      },
+      {
+        "id": "GV_27216_TR",
+        "type": "valve_gate",
+        "label": "3/4\"",
+        "bbox": [
+          0.3,
+          0.2,
+          0.34,
+          0.24
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a bowtie shape with an empty interior, which is the visual signature for a Gate Valve. The label '3/4\"' indicates its size.",
+          "description": "Gate Valve, 3/4 inch",
+          "raw_backend_output": [
+            0.3,
+            0.2,
+            0.34,
+            0.24
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.3,
+                  0.2,
+                  0.34,
+                  0.24
+                ],
+                "normalized_bbox": [
+                  0.3,
+                  0.2,
+                  0.34,
+                  0.24
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "controls",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 3/4\" (type: valve_gate)"
+        }
+      },
+      {
+        "id": "GV_27216_BR",
+        "type": "valve_gate",
+        "label": "3/4\"",
+        "bbox": [
+          0.3,
+          0.25,
+          0.34,
+          0.29
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a bowtie shape with an empty interior, which is the visual signature for a Gate Valve. The label '3/4\"' indicates its size.",
+          "description": "Gate Valve, 3/4 inch",
+          "raw_backend_output": [
+            0.3,
+            0.25,
+            0.34,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.3,
+                  0.25,
+                  0.34,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.3,
+                  0.25,
+                  0.34,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "controls",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 3/4\" (type: valve_gate)"
+        }
+      },
+      {
+        "id": "FE_27216",
+        "type": "sensor_flow",
+        "label": "1FE 27216",
+        "bbox": [
+          0.39,
+          0.38,
+          0.46,
+          0.44
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'FE' follows ISA-5.1 positional grammar (F=Flow, E=Primary Element), confirming it's a Flow Primary Element.",
+          "description": "Flow Primary Element",
+          "tag": "1FE",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.39,
+            0.38,
+            0.46,
+            0.44
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.39,
+                  0.38,
+                  0.46,
+                  0.44
+                ],
+                "normalized_bbox": [
+                  0.39,
+                  0.38,
+                  0.46,
+                  0.44
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "controls",
+          "component_category": "controls",
+          "isa_function": "FT",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": "Flow",
+          "isa_modifier": "Transmit",
+          "isa_confidence": 0.85,
+          "isa_reasoning": "Inferred from component type: sensor_flow"
+        }
+      },
+      {
+        "id": "TIT_27217A",
+        "type": "instrument_indicator_transmitter",
+        "label": "1TIT 27217A",
+        "bbox": [
+          0.39,
+          0.09,
+          0.46,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'TIT' follows ISA-5.1 positional grammar (T=Temperature, I=Indicator, T=Transmitter), confirming it's a Temperature Indicating Transmitter.",
+          "description": "Temperature Indicating Transmitter",
+          "tag": "1TIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.39,
+            0.09,
+            0.46,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.39,
+                  0.09,
+                  0.46,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.39,
+                  0.09,
+                  0.46,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1TIT-27217A (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "TE_27217A",
+        "type": "sensor_temperature",
+        "label": "1TE 27217A",
+        "bbox": [
+          0.39,
+          0.2,
+          0.46,
+          0.26
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'TE' follows ISA-5.1 positional grammar (T=Temperature, E=Primary Element), confirming it's a Temperature Primary Element.",
+          "description": "Temperature Primary Element",
+          "tag": "1TE",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.39,
+            0.2,
+            0.46,
+            0.26
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.39,
+                  0.2,
+                  0.46,
+                  0.26
+                ],
+                "normalized_bbox": [
+                  0.39,
+                  0.2,
+                  0.46,
+                  0.26
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "controls",
+          "component_category": "controls",
+          "isa_function": "TT",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": "Temperature",
+          "isa_modifier": "Transmit",
+          "isa_confidence": 0.85,
+          "isa_reasoning": "Inferred from component type: sensor_temperature"
+        }
+      },
+      {
+        "id": "TE_27217B",
+        "type": "sensor_temperature",
+        "label": "1TE 27217B",
+        "bbox": [
+          0.48,
+          0.2,
+          0.55,
+          0.26
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'TE' follows ISA-5.1 positional grammar (T=Temperature, E=Primary Element), confirming it's a Temperature Primary Element.",
+          "description": "Temperature Primary Element",
+          "tag": "1TE",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.48,
+            0.2,
+            0.55,
+            0.26
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.48,
+                  0.2,
+                  0.55,
+                  0.26
+                ],
+                "normalized_bbox": [
+                  0.48,
+                  0.2,
+                  0.55,
+                  0.26
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "controls",
+          "component_category": "controls",
+          "isa_function": "TT",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": "Temperature",
+          "isa_modifier": "Transmit",
+          "isa_confidence": 0.85,
+          "isa_reasoning": "Inferred from component type: sensor_temperature"
+        }
+      },
+      {
+        "id": "PIT_27218A",
+        "type": "instrument_indicator_transmitter",
+        "label": "1PIT 27218A",
+        "bbox": [
+          0.57,
+          0.09,
+          0.64,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'PIT' follows ISA-5.1 positional grammar (P=Pressure, I=Indicator, T=Transmitter), confirming it's a Pressure Indicating Transmitter.",
+          "description": "Pressure Indicating Transmitter",
+          "tag": "1PIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.57,
+            0.09,
+            0.64,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.57,
+                  0.09,
+                  0.64,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.57,
+                  0.09,
+                  0.64,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1PIT-27218A (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "PIT_27218B",
+        "type": "instrument_indicator_transmitter",
+        "label": "1PIT 27218B",
+        "bbox": [
+          0.66,
+          0.09,
+          0.73,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'PIT' follows ISA-5.1 positional grammar (P=Pressure, I=Indicator, T=Transmitter), confirming it's a Pressure Indicating Transmitter.",
+          "description": "Pressure Indicating Transmitter",
+          "tag": "1PIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.66,
+            0.09,
+            0.73,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.66,
+                  0.09,
+                  0.73,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.66,
+                  0.09,
+                  0.73,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1PIT-27218B (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "PIT_27219A",
+        "type": "instrument_indicator_transmitter",
+        "label": "1PIT 27219A",
+        "bbox": [
+          0.75,
+          0.09,
+          0.82,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'PIT' follows ISA-5.1 positional grammar (P=Pressure, I=Indicator, T=Transmitter), confirming it's a Pressure Indicating Transmitter.",
+          "description": "Pressure Indicating Transmitter",
+          "tag": "1PIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.75,
+            0.09,
+            0.82,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.75,
+                  0.09,
+                  0.82,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.75,
+                  0.09,
+                  0.82,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1PIT-27219A (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "PIT_27219B",
+        "type": "instrument_indicator_transmitter",
+        "label": "1PIT 27219B",
+        "bbox": [
+          0.84,
+          0.09,
+          0.91,
+          0.15
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Detected a simple circle with text, indicating an instrument. The tag 'PIT' follows ISA-5.1 positional grammar (P=Pressure, I=Indicator, T=Transmitter), confirming it's a Pressure Indicating Transmitter.",
+          "description": "Pressure Indicating Transmitter",
+          "tag": "1PIT",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.84,
+            0.09,
+            0.91,
+            0.15
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.84,
+                  0.09,
+                  0.91,
+                  0.15
+                ],
+                "normalized_bbox": [
+                  0.84,
+                  0.09,
+                  0.91,
+                  0.15
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1PIT-27219B (type: instrument_indicator_transmitter)"
+        }
+      },
+      {
+        "id": "HS_27221",
+        "type": "instrument_switch",
+        "label": "1HS 27221",
+        "bbox": [
+          0.69,
+          0.54,
+          0.74,
+          0.59
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a circle within a square, indicating a shared display/control instrument. The tag 'HS' follows ISA-5.1 positional grammar (H=Hand, S=Switch), denoting a Hand Switch.",
+          "description": "Hand Switch",
+          "tag": "1HS",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.69,
+            0.54,
+            0.74,
+            0.59
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.69,
+                  0.54,
+                  0.74,
+                  0.59
+                ],
+                "normalized_bbox": [
+                  0.69,
+                  0.54,
+                  0.74,
+                  0.59
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1HS-27221 (type: instrument_switch)"
+        }
+      },
+      {
+        "id": "HS_27225A",
+        "type": "instrument_switch",
+        "label": "1HS 27225A",
+        "bbox": [
+          0.8,
+          0.65,
+          0.85,
+          0.7
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a circle within a square, indicating a shared display/control instrument. The tag 'HS' follows ISA-5.1 positional grammar (H=Hand, S=Switch), denoting a Hand Switch.",
+          "description": "Hand Switch",
+          "tag": "1HS",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.8,
+            0.65,
+            0.85,
+            0.7
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.8,
+                  0.65,
+                  0.85,
+                  0.7
+                ],
+                "normalized_bbox": [
+                  0.8,
+                  0.65,
+                  0.85,
+                  0.7
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1HS-27225A (type: instrument_switch)"
+        }
+      },
+      {
+        "id": "VFD",
+        "type": "equipment_drive",
+        "label": "VFD",
+        "bbox": [
+          0.74,
+          0.76,
+          0.79,
+          0.8
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a rectangle with the label 'VFD', which is a common abbreviation for Variable Frequency Drive in HVAC systems.",
+          "description": "Variable Frequency Drive",
+          "equipment_type": "Variable Frequency Drive",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.74,
+            0.76,
+            0.79,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.74,
+                  0.76,
+                  0.79,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.74,
+                  0.76,
+                  0.79,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "VF",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Vibration / Mech. Analysis Ratio / Fraction"
+        }
+      },
+      {
+        "id": "LOGIC_1I_TOP",
+        "type": "logic_function",
+        "label": "1I",
+        "bbox": [
+          0.82,
+          0.76,
+          0.86,
+          0.8
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Classified as logic_function based on ISA-5.1 symbol recognition.",
+          "description": "Logic Function",
+          "raw_backend_output": [
+            0.82,
+            0.76,
+            0.86,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.82,
+                  0.76,
+                  0.86,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.82,
+                  0.76,
+                  0.86,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1I (type: logic_function)"
+        }
+      },
+      {
+        "id": "LOGIC_1I_BOTTOM",
+        "type": "logic_function",
+        "label": "1I",
+        "bbox": [
+          0.82,
+          0.84,
+          0.86,
+          0.88
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Classified as logic_function based on ISA-5.1 symbol recognition.",
+          "description": "Logic Function",
+          "raw_backend_output": [
+            0.82,
+            0.84,
+            0.86,
+            0.88
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.82,
+                  0.84,
+                  0.86,
+                  0.88
+                ],
+                "normalized_bbox": [
+                  0.82,
+                  0.84,
+                  0.86,
+                  0.88
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1I (type: logic_function)"
+        }
+      },
+      {
+        "id": "MOTOR",
+        "type": "equipment_motor",
+        "label": "M",
+        "bbox": [
+          0.49,
+          0.84,
+          0.54,
+          0.88
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a rectangle with the letter 'M' inside, which is the standard symbol for an electric motor.",
+          "description": "Electric Motor",
+          "equipment_type": "Motor",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.49,
+            0.84,
+            0.54,
+            0.88
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.49,
+                  0.84,
+                  0.54,
+                  0.88
+                ],
+                "normalized_bbox": [
+                  0.49,
+                  0.84,
+                  0.54,
+                  0.88
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "M",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice (Moisture/Humidity)"
+        }
+      },
+      {
+        "id": "CHECK_VALVE",
+        "type": "valve_check",
+        "label": "unknown",
+        "bbox": [
+          0.55,
+          0.84,
+          0.58,
+          0.88
+        ],
+        "confidence": 1,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid triangle shape, which is the standard symbol for a check valve, indicating flow in one direction.",
+          "description": "Check Valve",
+          "raw_backend_output": [
+            0.55,
+            0.84,
+            0.58,
+            0.88
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.55,
+                  0.84,
+                  0.58,
+                  0.88
+                ],
+                "normalized_bbox": [
+                  0.55,
+                  0.84,
+                  0.58,
+                  0.88
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "controls",
+          "isa_function": "U",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Multivariable Control Station (Manual/Auto) Orifice / Restriction Well / Probe"
+        }
+      },
+      {
+        "id": "EQUIPMENT_1C_2803",
+        "type": "equipment",
+        "label": "1C-2803",
+        "bbox": [
+          0.29,
+          0.77,
+          0.39,
+          0.8
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "This label '1C-2803' is placed above a large rectangular outline, suggesting it's a major equipment or control unit. The 'C' in the tag suggests a controller or a major component.",
+          "description": "Equipment Unit 1C-2803",
+          "equipment_type": "Unit/Controller",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.29,
+            0.77,
+            0.39,
+            0.8
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.29,
+                  0.77,
+                  0.39,
+                  0.8
+                ],
+                "normalized_bbox": [
+                  0.29,
+                  0.77,
+                  0.39,
+                  0.8
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1C-2803 (type: equipment)"
+        }
+      },
+      {
+        "id": "TP_904",
+        "type": "instrument_test_point",
+        "label": "TP904",
+        "bbox": [
+          0.18,
+          0.7,
+          0.22,
+          0.73
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "The label 'TP' indicates a Test Point. While no explicit circle is drawn around it, test points are often represented as small circles or just the label. Given the context, a circle is implied.",
+          "description": "Test Point",
+          "tag": "TP",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.18,
+            0.7,
+            0.22,
+            0.73
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.18,
+                  0.7,
+                  0.22,
+                  0.73
+                ],
+                "normalized_bbox": [
+                  0.18,
+                  0.7,
+                  0.22,
+                  0.73
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "T",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Temperature Test Point"
+        }
+      },
+      {
+        "id": "OFF_PAGE_27175",
+        "type": "off_page_connection",
+        "label": "27175",
+        "bbox": [
+          0.3,
+          0,
+          0.35,
+          0.04
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a circle with a number, indicating an off-page connection or continuation of a control loop.",
+          "description": "Off-page connection to loop 27175",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.3,
+            0,
+            0.35,
+            0.04
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.3,
+                  0,
+                  0.35,
+                  0.04
+                ],
+                "normalized_bbox": [
+                  0.3,
+                  0,
+                  0.35,
+                  0.04
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 27175 (type: off_page_connection)"
+        }
+      },
+      {
+        "id": "OFF_PAGE_27217B_TOP",
+        "type": "off_page_connection",
+        "label": "27217B",
+        "bbox": [
+          0.5,
+          0,
+          0.55,
+          0.04
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a circle with a number, indicating an off-page connection or continuation of a control loop.",
+          "description": "Off-page connection to loop 27217B",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.5,
+            0,
+            0.55,
+            0.04
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.5,
+                  0,
+                  0.55,
+                  0.04
+                ],
+                "normalized_bbox": [
+                  0.5,
+                  0,
+                  0.55,
+                  0.04
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 27217B (type: off_page_connection)"
+        }
+      },
+      {
+        "id": "JUNCTION_MANUAL_AUTO",
+        "type": "signal_junction",
+        "label": "MANUAL/AUTO",
+        "bbox": [
+          0.75,
+          0.55,
+          0.8,
+          0.58
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'MANUAL/AUTO' associated with signal lines, indicating a control mode selection junction.",
+          "description": "Manual/Auto Control Signal Junction",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.75,
+            0.55,
+            0.8,
+            0.58
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.75,
+                  0.55,
+                  0.8,
+                  0.58
+                ],
+                "normalized_bbox": [
+                  0.75,
+                  0.55,
+                  0.8,
+                  0.58
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "MA",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": "Moisture/Humidity",
+          "isa_modifier": "Alarm",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: MANUAL/AUTO"
+        }
+      },
+      {
+        "id": "JUNCTION_HAO",
+        "type": "signal_junction",
+        "label": "HAO",
+        "bbox": [
+          0.86,
+          0.69,
+          0.89,
+          0.72
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'HAO' associated with signal lines, indicating a Hand-Auto-Override junction.",
+          "description": "Hand-Auto-Override Signal Junction",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.86,
+            0.69,
+            0.89,
+            0.72
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.86,
+                  0.69,
+                  0.89,
+                  0.72
+                ],
+                "normalized_bbox": [
+                  0.86,
+                  0.69,
+                  0.89,
+                  0.72
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "H",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Hand (Manually Initiated) Alarm Orifice / Restriction"
+        }
+      },
+      {
+        "id": "OFF_PAGE_RIGHT_TYPE39",
+        "type": "off_page_connection",
+        "label": "TYPE 39",
+        "bbox": [
+          0.88,
+          0.78,
+          0.92,
+          0.81
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'TYPE 39' indicating an off-page connection or reference.",
+          "description": "Off-page connection/reference Type 39",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.88,
+            0.78,
+            0.92,
+            0.81
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.88,
+                  0.78,
+                  0.92,
+                  0.81
+                ],
+                "normalized_bbox": [
+                  0.88,
+                  0.78,
+                  0.92,
+                  0.81
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "T",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Temperature Relay / Compute / Convert Test Point Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "OFF_PAGE_RIGHT_TYPE15",
+        "type": "off_page_connection",
+        "label": "TYPE 15",
+        "bbox": [
+          0.78,
+          0.17,
+          0.82,
+          0.2
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'TYPE 15' indicating an off-page connection or reference.",
+          "description": "Off-page connection/reference Type 15",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.78,
+            0.17,
+            0.82,
+            0.2
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.78,
+                  0.17,
+                  0.82,
+                  0.2
+                ],
+                "normalized_bbox": [
+                  0.78,
+                  0.17,
+                  0.82,
+                  0.2
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "T",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Temperature Relay / Compute / Convert Test Point Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "OFF_PAGE_RIGHT_HH",
+        "type": "off_page_connection",
+        "label": "HH",
+        "bbox": [
+          0.82,
+          0.06,
+          0.85,
+          0.08
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'HH' indicating an off-page connection or reference.",
+          "description": "Off-page connection/reference HH",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.82,
+            0.06,
+            0.85,
+            0.08
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.82,
+                  0.06,
+                  0.85,
+                  0.08
+                ],
+                "normalized_bbox": [
+                  0.82,
+                  0.06,
+                  0.85,
+                  0.08
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "H",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Hand (Manually Initiated) High (Alarm/Switch Setpoint)"
+        }
+      },
+      {
+        "id": "OFF_PAGE_RIGHT_HH_2",
+        "type": "off_page_connection",
+        "label": "HH",
+        "bbox": [
+          0.91,
+          0.06,
+          0.94,
+          0.08
+        ],
+        "confidence": 0.8,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label 'HH' indicating an off-page connection or reference.",
+          "description": "Off-page connection/reference HH",
+          "text_clarity": "clear",
+          "raw_backend_output": [
+            0.91,
+            0.06,
+            0.94,
+            0.08
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.983Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.91,
+                  0.06,
+                  0.94,
+                  0.08
+                ],
+                "normalized_bbox": [
+                  0.91,
+                  0.06,
+                  0.94,
+                  0.08
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "H",
+          "detection_quality": "good",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "Hand (Manually Initiated) High (Alarm/Switch Setpoint)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271219",
+        "type": "process_line",
+        "label": "1VA-271219",
+        "bbox": [
+          0.27,
+          0.18,
+          0.28,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271219",
+          "raw_backend_output": [
+            0.27,
+            0.18,
+            0.28,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.27,
+                  0.18,
+                  0.28,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.27,
+                  0.18,
+                  0.28,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271219 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271221",
+        "type": "process_line",
+        "label": "1VA-271221",
+        "bbox": [
+          0.27,
+          0.29,
+          0.28,
+          0.36
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271221",
+          "raw_backend_output": [
+            0.27,
+            0.29,
+            0.28,
+            0.36
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.27,
+                  0.29,
+                  0.28,
+                  0.36
+                ],
+                "normalized_bbox": [
+                  0.27,
+                  0.29,
+                  0.28,
+                  0.36
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271221 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271220",
+        "type": "process_line",
+        "label": "1VA-271220",
+        "bbox": [
+          0.33,
+          0.18,
+          0.34,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271220",
+          "raw_backend_output": [
+            0.33,
+            0.18,
+            0.34,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.33,
+                  0.18,
+                  0.34,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.33,
+                  0.18,
+                  0.34,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271220 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271222",
+        "type": "process_line",
+        "label": "1VA-271222",
+        "bbox": [
+          0.33,
+          0.29,
+          0.34,
+          0.36
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271222",
+          "raw_backend_output": [
+            0.33,
+            0.29,
+            0.34,
+            0.36
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.33,
+                  0.29,
+                  0.34,
+                  0.36
+                ],
+                "normalized_bbox": [
+                  0.33,
+                  0.29,
+                  0.34,
+                  0.36
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271222 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271223",
+        "type": "process_line",
+        "label": "1VA-271223",
+        "bbox": [
+          0.59,
+          0.18,
+          0.6,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271223",
+          "raw_backend_output": [
+            0.59,
+            0.18,
+            0.6,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.59,
+                  0.18,
+                  0.6,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.59,
+                  0.18,
+                  0.6,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271223 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271224",
+        "type": "process_line",
+        "label": "1VA-271224",
+        "bbox": [
+          0.68,
+          0.18,
+          0.69,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271224",
+          "raw_backend_output": [
+            0.68,
+            0.18,
+            0.69,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.68,
+                  0.18,
+                  0.69,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.68,
+                  0.18,
+                  0.69,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271224 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271225",
+        "type": "process_line",
+        "label": "1VA-271225",
+        "bbox": [
+          0.77,
+          0.18,
+          0.78,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271225",
+          "raw_backend_output": [
+            0.77,
+            0.18,
+            0.78,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.77,
+                  0.18,
+                  0.78,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.77,
+                  0.18,
+                  0.78,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271225 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271958",
+        "type": "process_line",
+        "label": "1VA-271958",
+        "bbox": [
+          0.86,
+          0.18,
+          0.87,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271958",
+          "raw_backend_output": [
+            0.86,
+            0.18,
+            0.87,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.86,
+                  0.18,
+                  0.87,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.86,
+                  0.18,
+                  0.87,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271958 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_271959",
+        "type": "process_line",
+        "label": "1VA-271959",
+        "bbox": [
+          0.95,
+          0.18,
+          0.96,
+          0.29
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-271959",
+          "raw_backend_output": [
+            0.95,
+            0.18,
+            0.96,
+            0.29
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.95,
+                  0.18,
+                  0.96,
+                  0.29
+                ],
+                "normalized_bbox": [
+                  0.95,
+                  0.18,
+                  0.96,
+                  0.29
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-271959 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_1VA_270042",
+        "type": "process_line",
+        "label": "1VA-270042",
+        "bbox": [
+          0.29,
+          0.49,
+          0.39,
+          0.5
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a solid thick line with a label, indicating a process line.",
+          "description": "Process Line 1VA-270042",
+          "raw_backend_output": [
+            0.29,
+            0.49,
+            0.39,
+            0.5
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.29,
+                  0.49,
+                  0.39,
+                  0.5
+                ],
+                "normalized_bbox": [
+                  0.29,
+                  0.49,
+                  0.39,
+                  0.5
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 1VA-270042 (type: process_line)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_101R1",
+        "type": "process_line_identifier",
+        "label": "101R1",
+        "bbox": [
+          0.1,
+          0.2,
+          0.15,
+          0.21
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label indicating a process line identifier.",
+          "description": "Process Line Identifier 101R1",
+          "raw_backend_output": [
+            0.1,
+            0.2,
+            0.15,
+            0.21
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.1,
+                  0.2,
+                  0.15,
+                  0.21
+                ],
+                "normalized_bbox": [
+                  0.1,
+                  0.2,
+                  0.15,
+                  0.21
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 101R1 (type: process_line_identifier)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_101F1",
+        "type": "process_line_identifier",
+        "label": "101F1",
+        "bbox": [
+          0.1,
+          0.23,
+          0.15,
+          0.24
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label indicating a process line identifier.",
+          "description": "Process Line Identifier 101F1",
+          "raw_backend_output": [
+            0.1,
+            0.23,
+            0.15,
+            0.24
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.1,
+                  0.23,
+                  0.15,
+                  0.24
+                ],
+                "normalized_bbox": [
+                  0.1,
+                  0.23,
+                  0.15,
+                  0.24
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 101F1 (type: process_line_identifier)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_LOW_POINT",
+        "type": "process_line_feature",
+        "label": "LOW POINT",
+        "bbox": [
+          0.1,
+          0.46,
+          0.18,
+          0.48
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label indicating a low point in a process line.",
+          "description": "Low Point in Process Line",
+          "raw_backend_output": [
+            0.1,
+            0.46,
+            0.18,
+            0.48
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.1,
+                  0.46,
+                  0.18,
+                  0.48
+                ],
+                "normalized_bbox": [
+                  0.1,
+                  0.46,
+                  0.18,
+                  0.48
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "LO",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": "Level",
+          "isa_modifier": "Orifice",
+          "isa_confidence": 0.7,
+          "isa_reasoning": "Partial ISA pattern match from label: LOW-POINT"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_36x26",
+        "type": "process_line_dimension",
+        "label": "36\"x26\"",
+        "bbox": [
+          0,
+          0.58,
+          0.05,
+          0.62
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label indicating dimensions of a process line.",
+          "description": "Process Line Dimension 36\"x26\"",
+          "raw_backend_output": [
+            0,
+            0.58,
+            0.05,
+            0.62
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0,
+                  0.58,
+                  0.05,
+                  0.62
+                ],
+                "normalized_bbox": [
+                  0,
+                  0.58,
+                  0.05,
+                  0.62
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 36\"X26\" (type: process_line_dimension)"
+        }
+      },
+      {
+        "id": "PROCESS_LINE_42x38x42",
+        "type": "process_line_dimension",
+        "label": "42\"x38\"54\"x42\"",
+        "bbox": [
+          0.05,
+          0.58,
+          0.15,
+          0.62
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label indicating dimensions of a process line.",
+          "description": "Process Line Dimension 42\"x38\"54\"x42\"",
+          "raw_backend_output": [
+            0.05,
+            0.58,
+            0.15,
+            0.62
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.05,
+                  0.58,
+                  0.15,
+                  0.62
+                ],
+                "normalized_bbox": [
+                  0.05,
+                  0.58,
+                  0.15,
+                  0.62
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": null,
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_measured_variable": null,
+          "isa_modifier": null,
+          "isa_confidence": 0,
+          "isa_reasoning": "No ISA pattern detected for: 42\"X38\"54\"X42\" (type: process_line_dimension)"
+        }
+      },
+      {
+        "id": "NOTE_6_TOP",
+        "type": "annotation_note",
+        "label": "NOTE 6",
+        "bbox": [
+          0.05,
+          0.5,
+          0.1,
+          0.53
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label referring to a note.",
+          "description": "Note 6",
+          "raw_backend_output": [
+            0.05,
+            0.5,
+            0.1,
+            0.53
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.05,
+                  0.5,
+                  0.1,
+                  0.53
+                ],
+                "normalized_bbox": [
+                  0.05,
+                  0.5,
+                  0.1,
+                  0.53
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "N",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice Orifice / Restriction Transmitter Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "NOTE_6_BOTTOM",
+        "type": "annotation_note",
+        "label": "NOTE 6",
+        "bbox": [
+          0.19,
+          0.58,
+          0.24,
+          0.61
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label referring to a note.",
+          "description": "Note 6",
+          "raw_backend_output": [
+            0.19,
+            0.58,
+            0.24,
+            0.61
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.19,
+                  0.58,
+                  0.24,
+                  0.61
+                ],
+                "normalized_bbox": [
+                  0.19,
+                  0.58,
+                  0.24,
+                  0.61
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "N",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice Orifice / Restriction Transmitter Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "NOTE_2",
+        "type": "annotation_note",
+        "label": "NOTE 2",
+        "bbox": [
+          0.32,
+          0.8,
+          0.37,
+          0.82
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label referring to a note.",
+          "description": "Note 2",
+          "raw_backend_output": [
+            0.32,
+            0.8,
+            0.37,
+            0.82
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.32,
+                  0.8,
+                  0.37,
+                  0.82
+                ],
+                "normalized_bbox": [
+                  0.32,
+                  0.8,
+                  0.37,
+                  0.82
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "N",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice Orifice / Restriction Transmitter Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "NOTE_4",
+        "type": "annotation_note",
+        "label": "NOTE 4",
+        "bbox": [
+          0.46,
+          0.82,
+          0.51,
+          0.84
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label referring to a note.",
+          "description": "Note 4",
+          "raw_backend_output": [
+            0.46,
+            0.82,
+            0.51,
+            0.84
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.46,
+                  0.82,
+                  0.51,
+                  0.84
+                ],
+                "normalized_bbox": [
+                  0.46,
+                  0.82,
+                  0.51,
+                  0.84
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "N",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice Orifice / Restriction Transmitter Sensor / Primary Element"
+        }
+      },
+      {
+        "id": "NOTE_7",
+        "type": "annotation_note",
+        "label": "NOTE 7",
+        "bbox": [
+          0.6,
+          0.7,
+          0.65,
+          0.72
+        ],
+        "confidence": 0.9,
+        "rotation": 0,
+        "meta": {
+          "reasoning": "Identified a text label referring to a note.",
+          "description": "Note 7",
+          "raw_backend_output": [
+            0.6,
+            0.7,
+            0.65,
+            0.72
+          ],
+          "transform_history": [
+            {
+              "timestamp": "2026-01-06T21:14:15.984Z",
+              "operation": "normalize_bbox",
+              "details": {
+                "original_bbox": [
+                  0.6,
+                  0.7,
+                  0.65,
+                  0.72
+                ],
+                "normalized_bbox": [
+                  0.6,
+                  0.7,
+                  0.65,
+                  0.72
+                ]
+              }
+            }
+          ],
+          "hvac_subsystem": "other",
+          "component_category": "other",
+          "isa_function": "N",
+          "detection_quality": "excellent",
+          "shape_validation": {
+            "validated": false,
+            "reason": "No shape information available"
+          },
+          "isa_confidence": 0.8,
+          "isa_reasoning": "User's Choice Orifice / Restriction Transmitter Sensor / Primary Element"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "1767734055984-xfla45o5d",
+        "from_id": "FIT_27216A",
+        "to_id": "OFF_PAGE_27175",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_indicator_transmitter",
+          "to_component_type": "off_page_connection",
+          "from_label": "1FIT 27216A",
+          "to_label": "27175"
+        }
+      },
+      {
+        "id": "1767734055984-vspuou0d4",
+        "from_id": "FIT_27216B",
+        "to_id": "OFF_PAGE_27175",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_indicator_transmitter",
+          "to_component_type": "off_page_connection",
+          "from_label": "1FIT 27216B",
+          "to_label": "27175"
+        }
+      },
+      {
+        "id": "1767734055984-7ewslicyy",
+        "from_id": "TIT_27217A",
+        "to_id": "OFF_PAGE_27217B_TOP",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_indicator_transmitter",
+          "to_component_type": "off_page_connection",
+          "from_label": "1TIT 27217A",
+          "to_label": "27217B"
+        }
+      },
+      {
+        "id": "1767734055984-sb8ra56zp",
+        "from_id": "TE_27217A",
+        "to_id": "TIT_27217A",
+        "type": "unknown",
+        "confidence": 0.8,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "sensor_temperature",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1TE 27217A",
+          "to_label": "1TIT 27217A"
+        }
+      },
+      {
+        "id": "1767734055984-9itag61wt",
+        "from_id": "TE_27217B",
+        "to_id": "OFF_PAGE_27217B_TOP",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "sensor_temperature",
+          "to_component_type": "off_page_connection",
+          "from_label": "1TE 27217B",
+          "to_label": "27217B"
+        }
+      },
+      {
+        "id": "1767734055984-f64pvcxio",
+        "from_id": "HS_27221",
+        "to_id": "JUNCTION_MANUAL_AUTO",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_switch",
+          "to_component_type": "signal_junction",
+          "from_label": "1HS 27221",
+          "to_label": "MANUAL/AUTO"
+        }
+      },
+      {
+        "id": "1767734055984-ofkz7ri7c",
+        "from_id": "HS_27225A",
+        "to_id": "JUNCTION_HAO",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_switch",
+          "to_component_type": "signal_junction",
+          "from_label": "1HS 27225A",
+          "to_label": "HAO"
+        }
+      },
+      {
+        "id": "1767734055984-tkbgk637t",
+        "from_id": "JUNCTION_MANUAL_AUTO",
+        "to_id": "VFD",
+        "type": "unknown",
+        "confidence": 0.8,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "signal_junction",
+          "to_component_type": "equipment_drive",
+          "from_label": "MANUAL/AUTO",
+          "to_label": "VFD"
+        }
+      },
+      {
+        "id": "1767734055984-h4p2nbfk5",
+        "from_id": "JUNCTION_HAO",
+        "to_id": "VFD",
+        "type": "unknown",
+        "confidence": 0.8,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "signal_junction",
+          "to_component_type": "equipment_drive",
+          "from_label": "HAO",
+          "to_label": "VFD"
+        }
+      },
+      {
+        "id": "1767734055984-i09qtvn71",
+        "from_id": "VFD",
+        "to_id": "MOTOR",
+        "type": "electric",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment_drive",
+          "to_component_type": "equipment_motor",
+          "from_label": "VFD",
+          "to_label": "M"
+        }
+      },
+      {
+        "id": "1767734055984-plympxiom",
+        "from_id": "VFD",
+        "to_id": "LOGIC_1I_TOP",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment_drive",
+          "to_component_type": "logic_function",
+          "from_label": "VFD",
+          "to_label": "1I"
+        }
+      },
+      {
+        "id": "1767734055984-cjclu6e9x",
+        "from_id": "LOGIC_1I_TOP",
+        "to_id": "LOGIC_1I_BOTTOM",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "logic_function",
+          "to_component_type": "logic_function",
+          "from_label": "1I",
+          "to_label": "1I"
+        }
+      },
+      {
+        "id": "1767734055984-k5o1058f5",
+        "from_id": "LOGIC_1I_BOTTOM",
+        "to_id": "OFF_PAGE_RIGHT_TYPE39",
+        "type": "unknown",
+        "confidence": 0.8,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "logic_function",
+          "to_component_type": "off_page_connection",
+          "from_label": "1I",
+          "to_label": "TYPE 39"
+        }
+      },
+      {
+        "id": "1767734055984-9lysmfrqh",
+        "from_id": "EQUIPMENT_1C_2803",
+        "to_id": "MOTOR",
+        "type": "control_signal",
+        "confidence": 0.8,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment",
+          "to_component_type": "equipment_motor",
+          "from_label": "1C-2803",
+          "to_label": "M"
+        }
+      },
+      {
+        "id": "1767734055984-3tfk91ogn",
+        "from_id": "MOTOR",
+        "to_id": "CHECK_VALVE",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "equipment_motor",
+          "to_component_type": "valve_check",
+          "from_label": "M",
+          "to_label": "unknown"
+        }
+      },
+      {
+        "id": "1767734055984-t8tygty9j",
+        "from_id": "TP_904",
+        "to_id": "PROCESS_LINE_1VA_270042",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "instrument_test_point",
+          "to_component_type": "process_line",
+          "from_label": "TP904",
+          "to_label": "1VA-270042"
+        }
+      },
+      {
+        "id": "1767734055984-4dw8yk8nm",
+        "from_id": "GV_27216_TL",
+        "to_id": "PROCESS_LINE_1VA_271219",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_gate",
+          "to_component_type": "process_line",
+          "from_label": "3/4\"",
+          "to_label": "1VA-271219"
+        }
+      },
+      {
+        "id": "1767734055984-2jh7gurlo",
+        "from_id": "GV_27216_BL",
+        "to_id": "PROCESS_LINE_1VA_271221",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_gate",
+          "to_component_type": "process_line",
+          "from_label": "3/4\"",
+          "to_label": "1VA-271221"
+        }
+      },
+      {
+        "id": "1767734055984-41k86owwj",
+        "from_id": "GV_27216_TR",
+        "to_id": "PROCESS_LINE_1VA_271220",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_gate",
+          "to_component_type": "process_line",
+          "from_label": "3/4\"",
+          "to_label": "1VA-271220"
+        }
+      },
+      {
+        "id": "1767734055984-jl4m0d4rl",
+        "from_id": "GV_27216_BR",
+        "to_id": "PROCESS_LINE_1VA_271222",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "valve_gate",
+          "to_component_type": "process_line",
+          "from_label": "3/4\"",
+          "to_label": "1VA-271222"
+        }
+      },
+      {
+        "id": "1767734055984-2nbb0zl65",
+        "from_id": "PROCESS_LINE_1VA_271219",
+        "to_id": "FIT_27216A",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271219",
+          "to_label": "1FIT 27216A"
+        }
+      },
+      {
+        "id": "1767734055984-qhg2ibwhu",
+        "from_id": "PROCESS_LINE_1VA_271220",
+        "to_id": "TIT_27217A",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271220",
+          "to_label": "1TIT 27217A"
+        }
+      },
+      {
+        "id": "1767734055984-8gi0t824r",
+        "from_id": "PROCESS_LINE_1VA_271220",
+        "to_id": "TE_27217A",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "sensor_temperature",
+          "from_label": "1VA-271220",
+          "to_label": "1TE 27217A"
+        }
+      },
+      {
+        "id": "1767734055984-iyfjc20pi",
+        "from_id": "PROCESS_LINE_1VA_271220",
+        "to_id": "TE_27217B",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "sensor_temperature",
+          "from_label": "1VA-271220",
+          "to_label": "1TE 27217B"
+        }
+      },
+      {
+        "id": "1767734055984-7a5w4ai7w",
+        "from_id": "PROCESS_LINE_1VA_271221",
+        "to_id": "FIT_27216B",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271221",
+          "to_label": "1FIT 27216B"
+        }
+      },
+      {
+        "id": "1767734055984-b2d9wj0mu",
+        "from_id": "PROCESS_LINE_1VA_271222",
+        "to_id": "FE_27216",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "sensor_flow",
+          "from_label": "1VA-271222",
+          "to_label": "1FE 27216"
+        }
+      },
+      {
+        "id": "1767734055984-62r382hmv",
+        "from_id": "PROCESS_LINE_1VA_271223",
+        "to_id": "PIT_27218A",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271223",
+          "to_label": "1PIT 27218A"
+        }
+      },
+      {
+        "id": "1767734055984-7grzcbn35",
+        "from_id": "PROCESS_LINE_1VA_271224",
+        "to_id": "PIT_27218B",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271224",
+          "to_label": "1PIT 27218B"
+        }
+      },
+      {
+        "id": "1767734055984-arxyqd8vg",
+        "from_id": "PROCESS_LINE_1VA_271225",
+        "to_id": "PIT_27219A",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271225",
+          "to_label": "1PIT 27219A"
+        }
+      },
+      {
+        "id": "1767734055984-3vpnaqmae",
+        "from_id": "PROCESS_LINE_1VA_271958",
+        "to_id": "PIT_27219B",
+        "type": "unknown",
+        "confidence": 0.9,
+        "meta": {
+          "inferred_type": "unknown",
+          "type_confidence": 0.5,
+          "type_reasoning": "Could not determine connection type from component types",
+          "from_component_type": "process_line",
+          "to_component_type": "instrument_indicator_transmitter",
+          "from_label": "1VA-271958",
+          "to_label": "1PIT 27219B"
+        }
+      }
+    ],
+    "metadata": {
+      "total_components": 51,
+      "total_connections": 30,
+      "enhancement": {
+        "spatial_association_enabled": true,
+        "orphaned_labels_merged": 0,
+        "shape_validation_enabled": true,
+        "shape_violations_corrected": 0,
+        "isa_detection_enabled": true,
+        "isa_functions_detected": 19,
+        "isa_detection_rate": 0.37254901960784315,
+        "connection_inference_enabled": true,
+        "inferred_connections": 0,
+        "validation_enabled": true,
+        "validation_issues": 0,
+        "loop_detection_enabled": true,
+        "control_loops": 0,
+        "enhancement_duration_ms": 7
+      },
+      "control_loops": [],
+      "validation_issues": [],
+      "quality_metrics": {
+        "overall_score": 0.7047058823529411,
+        "detection_quality": 0.8627450980392157,
+        "isa_completeness": 0.37254901960784315,
+        "connection_coverage": 0.5882352941176471,
+        "confidence_avg": 0.9274509803921563,
+        "metrics": {
+          "total_components": 51,
+          "total_connections": 30,
+          "isa_functions_detected": 19,
+          "excellent_detections": 44,
+          "avg_confidence": 0.9274509803921563
+        }
+      }
+    }
+  }
+}
+[Background] Starting background analysis...
+[Background] Queuing background analysis on server...
+
+[Stage 2 Complete] Final analysis report generated successfully.

@@ -3,7 +3,7 @@
 start.py - Professional Platform Startup & Diagnostic Script
 
 Usage:
-  python start.py [--dev] [--build] [--auto-install]
+python start.py [--dev] [--build] [--auto-install]
 
 This script performs comprehensive sanity checks and diagnostic commands for the
 HVAC AI platform repository. It collects detailed debug logs (stdout/stderr) for
