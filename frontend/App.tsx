@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
     // Update browser tab title based on current view
-    const base = 'HVAC AI Platform';
+    const base = 'HVAC AI';
     switch (currentView) {
       case ViewState.DASHBOARD:
         document.title = `${base} — Dashboard`;
