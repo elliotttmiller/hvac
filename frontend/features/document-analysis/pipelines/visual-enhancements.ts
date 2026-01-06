@@ -15,6 +15,7 @@ import {
 } from '../../../lib/utils/connection-engine';
 import { applySpatialAssociation } from '../../../lib/utils/spatial-association';
 import { normalizeComponents, normalizeConnections } from '../../../lib/utils/type-normalization';
+import { applyShapeValidation } from '../../../lib/utils/shape-validator';
 import type { VisualAnalysisResult, DetectedComponent, Connection } from '../types';
 
 /**
@@ -28,6 +29,7 @@ export async function enhanceVisualAnalysis(
     enableLoopDetection?: boolean;
     enableValidation?: boolean;
     enableSpatialAssociation?: boolean;
+    enableShapeValidation?: boolean;
   } = {}
 ): Promise<VisualAnalysisResult> {
   const {
@@ -35,7 +37,8 @@ export async function enhanceVisualAnalysis(
     enableConnectionInference = true,
     enableLoopDetection = true,
     enableValidation = true,
-    enableSpatialAssociation = true
+    enableSpatialAssociation = true,
+    enableShapeValidation = true
   } = options;
   
   console.log('[Enhancement] Starting post-processing enhancements...');
@@ -65,6 +68,17 @@ export async function enhanceVisualAnalysis(
     console.log(
       `[Enhancement] Spatial association complete: ${mergeCount} orphaned labels merged, ` +
       `${components.length} total components remain`
+    );
+  }
+  
+  // Step 0.5: Apply strict geometric shape validation (ZERO-HITL Critical)
+  // This enforces shape-type consistency to prevent hallucinations like "circles as valves"
+  if (enableShapeValidation) {
+    console.log('[Enhancement] Applying strict geometric shape validation...');
+    components = applyShapeValidation(components);
+    const correctedCount = components.filter(c => c.meta?.shape_validation?.corrected).length;
+    console.log(
+      `[Enhancement] Shape validation complete: ${correctedCount} components corrected`
     );
   }
   
@@ -152,6 +166,8 @@ export async function enhanceVisualAnalysis(
       enhancement: {
         spatial_association_enabled: enableSpatialAssociation,
         orphaned_labels_merged: components.filter(c => c.meta?.merged_from_orphaned_label).length,
+        shape_validation_enabled: enableShapeValidation,
+        shape_violations_corrected: components.filter(c => c.meta?.shape_validation?.corrected).length,
         isa_detection_enabled: enableISADetection,
         isa_functions_detected: components.filter(c => c.meta?.isa_function).length,
         isa_detection_rate: components.filter(c => c.meta?.isa_function).length / components.length,
