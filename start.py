@@ -10,19 +10,6 @@ HVAC AI platform repository. It collects detailed debug logs (stdout/stderr) for
 each step and writes a timestamped log file to ./logs/start.log. The script is
 designed to help pinpoint issues during development, CI, or local startup.
 
-Features:
-- Comprehensive environment validation (Python, Node, npm, git)
-- Dependency installation verification with auto-install option
-- Repository health checks
-- .env configuration loading and validation against .env.example
-- Package.json scripts validation (dev, build, preview)
-- Pre-build script execution and validation
-- Optional production build (npm run build) with progress tracking
-- Optional dev server startup (npm run dev) with log streaming
-- Comprehensive structured logging with progress indicators
-- Platform-specific optimizations (Windows/macOS/Linux)
-- Actionable error messages with recommendations
-
 This file is zero-dependency and runs on Windows/macOS/Linux with Python 3.8+.
 """
 from __future__ import annotations
