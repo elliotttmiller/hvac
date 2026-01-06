@@ -521,6 +521,114 @@ function validateBBox(bbox: any): [number, number, number, number] {
  * These functions add HVAC intelligence to component detection
  */
 
+/**
+ * Resolve type conflicts between visual shape and text tag (SHAPE-FIRST LOGIC)
+ * This is the "Conflict Resolution Engine" that enforces visual precision.
+ * 
+ * @param tag - The text label (e.g., "PV-101", "TV-202")
+ * @param shape - The detected geometric shape (e.g., "circle", "bowtie")
+ * @param visualSignature - Detailed visual pattern (e.g., "circle_empty", "bowtie_with_actuator")
+ * @param aiType - The type suggested by AI (may be incorrect)
+ * @returns Corrected type and reasoning
+ */
+function resolveTypeConflict(
+  tag: string, 
+  shape: string, 
+  visualSignature: string | undefined,
+  aiType: string
+): { correctedType: string; reasoning: string } {
+  const tagUpper = tag.toUpperCase();
+  const shapeLower = shape.toLowerCase();
+  const sigLower = (visualSignature || '').toLowerCase();
+  const typeLower = aiType.toLowerCase();
+  
+  // --- RULE 1: "Circle Safety" Rule ---
+  // IF Shape = Circle (without internal actuating line) AND Type contains "valve" (but NOT Ball/Butterfly)
+  // THEN: Auto-correct to instrument/indicator
+  if (shapeLower === 'circle') {
+    // Check if it's a Ball or Butterfly valve (allowed circular valves)
+    const isBallValve = sigLower.includes('diagonal') || typeLower.includes('ball');
+    const isButterflyValve = sigLower.includes('bar') || typeLower.includes('butterfly');
+    
+    if (!isBallValve && !isButterflyValve) {
+      // Simple circle - check if incorrectly classified as valve
+      if (typeLower.includes('valve') && !typeLower.includes('ball') && !typeLower.includes('butterfly')) {
+        // Determine correct instrument type based on tag
+        let correctedType = 'instrument_indicator';
+        if (tagUpper.startsWith('P')) correctedType = 'sensor_pressure';
+        else if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
+        else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
+        else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+        
+        return {
+          correctedType,
+          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments/sensors, not valves. Tag '${tag}' likely indicates an indicator or sensor.`
+        };
+      }
+    }
+  }
+  
+  // --- RULE 2: "PV Circle" Rule (HVAC Domain Specific) ---
+  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator, NOT Valve
+  if (tagUpper.startsWith('PV') && shapeLower === 'circle') {
+    const isEmptyCircle = sigLower === 'circle_empty' || !sigLower.includes('diagonal') && !sigLower.includes('bar');
+    if (isEmptyCircle && typeLower.includes('valve')) {
+      return {
+        correctedType: 'instrument_indicator',
+        reasoning: `Shape-based correction: Circle labeled 'PV' is a Pressure Indicator (Pressure View), not a Pressure Valve. Visual geometry (simple circle) confirms this is an instrument for displaying pressure readings, per HVAC/BAS conventions.`
+      };
+    }
+  }
+  
+  // --- RULE 3: "*I" Tags (Indicators) ---
+  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Indicator
+  if (tagUpper.match(/^[A-Z]{1,2}I-?\d/) && shapeLower === 'circle') {
+    if (typeLower.includes('valve')) {
+      return {
+        correctedType: 'instrument_indicator',
+        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to instrument_indicator per ISA-5.1 standards.`
+      };
+    }
+  }
+  
+  // --- RULE 4: "Actuator" Rule ---
+  // IF Shape = Bowtie with Actuator AND Type = Gate/Globe Valve → Control Valve
+  if (shapeLower === 'bowtie' && sigLower === 'bowtie_with_actuator') {
+    if (typeLower.includes('gate') || typeLower.includes('globe')) {
+      return {
+        correctedType: 'valve_control',
+        reasoning: `Visual evidence (Actuator symbol on bowtie body) indicates automated control. Reclassified from ${aiType} to valve_control. Actuators are used for modulating/automated valves, not manual gate/globe valves.`
+      };
+    }
+  }
+  
+  // --- RULE 5: Empty Bowtie = Gate Valve (NOT Control) ---
+  if (shapeLower === 'bowtie' && sigLower === 'bowtie_empty') {
+    if (typeLower.includes('control')) {
+      return {
+        correctedType: 'valve_gate',
+        reasoning: `Visual evidence (Empty bowtie without actuator) indicates manual gate valve for isolation. Reclassified from ${aiType} to valve_gate. Control valves require actuator symbols.`
+      };
+    }
+  }
+  
+  // --- RULE 6: Bowtie with Solid Center = Globe Valve ---
+  if (shapeLower === 'bowtie' && sigLower === 'bowtie_solid_center') {
+    if (!typeLower.includes('globe')) {
+      return {
+        correctedType: 'valve_globe',
+        reasoning: `Visual evidence (Bowtie with solid center dot) indicates globe valve geometry. Reclassified from ${aiType} to valve_globe per ISA-5.1 symbology.`
+      };
+    }
+  }
+  
+  // No conflict detected - return original type
+  return {
+    correctedType: aiType,
+    reasoning: ''
+  };
+}
+
 // ISA-5.1 prefix-based type mapping
 const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
   'TT': 'sensor_temperature',
@@ -582,41 +690,44 @@ function normalizeHVACComponentType(comp: any): any {
 
 /**
  * Determine HVAC subsystem classification for a component
+ * Uses regex-based pattern matching for deterministic categorization
  */
 function determineHVACSubsystem(comp: any): string {
   const tag = (comp.meta?.tag || comp.label || '').toUpperCase();
+  const type = (comp.type || '').toLowerCase();
   
-  // Chilled water system indicators
-  if (tag.includes('CHW') || tag.includes('CHILLED') || 
-      ['CHILLER', 'COOLING_TOWER'].includes(comp.type)) {
-    return 'chilled_water';
-  }
+  // Regex patterns for deterministic HVAC categorization
   
-  // Condenser water system
-  if (tag.includes('CNDW') || tag.includes('CONDENSER')) {
-    return 'condenser_water';
-  }
-  
-  // Air handling system
-  if (tag.includes('AHU') || tag.includes('FCU') || tag.includes('VAV') || 
-      ['air_handler', 'air_handling_unit', 'fan_coil_unit'].includes(comp.type)) {
+  // Airside systems (VAV, AHU, FCU, etc.)
+  if (/^(VAV|AHU|FCU|RTU|MAU|DOAS|ERV|HRV)/.test(tag)) {
     return 'air_handling';
   }
   
-  // Refrigeration system
-  if (tag.includes('REF') || tag.includes('REFRIG') || 
-      ['compressor', 'condenser', 'evaporator', 'expansion_valve'].includes(comp.type)) {
-    return 'refrigeration';
+  // Hydronic systems - Chilled Water
+  if (/CHW|CHWS|CHWR|CHILLED/.test(tag) || 
+      ['chiller', 'cooling_tower'].includes(type)) {
+    return 'chilled_water';
   }
   
-  // Heating system
-  if (tag.includes('HW') || tag.includes('HEAT') || tag.includes('BOILER')) {
+  // Hydronic systems - Hot Water
+  if (/HW|HWS|HWR|HEAT|BOILER/.test(tag) && !tag.includes('CHW')) {
     return 'heating_water';
   }
   
-  // Controls and instrumentation
+  // Hydronic systems - Condenser Water
+  if (/CNDW|CW|CONDENSER/.test(tag)) {
+    return 'condenser_water';
+  }
+  
+  // Refrigeration systems
+  if (/REF|REFRIG|EVAP|COMP/.test(tag) || 
+      ['compressor', 'condenser', 'evaporator', 'expansion_valve'].includes(type)) {
+    return 'refrigeration';
+  }
+  
+  // Controls and instrumentation (sensors, controllers, dampers, valves)
   if (['sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level',
-       'instrument_controller', 'valve_control', 'damper'].includes(comp.type)) {
+       'instrument_controller', 'instrument_indicator', 'valve_control', 'damper'].includes(type)) {
     return 'controls';
   }
   
@@ -642,44 +753,75 @@ function extractISAFunction(tag?: string): string | null {
  * Enhance component with HVAC-specific metadata
  */
 function enhanceHVACComponent(comp: any): any {
-  const enhanced = normalizeHVACComponentType(comp);
+  // STEP 1: Apply conflict resolution BEFORE normalization
+  const tag = comp.meta?.tag || comp.label || '';
+  const shape = comp.shape || comp.meta?.shape || '';
+  const visualSignature = comp.visual_signature || comp.meta?.visual_signature;
+  const aiType = comp.type || 'unknown';
   
-  // Generate dynamic reasoning based on actual visual evidence
+  // Run conflict resolution engine
+  const { correctedType, reasoning: conflictReasoning } = resolveTypeConflict(
+    tag, 
+    shape, 
+    visualSignature,
+    aiType
+  );
+  
+  // Apply correction if conflict was detected
+  let enhanced = { ...comp };
+  if (correctedType !== aiType) {
+    enhanced.type = correctedType;
+    // Prepend conflict resolution reasoning
+    if (enhanced.meta?.reasoning) {
+      enhanced.meta.reasoning = conflictReasoning;
+    } else {
+      enhanced.meta = { ...enhanced.meta, reasoning: conflictReasoning };
+    }
+  }
+  
+  // STEP 2: Normalize type based on ISA-5.1 tag (if no conflict correction was applied)
+  if (correctedType === aiType) {
+    enhanced = normalizeHVACComponentType(enhanced);
+  }
+  
+  // STEP 3: Generate dynamic reasoning based on actual visual evidence
   // Replace generic/hardcoded reasoning with specific shape-based explanations
   if (enhanced.meta?.reasoning) {
-    const reasoning = enhanced.meta.reasoning;
-    const shape = enhanced.shape || enhanced.meta?.shape;
-    const type = enhanced.type || 'component';
+    const existingReasoning = enhanced.meta.reasoning;
+    const currentShape = enhanced.shape || enhanced.meta?.shape;
+    const currentType = enhanced.type || 'component';
     
-    // Replace hardcoded "detected diamond shape" with dynamic shape-based reasoning
-    if (reasoning.toLowerCase().includes('detected diamond shape') || 
-        reasoning.toLowerCase().includes('diamond-shaped') ||
-        reasoning.toLowerCase().includes('diamond shape') ||
-        reasoning === 'Identified based on standard ISA-5.1 symbology.') {
+    // Only replace reasoning if it's generic (don't replace conflict resolution reasoning)
+    if (!existingReasoning.includes('Visual evidence') &&
+        !existingReasoning.includes('Shape-based correction') &&
+        (existingReasoning.toLowerCase().includes('detected diamond shape') || 
+         existingReasoning.toLowerCase().includes('diamond-shaped') ||
+         existingReasoning.toLowerCase().includes('diamond shape') ||
+         existingReasoning === 'Identified based on standard ISA-5.1 symbology.')) {
       
       // Generate specific reasoning based on actual shape and type
-      if (shape) {
-        const shapeReasoning = generateShapeBasedReasoning(shape, type);
+      if (currentShape) {
+        const shapeReasoning = generateShapeBasedReasoning(currentShape, currentType);
         if (shapeReasoning) {
           enhanced.meta.reasoning = shapeReasoning;
         }
       } else {
         // Fallback: Use type-based reasoning if no shape available
-        enhanced.meta.reasoning = `Classified as ${type} based on ISA-5.1 symbol recognition.`;
+        enhanced.meta.reasoning = `Classified as ${currentType} based on ISA-5.1 symbol recognition.`;
       }
     }
   } else if (enhanced.shape || enhanced.meta?.shape) {
     // If no reasoning exists but we have shape, generate it
-    const shape = enhanced.shape || enhanced.meta?.shape;
-    const type = enhanced.type || 'component';
-    const shapeReasoning = generateShapeBasedReasoning(shape, type);
+    const currentShape = enhanced.shape || enhanced.meta?.shape;
+    const currentType = enhanced.type || 'component';
+    const shapeReasoning = generateShapeBasedReasoning(currentShape, currentType);
     if (shapeReasoning) {
       enhanced.meta = enhanced.meta || {};
       enhanced.meta.reasoning = shapeReasoning;
     }
   }
   
-  // Add HVAC-specific metadata
+  // STEP 4: Add HVAC-specific metadata
   enhanced.meta = {
     ...enhanced.meta,
     hvac_subsystem: enhanced.meta?.hvac_subsystem || determineHVACSubsystem(enhanced),
@@ -738,27 +880,45 @@ function generateShapeBasedReasoning(shape: string, type: string): string | null
 
 /**
  * Get HVAC component category for filtering and grouping
+ * Categories: Hydronic, Airside, Controls, Equipment
  */
 function getHVACComponentCategory(comp: any): string {
   const subsystem = comp.meta?.hvac_subsystem || determineHVACSubsystem(comp);
+  const type = (comp.type || '').toLowerCase();
   
+  // Hydronic systems (water-based)
   if (['chilled_water', 'condenser_water', 'heating_water'].includes(subsystem)) {
-    return 'water_system';
+    return 'hydronic';
   }
   
+  // Airside systems (air-based)
   if (subsystem === 'air_handling') {
-    return 'air_system';
+    return 'airside';
   }
   
+  // Refrigeration systems
   if (subsystem === 'refrigeration') {
     return 'refrigeration';
   }
   
-  if (subsystem === 'controls') {
+  // Controls (sensors, controllers, valves, dampers)
+  if (subsystem === 'controls' || 
+      type.includes('sensor') || 
+      type.includes('controller') || 
+      type.includes('valve') || 
+      type.includes('damper')) {
     return 'controls';
   }
   
-  return 'equipment';
+  // Equipment (pumps, chillers, fans, etc.)
+  if (type.includes('pump') || 
+      type.includes('chiller') || 
+      type.includes('fan') || 
+      type.includes('handler')) {
+    return 'equipment';
+  }
+  
+  return 'other';
 }
 
 /**
