@@ -324,24 +324,115 @@ const analysisJobs = new Map();
 let analysisJobCounter = 0;
 function genAnalysisJobId() { return `analysis-job-${++analysisJobCounter}-${Date.now()}`; }
 
-// Minimal prompt builder & minifier (keeps in sync with frontend logic)
+/**
+ * PHASE 2: Data Minification Layer
+ * Aggressively strips visual metadata and filters invalid connections
+ * Target: >60% token reduction by removing bloat
+ */
 function minifyForAnalysis(visualResults) {
-  if (!visualResults) return { components: [], connections: [] };
+  if (!visualResults) return { components: [], connections: [], stats: {} };
+  
+  const originalSize = JSON.stringify(visualResults).length;
+  
+  // STRIP: Remove all visual data (bbox, rotation, confidence, transform_history, etc.)
+  // RETAIN: Only semantic attributes needed for engineering narrative
   const components = (visualResults.components || []).map(c => ({
-    tag: c.label || c.id,
-    type: c.type,
-    desc: (c.meta && c.meta.description) || c.type,
-    meta: {
-      subsystem: c.meta && c.meta.hvac_subsystem,
-      function: c.meta && c.meta.functional_desc
-    }
+    id: c.id,                    // Component identifier for connection graph
+    tag: c.label || c.id,        // Human-readable tag (e.g., "1TI-18010")
+    type: c.type,                // Functional type (e.g., "valve", "temperature_sensor")
+    description: (c.meta && c.meta.description) || c.type, // Functional description
+    // Only preserve non-visual semantic metadata
+    subsystem: c.meta && c.meta.hvac_subsystem,
+    isa_function: c.meta && c.meta.isa_function,
+    instrument_function: c.meta && c.meta.instrument_function,
+    // EXCLUDED: bbox, rotation, confidence, transform_history, shape_validation, detection_quality
   }));
-  const connections = (visualResults.connections || []).map(c => ({ from: c.from_id, to: c.to_id, type: c.type }));
-  return { components, connections };
+  
+  // Build component ID lookup to filter ghost connections
+  const validComponentIds = new Set(components.map(c => c.id));
+  
+  // FILTER: Remove connections referencing non-existent components (ghost references)
+  // TRANSFORM: Emphasize relationship (source → target) over line geometry
+  const connections = (visualResults.connections || [])
+    .filter(c => {
+      // Filter out connections to/from components that don't exist
+      const fromExists = validComponentIds.has(c.from_id);
+      const toExists = validComponentIds.has(c.to_id);
+      
+      if (!fromExists || !toExists) {
+        console.log(`   [Minification] Filtered ghost connection: ${c.from_id} → ${c.to_id}`);
+        return false;
+      }
+      return true;
+    })
+    .map(c => ({
+      from: c.from_id,
+      to: c.to_id,
+      type: c.type,  // Connection type (e.g., 'process_flow', 'control_signal')
+      // EXCLUDED: confidence, geometry, visual properties, metadata bloat
+    }));
+  
+  const minifiedSize = JSON.stringify({ components, connections }).length;
+  const reduction = ((originalSize - minifiedSize) / originalSize * 100).toFixed(1);
+  
+  const stats = {
+    originalSize,
+    minifiedSize,
+    reduction: `${reduction}%`,
+    components: components.length,
+    connections: connections.length,
+    ghostConnectionsFiltered: (visualResults.connections || []).length - connections.length
+  };
+  
+  console.log(`   [Minification] Token reduction: ${reduction}% (${originalSize} → ${minifiedSize} bytes)`);
+  console.log(`   [Minification] Components: ${components.length}, Connections: ${connections.length}, Ghosts filtered: ${stats.ghostConnectionsFiltered}`);
+  
+  return { components, connections, stats };
 }
 
-const FINAL_ANALYSIS_SYSTEM_INSTRUCTION = `Senior HVAC Systems Engineer & Technical Auditor. Provide a JSON report describing executive summary, control loops, process flow, interlocks, and recommendations.`;
+/**
+ * PHASE 2: Enhanced System Instruction
+ * Emphasizes narrative engineering analysis over bean counting
+ */
+const FINAL_ANALYSIS_SYSTEM_INSTRUCTION = `
+### ROLE
+You are a Senior HVAC/P&ID Systems Engineer preparing a handover document for a client or colleague.
 
+### MISSION
+Transform the structured component and connectivity data into a **professional engineering narrative** that reads like a technical report written by a human expert, NOT a machine-generated list.
+
+### CRITICAL REQUIREMENTS - "NO BEAN COUNTING"
+1. **NEVER** mention detection metrics like "confidence scores", "total components detected", or "bounding boxes"
+2. **NEVER** output simple inventories like "There are 5 valves and 3 pumps"
+3. **DO NOT** list component counts or statistics
+4. **DO NOT** reference the detection process or AI analysis
+
+### WRITING STYLE - "NARRATIVE FLOW"
+- Write in paragraph form, not bullet points or tables
+- Use a top-to-bottom, upstream-to-downstream flow when describing processes
+- Explain the system as if walking someone through the physical installation
+- Use phrases like: "begins at...", "flows through...", "is controlled by...", "maintains..."
+
+### ANALYSIS APPROACH - "CORRELATION & INTEGRATION"
+1. **Trace Physical Flow**: Identify the start and end of the process by analyzing connections
+2. **Explain Control Strategies**: Show how sensors influence controllers which modulate actuators
+3. **Describe Relationships**: Connect components logically (e.g., "Pump P-101 supplies chilled water to Coil C-201")
+4. **Identify Subsystems**: Group related equipment and explain their collective purpose
+
+### ACCURACY - "TRUTHFULNESS"
+- ONLY reference components and tags that exist in the provided data
+- DO NOT invent or assume equipment not shown
+- If information is missing or unclear, state so professionally
+- Base all descriptions on the connectivity graph and component metadata
+
+### TONE
+Professional, technical, authoritative. Use standard engineering terminology (ASHRAE/ISA standards). Write as if this analysis will be filed as official project documentation.
+`;
+
+/**
+ * PHASE 3: Background Analysis Queue with Enhanced Observability
+ * Implements lifecycle logging, explicit error handling, and timeout support
+ */
 app.post('/api/analysis/queue', async (req, res) => {
   try {
     const payload = req.body && req.body.documentResult ? req.body.documentResult : req.body;
@@ -351,37 +442,155 @@ app.post('/api/analysis/queue', async (req, res) => {
     const job = { jobId, documentId: payload.document_id, status: 'pending', startTime: Date.now() };
     analysisJobs.set(jobId, job);
 
+    console.log(`[Stage 2] Job ${jobId} queued for document ${payload.document_id}`);
+
     // Respond immediately with jobId
     res.json({ jobId });
 
-    // Run analysis async
+    // Run analysis async with comprehensive error handling
     (async () => {
+      const perfStart = Date.now();
       try {
-        job.status = 'running'; analysisJobs.set(jobId, job);
+        // LIFECYCLE: Job Started
+        console.log(`[Stage 2] Job ${jobId} - Status: RUNNING`);
+        job.status = 'running'; 
+        analysisJobs.set(jobId, job);
         io.emit('analysis-job-update', { jobId, status: 'running' });
 
-        if (!genAI) throw new Error('AI not configured on server.');
+        // VALIDATION: Check AI configuration
+        if (!genAI) {
+          throw new Error('AI not configured on server. Check GEMINI_API_KEY in environment.');
+        }
 
-        const { components, connections } = minifyForAnalysis(payload.visual || {});
+        // LIFECYCLE: Payload Minification
+        console.log(`[Stage 2] Job ${jobId} - Minifying payload...`);
+        const minifyStart = Date.now();
+        const { components, connections, stats } = minifyForAnalysis(payload.visual || {});
+        const minifyDuration = Date.now() - minifyStart;
+        console.log(`[Stage 2] Job ${jobId} - Minification complete in ${minifyDuration}ms`);
 
-        const prompt = `\n**INPUT DATA FOR ANALYSIS**:\nComponents: ${components.length} - Connections: ${connections.length}\n\nJSON:\n${JSON.stringify({ components, connectivity_graph: connections })}\n\nPlease produce a JSON analysis report with executive_summary, system_architecture, control_and_operation, technical_inventory, and engineering_audit.`;
+        // LIFECYCLE: Building Prompt
+        const prompt = `
+**DOCUMENT CONTEXT**:
+Type: ${payload.document_type || 'SCHEMATIC'}
+Classification: ${payload.classification?.reasoning || 'Engineering drawing'}
 
-        const geminiModel = genAI.getGenerativeModel({ model: AI_MODEL_DEFAULT, generationConfig: { responseMimeType: 'application/json' }, systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION });
+**SYSTEM DATA** (Minified for Narrative Generation):
 
-        const result = await geminiModel.generateContent(prompt);
-        const text = (result && result.response && typeof result.response.text === 'function') ? result.response.text() : (result && result.text) || '{}';
+\`\`\`json
+{
+  "components": ${JSON.stringify(components, null, 2)},
+  "connections": ${JSON.stringify(connections, null, 2)}
+}
+\`\`\`
+
+**YOUR TASK**:
+Generate a professional engineering analysis that explains this system in narrative form.
+
+1. **Executive Summary**: Start with a high-level overview (2-3 sentences) describing what type of system this is and its primary purpose.
+
+2. **System Workflow Narrative**: Write a detailed paragraph describing the complete process flow from start to finish. Follow the physical path using the connection graph to determine upstream and downstream relationships.
+
+3. **Control Logic Analysis**: Explain the control strategies in paragraph form. Show how instruments send signals to controllers, which then modulate final control elements.
+
+4. **Specifications and Details**: Provide a paragraph summarizing any engineering details visible in the data such as pipe sizes, material specifications, equipment ratings, or special notes.
+
+**REMEMBER**: 
+- Write as a human engineer, not as a detection system
+- NO mentions of detection metrics, confidence scores, or component counts
+- Focus on HOW the system works, not WHAT was detected
+- Only reference components that actually exist in the provided data
+`;
+
+        // LIFECYCLE: Sending to AI
+        console.log(`[Stage 2] Job ${jobId} - Sending to AI (model: ${AI_MODEL_DEFAULT})...`);
+        const aiStart = Date.now();
+        
+        // Configure AI with timeout support for large token generation
+        const AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '300000', 10); // 5 minutes default
+        const geminiModel = genAI.getGenerativeModel({ 
+          model: AI_MODEL_DEFAULT,
+          generationConfig: { 
+            responseMimeType: 'application/json',
+            temperature: 0.2,
+            maxOutputTokens: parseInt(process.env.MAX_OUTPUT_TOKENS || '8192', 10)
+          },
+          systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION
+        });
+
+        console.log(`[Stage 2] Job ${jobId} - AI timeout configured: ${AI_TIMEOUT_MS}ms`);
+        
+        const result = await Promise.race([
+          geminiModel.generateContent(prompt),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`AI generation timeout after ${AI_TIMEOUT_MS}ms`)), AI_TIMEOUT_MS)
+          )
+        ]);
+        
+        const aiDuration = Date.now() - aiStart;
+        console.log(`[Stage 2] Job ${jobId} - AI Response received in ${aiDuration}ms`);
+
+        // LIFECYCLE: Parsing Response
+        const text = (result && result.response && typeof result.response.text === 'function') 
+          ? result.response.text() 
+          : (result && result.text) || '{}';
 
         let parsed = {};
-        try { parsed = JSON.parse(text); } catch (e) { parsed = { raw: text }; }
+        try { 
+          parsed = JSON.parse(text); 
+        } catch (e) { 
+          console.warn(`[Stage 2] Job ${jobId} - JSON parse fallback`);
+          // Try to extract JSON from markdown code blocks
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) {
+            parsed = JSON.parse(match[0]);
+          } else {
+            parsed = { raw: text, error: 'Could not parse JSON response' };
+          }
+        }
 
-        job.status = 'completed'; job.result = parsed; job.endTime = Date.now(); analysisJobs.set(jobId, job);
+        // LIFECYCLE: Saving to DB (simulated - in-memory store)
+        const dbStart = Date.now();
+        job.status = 'completed'; 
+        job.result = parsed; 
+        job.endTime = Date.now();
+        job.performance = {
+          total: job.endTime - perfStart,
+          minification: minifyDuration,
+          ai_inference: aiDuration,
+          db_save: Date.now() - dbStart,
+          stats: stats
+        };
+        analysisJobs.set(jobId, job);
+        const dbDuration = Date.now() - dbStart;
+        
+        // LIFECYCLE: Job Complete
+        console.log(`[Stage 2] Job ${jobId} - Status: COMPLETED`);
+        console.log(`[Stage 2] Job ${jobId} - Performance: Total=${job.performance.total}ms, AI=${aiDuration}ms, Minify=${minifyDuration}ms, DB=${dbDuration}ms`);
+        
         io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
+        
       } catch (err) {
-        job.status = 'failed'; job.error = err && err.message ? err.message : String(err); job.endTime = Date.now(); analysisJobs.set(jobId, job);
-        io.emit('analysis-job-update', { jobId, status: 'failed', error: job.error });
+        // PHASE 3: Explicit Failure States - Never hang silently
+        const errorMessage = err && err.message ? err.message : String(err);
+        console.error(`[Stage 2] Job ${jobId} - Status: FAILED - ${errorMessage}`);
+        console.error(`[Stage 2] Job ${jobId} - Error stack:`, err && err.stack);
+        
+        job.status = 'failed'; 
+        job.error = errorMessage; 
+        job.endTime = Date.now();
+        job.performance = {
+          total: job.endTime - perfStart,
+          failedAt: 'See error message'
+        };
+        analysisJobs.set(jobId, job);
+        
+        // Emit failure to frontend so UI stops polling and shows error
+        io.emit('analysis-job-update', { jobId, status: 'failed', error: errorMessage });
       }
     })();
   } catch (err) {
+    console.error(`[Stage 2] Queue endpoint error:`, err);
     res.status(500).json({ error: err.message || String(err) });
   }
 });
