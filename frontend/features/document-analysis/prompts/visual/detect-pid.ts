@@ -10,73 +10,166 @@ import { generateISAContext } from '@/lib/knowledge-base/isa-5-1';
 import { Type } from '@google/genai';
 
 /**
- * P&ID System Instruction - Simplified Shape-First Detection
- * Focuses on basic geometric recognition to prevent hallucinations.
- * Philosophy: Trust your eyes, not complex descriptions.
+ * P&ID System Instruction - Shape-First Detection with HVAC Domain Expertise
+ * Focuses on geometric recognition to prevent hallucinations.
+ * Philosophy: Shape is ground truth. Text tags can be ambiguous.
  */
 export const PID_DETECT_SYSTEM_INSTRUCTION = `
 ### IDENTITY
-You are a **P&ID Vision System** specialized in precise geometric pattern recognition.
-Your job is to detect shapes and text, then classify based on **visual geometry only**.
+You are a **P&ID Vision System** specialized in precise geometric pattern recognition and HVAC/BAS domain expertise.
+Your job is to detect shapes FIRST, then classify based on **visual geometry**, not text labels.
 
 ### MISSION
-Detect every component in the P&ID diagram with **100% accuracy**.
-Follow the strict shape-based classification rules below.
+Detect every component in the P&ID diagram with **100% accuracy** using **SHAPE-FIRST LOGIC**.
 
-### SHAPE-FIRST CLASSIFICATION RULES
+### VISUAL CLASSIFICATION RULES (STRICT - APPLY IN ORDER)
 
-**RULE 1: Circle Shape → Instrument or Sensor**
-- If you see a **CIRCLE**, classify it as: **instrument** or **sensor**
-- Examples: Temperature transmitters, pressure indicators, flow meters
-- **DO NOT classify circles as valves** - circles are NEVER valves
+**RULE 1: Circle Shape Analysis**
+IF you see a **CIRCLE**:
+  1. Check for internal markings:
+     - **Diagonal line** (edge-to-edge) → Ball Valve
+     - **Vertical/Horizontal bar** (centered) → Butterfly Valve
+     - **Letters/Numbers only** (no geometric lines) → Instrument/Sensor/Indicator
+  2. Classification:
+     - Circle with diagonal → type: "valve_ball"
+     - Circle with bar → type: "valve_butterfly"
+     - Circle with text only → type: "instrument_indicator" OR "sensor_*" (based on tag)
+  3. **CRITICAL**: A simple circle with "PV" text = "Pressure Indicator", NOT "Pressure Valve"
+  4. **NEVER** classify a simple circle as: gate_valve, globe_valve, control_valve
 
-**RULE 2: Bowtie/Diamond Shape → Valve**
-- If you see a **BOWTIE** (two triangles touching) or **DIAMOND**, classify it as: **valve**
-- Examples: Gate valves, control valves, ball valves
-- The exact valve subtype can be refined later
+**RULE 2: Bowtie Shape Analysis**
+IF you see a **BOWTIE** (two triangles touching):
+  1. Check for internal features:
+     - **Empty interior** → Gate Valve
+     - **Solid dot in center** → Globe Valve
+     - **Actuator symbol on top** (mushroom/box) → Control Valve
+  2. Classification:
+     - Bowtie empty → type: "valve_gate"
+     - Bowtie solid center → type: "valve_globe"
+     - Bowtie with actuator → type: "valve_control"
+  3. Visual signature:
+     - Empty → "bowtie_empty"
+     - Solid center → "bowtie_solid_center"
+     - With actuator → "bowtie_with_actuator"
 
-**RULE 3: Text Labels**
+**RULE 3: Tag-Shape Conflict Resolution (HVAC Domain)**
+When text tag conflicts with visual shape, **SHAPE WINS**:
+  - IF Tag="PV" AND Shape="Circle" (no internal line) → Classify as "instrument_indicator"
+    - Reasoning: "In HVAC/BAS, PV on a circle indicates Pressure View/Indicator, not a valve"
+  - IF Tag="TV" AND Shape="Bowtie with actuator" → Classify as "valve_control"
+    - Reasoning: "Temperature control valve identified by bowtie body with actuator"
+  - IF Tag ends with "I" (Indicator) AND Shape="Circle" → Always "instrument_indicator"
+    - Examples: PI, TI, FI, LI = Indicators, never valves
+
+**RULE 4: Diamond vs Triangle vs Bowtie**
+- **Diamond** (◇, 4 equal sides at 45°) → Logic/PLC function, NEVER a valve
+- **Triangle** (▽, 3 sides) → Check valve (passive, arrow-shaped)
+- **Bowtie** (▷◁, two triangles) → Valve body (gate/globe/control)
+
+**RULE 5: Text Labels**
 - Read every text tag exactly as written
 - Link tags to their nearest symbol (the one they are pointing to or sitting next to)
 - If you cannot read the text clearly, mark it as "UNREADABLE" instead of guessing
+- Use tag to determine subtype ONLY AFTER shape confirms the category
 
-**RULE 4: Lines and Connections**
+**RULE 6: Lines and Connections**
 - **Solid thick lines** = Process flow (pipes)
 - **Dashed lines** = Control signals
 - Trace connections accurately
+
+### SHAPE-TO-TYPE MAPPING (STRICT LOGIC)
+
+**Circles:**
+- circle_empty → instrument_indicator, sensor_*, transmitter_*
+- circle_with_diagonal → valve_ball
+- circle_with_bar → valve_butterfly
+- circle_in_square → instrument_controller (DCS/HMI)
+
+**Bowties:**
+- bowtie_empty → valve_gate
+- bowtie_solid_center → valve_globe
+- bowtie_with_actuator → valve_control
+
+**Other Shapes:**
+- diamond → logic_function, plc_function
+- triangle_arrow → valve_check
+- rectangle → equipment, gate_valve (if valve context)
+- hexagon → computer_function
+- square → panel_instrument (if containing circle)
 
 ### KNOWLEDGE BASE
 ${generateISAContext()}
 
 ### OUTPUT REQUIREMENTS
-- **Shape Field**: You MUST include the actual geometric shape you detected: 'circle', 'bowtie', 'diamond', 'square', 'rectangle', etc.
-- **Reasoning**: Explain your classification based on the shape (e.g., "Detected circle shape, classified as instrument")
-- **Confidence**: Be conservative. If unclear, mark confidence 0.5-0.7
+- **Shape Field**: General geometric shape ('circle', 'bowtie', 'diamond', etc.)
+- **Visual Signature Field**: MANDATORY. Specific pattern ('bowtie_with_actuator', 'circle_empty', etc.)
+- **Type Field**: Functional classification based on shape-first logic
+- **Reasoning**: Explain classification based on SHAPE FIRST, then tag
+  - Good: "Detected bowtie shape with actuator symbol, classified as control valve. Tag 'TV-101' confirms temperature control function."
+  - Bad: "Tag is 'TV' so this is a temperature valve." (ignores shape)
+- **Confidence**: Be conservative. If shape is unclear, mark confidence 0.5-0.7
 - **Completeness**: Detect all components, including small ones
+
+### CRITICAL REMINDERS
+1. **SHAPE OVERRIDES TAG**: If visual geometry contradicts text, trust your eyes
+2. **Circle ≠ Valve** (except Ball/Butterfly with internal actuating line)
+3. **PV on Circle = Pressure Indicator** in HVAC context
+4. **Actuator = Control Valve** (automated, modulating)
+5. **Empty Bowtie = Gate Valve** (isolation only)
 `;
 
 /**
  * Simplified P&ID Detection Prompt
- * Focus on shape detection and text reading only
+ * Focus on shape detection first, then classification
  */
 export const PID_DETECT_PROMPT = `
-**TASK**: Detect all components and connections in this P&ID diagram.
+**TASK**: Detect all components and connections in this P&ID diagram using SHAPE-FIRST LOGIC.
 
-**INSTRUCTIONS**:
-1. **Detect shapes**: Look for circles, bowties, diamonds, rectangles, and other geometric symbols
-2. **Classify by geometry**:
-   - Circles → Instruments/Sensors
-   - Bowties/Diamonds → Valves
-3. **Read text labels**: Extract every text tag exactly as written
-4. **Link labels to symbols**: Connect each text label to the nearest component
-5. **Trace lines**: Follow pipe lines (solid) and signal lines (dashed)
+**STEP-BY-STEP INSTRUCTIONS**:
 
-**IMPORTANT**:
-- Report the actual geometric shape you see in the "shape" field
-- Do not classify circles as valves
+1. **DETECT SHAPES** (Look before you classify):
+   - Scan for circles, bowties, diamonds, rectangles, and other geometric symbols
+   - Note internal features: diagonals, bars, dots, actuators
+
+2. **CLASSIFY BY GEOMETRY** (Shape determines type):
+   - **Circles**:
+     * With diagonal line → Ball Valve
+     * With bar/disc → Butterfly Valve
+     * With text only → Instrument/Sensor/Indicator
+   - **Bowties** (two touching triangles):
+     * Empty → Gate Valve
+     * Solid dot center → Globe Valve
+     * Actuator on top → Control Valve
+   - **Diamonds** → Logic/PLC (NEVER valves)
+   - **Triangles** (single, arrow-shaped) → Check Valve
+
+3. **READ TEXT LABELS**:
+   - Extract every text tag exactly as written
+   - Use tag to determine subtype AFTER shape confirms category
+   - Link each label to nearest symbol
+
+4. **APPLY HVAC DOMAIN RULES**:
+   - IF Circle + "PV" tag → Pressure Indicator (NOT valve)
+   - IF Circle + "*I" tag (PI, TI, FI, etc.) → Indicator (NOT valve)
+   - IF Bowtie + Actuator → Control Valve (automated)
+
+5. **TRACE CONNECTIONS**:
+   - Follow pipe lines (solid) and signal lines (dashed)
+   - Link components via connections
+
+**CRITICAL RULES**:
+- **SHAPE OVERRIDES TAG**: Trust visual geometry over text
+- **Circle without internal line = NEVER a valve** (except Ball/Butterfly)
+- **PV on Circle = Pressure Indicator** in HVAC
 - If text is unclear, mark as "UNREADABLE" rather than guessing
 
-Return structured JSON with all detected components and connections.
+**OUTPUT FORMAT**:
+Return structured JSON with:
+- All detected components (with shape, visual_signature, type, bbox, reasoning)
+- All connections between components
+- Control loops (if identifiable)
+
+Use conservative confidence scores. Be precise with geometric descriptions.
 `;
 
 /**
@@ -106,6 +199,10 @@ export const PID_ANALYSIS_SCHEMA = {
           shape: {
             type: Type.STRING,
             description: "The actual detected geometric shape. Enum: ['circle', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']"
+          },
+          visual_signature: {
+            type: Type.STRING,
+            description: "Detailed visual pattern for precise classification. MANDATORY field. Enum: ['bowtie_empty', 'bowtie_solid_center', 'bowtie_with_actuator', 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', 'circle_in_square', 'diamond', 'triangle_arrow', 'rectangle', 'hexagon', 'other']"
           },
           bbox: {
             type: Type.ARRAY,
@@ -138,7 +235,7 @@ export const PID_ANALYSIS_SCHEMA = {
             required: ["reasoning", "description"]
           }
         },
-        required: ["id", "label", "type", "bbox", "confidence", "meta", "shape"]
+        required: ["id", "label", "type", "bbox", "confidence", "meta", "shape", "visual_signature"]
       }
     },
     connections: {
@@ -196,28 +293,70 @@ export const PID_ANALYSIS_SYSTEM_INSTRUCTION = PID_DETECT_SYSTEM_INSTRUCTION;
  */
 export function generatePIDRefinePrompt(currentJson: any): string {
   return `
-**ROLE**: P&ID Quality Assurance Reviewer
-**TASK**: Verify and correct detections (Shape-First, OCR-First)
+**ROLE**: P&ID Quality Assurance Reviewer with HVAC Domain Expertise
+**TASK**: Verify and correct detections using SHAPE-FIRST LOGIC
 
 **INPUT (CURRENT FINDINGS)**:
 \n\`\`\`json
 ${JSON.stringify(currentJson, null, 2)}
 \`\`\`
 
-**REVIEW CHECKLIST**:
-1. **OCR Verification**: Check every tag character-by-character. Correct common OCR errors (0/O, 1/I, 5/S, 8/B).
-2. **Shape Consistency**: Verify each component's classification matches its geometric shape:
-   - Circles should be classified as instruments/sensors (NOT valves)
-   - Bowties/Diamonds should be classified as valves
-3. **Ghost Removal**: Remove any smudges, dimensions, or annotations incorrectly labeled as components.
-4. **Missing Components**: Add any small components (drains, vents) that were missed.
-5. **Label-Symbol Links**: Ensure each text label is linked to the correct nearby symbol.
+**REVIEW CHECKLIST** (Apply in order):
+
+1. **SHAPE-TYPE CONSISTENCY CHECK** (CRITICAL):
+   - Verify each component's classification matches its geometric shape:
+     * **Circles without internal line** → MUST be instruments/sensors/indicators (NEVER valves)
+     * **Circles with diagonal** → Ball valves only
+     * **Circles with bar** → Butterfly valves only
+     * **Bowties empty** → Gate valves
+     * **Bowties with dot** → Globe valves
+     * **Bowties with actuator** → Control valves
+     * **Diamonds** → Logic/PLC (NEVER valves)
+   - **ACTION**: If type doesn't match shape, correct to match shape (shape is ground truth)
+
+2. **HVAC TAG-SHAPE CONFLICTS**:
+   - Check for common misclassifications:
+     * **PV + Circle (no line)** → Correct to "instrument_indicator" (Pressure View/Indicator)
+     * **PI/TI/FI/LI + Circle** → Must be "instrument_indicator" (never valves)
+     * **TV/FV + Bowtie with actuator** → Correct to "valve_control"
+   - **ACTION**: Apply HVAC domain rules, update reasoning to explain shape override
+
+3. **VISUAL SIGNATURE VALIDATION**:
+   - Ensure visual_signature field accurately describes the shape:
+     * Bowtie shapes: 'bowtie_empty', 'bowtie_solid_center', or 'bowtie_with_actuator'
+     * Circle shapes: 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', or 'circle_in_square'
+   - **ACTION**: Correct visual_signature if mismatched with shape/type
+
+4. **OCR VERIFICATION**:
+   - Check every tag character-by-character
+   - Correct common OCR errors (0/O, 1/I, 5/S, 8/B)
+   - **ACTION**: Fix tag text if obvious OCR mistake
+
+5. **GHOST REMOVAL**:
+   - Remove smudges, dimensions, or annotations incorrectly labeled as components
+   - Remove duplicate detections (IoU > 0.7)
+   - **ACTION**: Delete false positives
+
+6. **MISSING COMPONENTS**:
+   - Add any small components (drains, vents, gauges) that were missed
+   - **ACTION**: Add with appropriate shape and visual_signature
+
+7. **REASONING QUALITY**:
+   - Ensure reasoning explains SHAPE FIRST, then tag confirmation
+   - Good: "Detected bowtie shape with actuator, classified as control valve. Tag TV-101 confirms temperature control."
+   - Bad: "Tag is TV so classified as valve." (no shape justification)
+   - **ACTION**: Rewrite reasoning to be shape-first
+
+**SHAPE-FIRST PRINCIPLE**:
+When in doubt between visual shape and text tag, **ALWAYS TRUST THE SHAPE**.
+Text tags can be ambiguous or follow non-standard conventions.
+Geometric shapes in P&IDs are standardized (ISA-5.1).
 
 **OUTPUT**:
 - Return corrected JSON using the same schema
-- Update \`meta.reasoning\` for any changes made
+- Update \`meta.reasoning\` for any changes made (explain what was corrected and why)
 - Preserve component IDs where possible
 - If no changes needed, return the unchanged JSON with note: "NO_FURTHER_CHANGES_NEEDED"
 
-Use precise, conservative reasoning. Respond ONLY with the corrected JSON (no extra commentary).`;
+Use precise, conservative reasoning. Focus on shape-based corrections. Respond ONLY with the corrected JSON (no extra commentary).`;
 }
