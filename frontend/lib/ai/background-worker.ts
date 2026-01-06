@@ -48,14 +48,17 @@ export const queueFinalAnalysis = async (
   // ARCHITECTURE: All AI operations are forwarded to the server
   // This ensures proper environment isolation and prevents Node.js
   // dependencies from being bundled into the browser.
-  try {
-    onProgress?.('Queuing background analysis on server...');
+  // 
+  // PERFORMANCE FIX: Wrap in setTimeout to ensure this doesn't block the UI response
+  setTimeout(async () => {
+    try {
+      onProgress?.('Queuing background analysis on server...');
 
-    const resp = await fetch('/api/analysis/queue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documentResult })
-    });
+      const resp = await fetch('/api/analysis/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentResult })
+      });
 
     if (!resp.ok) {
       const text = await resp.text();
@@ -96,8 +99,6 @@ export const queueFinalAnalysis = async (
       // Socket not available - fall back to no real-time updates
       console.warn('Socket subscription unavailable:', e);
     }
-
-    return serverJobId;
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
     job.status = 'failed';
@@ -105,8 +106,11 @@ export const queueFinalAnalysis = async (
     job.endTime = Date.now();
     jobStore.set(jobId, job);
     onError?.(error);
-    throw error;
   }
+  }, 0); // End of setTimeout - runs asynchronously to avoid blocking UI
+
+  // Return jobId immediately to not block UI
+  return jobId;
 };
 
 /**
