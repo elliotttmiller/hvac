@@ -97,6 +97,7 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
     console.log('[Visual Pipeline] Applying enhancements...');
     result = await enhanceVisualAnalysis(result, {
       enableSpatialAssociation: true, // ZERO-HITL: Merge orphaned labels
+      enableShapeValidation: true,    // ZERO-HITL: Enforce geometric consistency
       enableISADetection: true,
       enableConnectionInference: true,
       enableLoopDetection: true,
@@ -643,14 +644,38 @@ function extractISAFunction(tag?: string): string | null {
 function enhanceHVACComponent(comp: any): any {
   const enhanced = normalizeHVACComponentType(comp);
   
-  // Normalize reasoning text to avoid hardcoded shape references
-  // Replace legacy "Detected diamond shape" with generic ISA-5.1 reference
+  // Generate dynamic reasoning based on actual visual evidence
+  // Replace generic/hardcoded reasoning with specific shape-based explanations
   if (enhanced.meta?.reasoning) {
     const reasoning = enhanced.meta.reasoning;
+    const shape = enhanced.shape || enhanced.meta?.shape;
+    const type = enhanced.type || 'component';
+    
+    // Replace hardcoded "detected diamond shape" with dynamic shape-based reasoning
     if (reasoning.toLowerCase().includes('detected diamond shape') || 
         reasoning.toLowerCase().includes('diamond-shaped') ||
-        reasoning.toLowerCase().includes('diamond shape')) {
-      enhanced.meta.reasoning = 'Identified based on standard ISA-5.1 symbology.';
+        reasoning.toLowerCase().includes('diamond shape') ||
+        reasoning === 'Identified based on standard ISA-5.1 symbology.') {
+      
+      // Generate specific reasoning based on actual shape and type
+      if (shape) {
+        const shapeReasoning = generateShapeBasedReasoning(shape, type);
+        if (shapeReasoning) {
+          enhanced.meta.reasoning = shapeReasoning;
+        }
+      } else {
+        // Fallback: Use type-based reasoning if no shape available
+        enhanced.meta.reasoning = `Classified as ${type} based on ISA-5.1 symbol recognition.`;
+      }
+    }
+  } else if (enhanced.shape || enhanced.meta?.shape) {
+    // If no reasoning exists but we have shape, generate it
+    const shape = enhanced.shape || enhanced.meta?.shape;
+    const type = enhanced.type || 'component';
+    const shapeReasoning = generateShapeBasedReasoning(shape, type);
+    if (shapeReasoning) {
+      enhanced.meta = enhanced.meta || {};
+      enhanced.meta.reasoning = shapeReasoning;
     }
   }
   
@@ -664,6 +689,51 @@ function enhanceHVACComponent(comp: any): any {
   };
   
   return enhanced;
+}
+
+/**
+ * Generate dynamic shape-based reasoning
+ * Returns specific reasoning based on the actual detected shape and type
+ */
+function generateShapeBasedReasoning(shape: string, type: string): string | null {
+  const shapeLower = shape.toLowerCase();
+  const typeLower = type.toLowerCase();
+  
+  // Shape-specific reasoning templates
+  const shapeReasoningMap: Record<string, string> = {
+    'circle': 'Detected circular shape, indicating an instrument or sensor per ISA-5.1',
+    'bowtie': 'Detected bowtie (two triangles) shape, indicating a valve body per ISA-5.1',
+    'diamond': 'Detected diamond shape, indicating logic/PLC function or control element per ISA-5.1',
+    'triangle': 'Detected triangular shape, indicating a control valve or check valve per ISA-5.1',
+    'square': 'Detected square shape, indicating a panel instrument or equipment per ISA-5.1',
+    'rectangle': 'Detected rectangular shape, indicating equipment or gate valve per ISA-5.1',
+    'hexagon': 'Detected hexagonal shape, indicating computer function per ISA-5.1'
+  };
+  
+  // Get base reasoning from shape
+  let reasoning = shapeReasoningMap[shapeLower];
+  
+  if (!reasoning) {
+    // Fallback for unknown shapes
+    return `Classified as ${type} based on symbol geometry and ISA-5.1 standards.`;
+  }
+  
+  // Add type-specific details if applicable
+  if (typeLower.includes('valve')) {
+    if (shapeLower === 'circle' && (typeLower.includes('ball') || typeLower.includes('butterfly'))) {
+      reasoning += '. Ball and butterfly valves use circular bodies with internal actuating elements.';
+    } else if (shapeLower === 'bowtie' || shapeLower === 'triangle') {
+      reasoning += '. Valve body identified with appropriate actuator symbol.';
+    }
+  } else if (typeLower.includes('sensor') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
+    if (shapeLower === 'circle') {
+      reasoning += '. Circular symbols are standard for field-mounted instrumentation.';
+    }
+  } else if (typeLower.includes('controller')) {
+    reasoning += '. Controller identified with appropriate ISA function code.';
+  }
+  
+  return reasoning;
 }
 
 /**
