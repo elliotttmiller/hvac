@@ -336,6 +336,19 @@ const analysisJobs = new Map();
 let analysisJobCounter = 0;
 function genAnalysisJobId() { return `analysis-job-${++analysisJobCounter}-${Date.now()}`; }
 
+// In-memory project store for persistence across page refreshes
+// Maps projectId -> { id, name, status, finalReport, lastUpdated }
+const projectsStore = new Map();
+
+// Initialize default project
+projectsStore.set('default', {
+  id: 'default',
+  name: 'Default Project',
+  status: 'idle', // idle | processing | completed | failed
+  finalReport: null,
+  lastUpdated: Date.now()
+});
+
 /**
  * PHASE 2: Data Minification Layer
  * Aggressively strips visual metadata and filters invalid connections
@@ -451,13 +464,21 @@ app.post('/api/analysis/queue', async (req, res) => {
     if (!payload || !payload.document_id) return res.status(400).json({ error: 'Missing documentResult' });
 
     const jobId = genAnalysisJobId();
-    const job = { jobId, documentId: payload.document_id, status: 'pending', startTime: Date.now() };
+    // Get projectId from request or default to 'default'
+    const projectId = req.body.projectId || 'default';
+    const job = { jobId, documentId: payload.document_id, projectId, status: 'pending', startTime: Date.now() };
     analysisJobs.set(jobId, job);
+
+    // Update project status to processing
+    const project = projectsStore.get(projectId) || { id: projectId, name: projectId, status: 'idle', finalReport: null };
+    project.status = 'processing';
+    project.lastUpdated = Date.now();
+    projectsStore.set(projectId, project);
 
     console.log(`[Stage 2] Job ${jobId} queued for document ${payload.document_id}`);
 
     // Respond immediately with jobId
-    res.json({ jobId });
+    res.json({ jobId, projectId });
 
     // Run analysis async with comprehensive error handling
     (async () => {
@@ -606,6 +627,16 @@ Generate a professional engineering analysis that explains this system in narrat
         console.log(`[Stage 2] Job ${jobId} - Status: COMPLETED`);
         console.log(`[Stage 2] Job ${jobId} - Performance: Total=${job.performance.total}ms, AI=${aiDuration}ms, Minify=${minifyDuration}ms, DB=${dbDuration}ms`);
         
+        // Update project store with final report
+        const project = projectsStore.get(job.projectId);
+        if (project) {
+          project.status = 'completed';
+          project.finalReport = parsed;
+          project.lastUpdated = Date.now();
+          projectsStore.set(job.projectId, project);
+          console.log(`[Stage 2] Project ${job.projectId} - Final report saved`);
+        }
+        
         io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
         
       } catch (err) {
@@ -623,6 +654,15 @@ Generate a professional engineering analysis that explains this system in narrat
         };
         analysisJobs.set(jobId, job);
         
+        // Update project store with failed status
+        const project = projectsStore.get(job.projectId);
+        if (project) {
+          project.status = 'failed';
+          project.error = errorMessage;
+          project.lastUpdated = Date.now();
+          projectsStore.set(job.projectId, project);
+        }
+        
         // Emit failure to frontend so UI stops polling and shows error
         io.emit('analysis-job-update', { jobId, status: 'failed', error: errorMessage });
       }
@@ -637,6 +677,27 @@ app.get('/api/analysis/status/:jobId', (req, res) => {
   const job = analysisJobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ error: 'Job not found' });
   res.json(job);
+});
+
+// Get individual project with status and finalReport
+app.get('/api/projects/:id', (req, res) => {
+  const { id } = req.params;
+  const project = projectsStore.get(id);
+  
+  if (!project) {
+    // Create a new project if it doesn't exist
+    const newProject = {
+      id,
+      name: id,
+      status: 'idle',
+      finalReport: null,
+      lastUpdated: Date.now()
+    };
+    projectsStore.set(id, newProject);
+    return res.json(newProject);
+  }
+  
+  res.json(project);
 });
 
 // --- 4. Project & File Management ---
