@@ -242,17 +242,17 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     
     // Calculate appropriate output token budget based on component count
     // Rule of thumb: ~100 tokens per component for comprehensive narrative
-    // + 1000 tokens base for executive summary and conclusions
+    // + 2000 tokens base for executive summary and conclusions
     // INCREASED: To ensure full, complete reports without truncation
     const componentCount = inferenceResults.visual?.components?.length || 0;
-    const tokensPerComponent = 100; // Increased for more detailed narratives
-    const baseTokens = 1000; // Increased base allocation
+    const tokensPerComponent = 150; // Increased for more detailed narratives with all required sections
+    const baseTokens = 2000; // Increased base allocation for all mandatory sections
     const calculatedTokens = Math.min(
       baseTokens + (componentCount * tokensPerComponent),
-      8192 // Increased cap to 8k tokens for comprehensive reports
+      16384 // Increased cap to 16k tokens to accommodate all required HVAC report sections
     );
     
-    console.log(`   [Token Budget] Components: ${componentCount}, Calculated: ${calculatedTokens} tokens (cap: 8192)`);
+    console.log(`   [Token Budget] Components: ${componentCount}, Calculated: ${calculatedTokens} tokens (cap: 16384)`);
     
     // 2. Inference with optimized configuration
     const response = await ai.models.generateContent({
@@ -262,9 +262,9 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
         // OPTIMIZED: Dynamic thinking budget based on complexity
         // Simple diagrams (<10 components): 2048 tokens
         // Medium diagrams (10-30 components): 4096 tokens  
-        // Complex diagrams (>30 components): 6144 tokens (max)
+        // Complex diagrams (>30 components): 8192 tokens (max)
         thinkingConfig: { 
-          thinkingBudget: Math.min(2048 + (componentCount * 100), 6144)
+          thinkingBudget: Math.min(2048 + (componentCount * 100), 8192)
         }, 
         systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
@@ -274,17 +274,58 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
       }
     });
 
-    // 3. Parse
+    // 3. Parse and validate response
     const jsonText = response.text || "{}";
     let analysisReport;
     
     try {
       analysisReport = JSON.parse(jsonText);
     } catch (e) {
+      console.warn('⚠️  Initial JSON parse failed, attempting fallback extraction...');
       // Simple regex fallback
       const match = jsonText.match(/\{[\s\S]*\}/);
-      if (match) analysisReport = JSON.parse(match[0]);
-      else throw new Error('Analysis generation failed to produce valid JSON');
+      if (match) {
+        try {
+          analysisReport = JSON.parse(match[0]);
+          console.log('✅ Fallback extraction successful');
+        } catch (e2) {
+          throw new Error('Analysis generation failed to produce valid JSON');
+        }
+      } else {
+        throw new Error('Analysis generation failed to produce valid JSON');
+      }
+    }
+
+    // Validate that all required fields are present and non-empty
+    const requiredFields = [
+      'report_title',
+      'executive_summary',
+      'design_overview',
+      'system_workflow_narrative',
+      'control_logic_analysis',
+      'equipment_specifications',
+      'standards_compliance'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !analysisReport[field] || analysisReport[field].trim().length === 0);
+    
+    if (missingFields.length > 0) {
+      console.warn(`⚠️  Response may be incomplete. Missing or empty fields: ${missingFields.join(', ')}`);
+      console.warn(`   [Token Budget] Current: ${calculatedTokens} tokens. Consider increasing if truncation occurs.`);
+    }
+    
+    // Check for truncation indicators (incomplete sentences in narrative fields)
+    const narrativeFields = ['system_workflow_narrative', 'control_logic_analysis', 'design_overview'];
+    for (const field of narrativeFields) {
+      if (analysisReport[field]) {
+        const text = analysisReport[field].trim();
+        const lastChar = text[text.length - 1];
+        // Check if ends with incomplete sentence (not ending with . ! ? or ")
+        if (lastChar && !'.!?"'.includes(lastChar)) {
+          console.warn(`⚠️  Field '${field}' may be truncated (doesn't end with sentence terminator)`);
+          console.warn(`   Last 50 chars: "${text.slice(-50)}"`);
+        }
+      }
     }
 
     console.log('✅ Analysis Report Generated.');

@@ -26,12 +26,12 @@ const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MOD
 // Token Budget Configuration (Dynamic Calculation)
 // These values determine how token budgets scale with diagram complexity
 // Increased defaults to ensure complete report generation without truncation
-const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '100', 10);
-const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '1000', 10);
-const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '8192', 10);
+const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '150', 10);
+const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '2000', 10);
+const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '16384', 10);
 const THINKING_TOKENS_PER_COMPONENT = parseInt(process.env.THINKING_TOKENS_PER_COMPONENT || '100', 10);
 const BASE_THINKING_TOKENS = parseInt(process.env.BASE_THINKING_TOKENS || '2048', 10);
-const MAX_THINKING_TOKENS_CAP = parseInt(process.env.MAX_THINKING_TOKENS_CAP || '6144', 10);
+const MAX_THINKING_TOKENS_CAP = parseInt(process.env.MAX_THINKING_TOKENS_CAP || '8192', 10);
 
 // Timeout Configuration
 const DEFAULT_AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '180000', 10); // 3 minutes
