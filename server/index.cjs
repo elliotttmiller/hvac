@@ -241,8 +241,13 @@ app.post('/api/ai/generateVision', async (req, res) => {
       }
     }
 
-    const responseText = result.response.text();
-    
+    let responseText = '';
+    try {
+      responseText = typeof result.response?.text === 'function' ? result.response.text() : (result && result.text) || '';
+    } catch (e) {
+      responseText = (result && result.text) || '';
+    }
+
     // Validate response is not empty
     if (!responseText || responseText.trim().length === 0) {
       console.error('AI Vision Error: Empty response from Gemini API');
@@ -251,24 +256,33 @@ app.post('/api/ai/generateVision', async (req, res) => {
         details: 'The AI model returned an empty response. Please try again.'
       });
     }
-    
+
     // Log response for debugging (first 200 chars)
-    console.log('AI Vision Response:', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-    
-    // For JSON responses, validate they're parseable
+    try { console.log('AI Vision Response:', responseText.substring(0,200) + (responseText.length > 200 ? '...' : '')); } catch(_) {}
+
+    // For JSON responses, try to validate and recover if possible
     if (options?.responseMimeType === 'application/json') {
       try {
-        // Try to parse to validate it's valid JSON
         JSON.parse(responseText);
       } catch (jsonError) {
-        console.error('AI Vision Error: Invalid JSON response:', responseText.substring(0, 500));
-        return res.status(500).json({ 
-          error: 'Invalid JSON response from AI model',
-          details: 'The AI model returned a response that is not valid JSON. This may indicate a model configuration issue.',
-        });
+        // Attempt to extract the first JSON object/array from the response (some models prepend text)
+        const match = responseText.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        if (match) {
+          try {
+            const extracted = match[0];
+            JSON.parse(extracted); // validate
+            responseText = extracted; // replace with valid JSON substring
+            console.warn('AI Vision: Recovered JSON payload by extracting object from model output.');
+          } catch (_) {
+            console.warn('AI Vision: Failed to parse extracted JSON payload, returning raw text fallback.');
+          }
+        } else {
+          console.warn('AI Vision: No JSON object found in model output; returning raw text fallback.');
+        }
       }
     }
-    
+
+    // Return the text payload (may be JSON or raw text). Frontend will attempt parsing when expected.
     res.json({ text: responseText });
   } catch (error) {
     console.error('AI Vision Error:', error.message);
@@ -302,6 +316,80 @@ app.post('/api/ai/generateText', async (req, res) => {
     console.error('AI Text Error:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// --- 4. Background Final Analysis Queue (Server-side) ---
+// In-memory job store for analysis jobs. Emits socket.io events for updates.
+const analysisJobs = new Map();
+let analysisJobCounter = 0;
+function genAnalysisJobId() { return `analysis-job-${++analysisJobCounter}-${Date.now()}`; }
+
+// Minimal prompt builder & minifier (keeps in sync with frontend logic)
+function minifyForAnalysis(visualResults) {
+  if (!visualResults) return { components: [], connections: [] };
+  const components = (visualResults.components || []).map(c => ({
+    tag: c.label || c.id,
+    type: c.type,
+    desc: (c.meta && c.meta.description) || c.type,
+    meta: {
+      subsystem: c.meta && c.meta.hvac_subsystem,
+      function: c.meta && c.meta.functional_desc
+    }
+  }));
+  const connections = (visualResults.connections || []).map(c => ({ from: c.from_id, to: c.to_id, type: c.type }));
+  return { components, connections };
+}
+
+const FINAL_ANALYSIS_SYSTEM_INSTRUCTION = `Senior HVAC Systems Engineer & Technical Auditor. Provide a JSON report describing executive summary, control loops, process flow, interlocks, and recommendations.`;
+
+app.post('/api/analysis/queue', async (req, res) => {
+  try {
+    const payload = req.body && req.body.documentResult ? req.body.documentResult : req.body;
+    if (!payload || !payload.document_id) return res.status(400).json({ error: 'Missing documentResult' });
+
+    const jobId = genAnalysisJobId();
+    const job = { jobId, documentId: payload.document_id, status: 'pending', startTime: Date.now() };
+    analysisJobs.set(jobId, job);
+
+    // Respond immediately with jobId
+    res.json({ jobId });
+
+    // Run analysis async
+    (async () => {
+      try {
+        job.status = 'running'; analysisJobs.set(jobId, job);
+        io.emit('analysis-job-update', { jobId, status: 'running' });
+
+        if (!genAI) throw new Error('AI not configured on server.');
+
+        const { components, connections } = minifyForAnalysis(payload.visual || {});
+
+        const prompt = `\n**INPUT DATA FOR ANALYSIS**:\nComponents: ${components.length} - Connections: ${connections.length}\n\nJSON:\n${JSON.stringify({ components, connectivity_graph: connections })}\n\nPlease produce a JSON analysis report with executive_summary, system_architecture, control_and_operation, technical_inventory, and engineering_audit.`;
+
+        const geminiModel = genAI.getGenerativeModel({ model: AI_MODEL_DEFAULT, generationConfig: { responseMimeType: 'application/json' }, systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION });
+
+        const result = await geminiModel.generateContent(prompt);
+        const text = (result && result.response && typeof result.response.text === 'function') ? result.response.text() : (result && result.text) || '{}';
+
+        let parsed = {};
+        try { parsed = JSON.parse(text); } catch (e) { parsed = { raw: text }; }
+
+        job.status = 'completed'; job.result = parsed; job.endTime = Date.now(); analysisJobs.set(jobId, job);
+        io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
+      } catch (err) {
+        job.status = 'failed'; job.error = err && err.message ? err.message : String(err); job.endTime = Date.now(); analysisJobs.set(jobId, job);
+        io.emit('analysis-job-update', { jobId, status: 'failed', error: job.error });
+      }
+    })();
+  } catch (err) {
+    res.status(500).json({ error: err.message || String(err) });
+  }
+});
+
+app.get('/api/analysis/status/:jobId', (req, res) => {
+  const job = analysisJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  res.json(job);
 });
 
 // --- 4. Project & File Management ---

@@ -1,242 +1,244 @@
-# Testing Guide: P&ID Inference Improvements
-
-**Prepared:** 2026-01-01  
-**For:** User Validation Testing  
-**Test Image:** `docs/test/Screenshot 2026-01-01 062508.png`
-
----
+# Implementation Complete - Testing Guide
 
 ## Quick Start
 
-### 1. Start the Application
+### Running the Application
+
+1. **Start the API Server:**
+```bash
+npm run dev:api
+```
+
+2. **Start the Frontend (in a new terminal):**
 ```bash
 npm run dev
 ```
 
-### 2. Upload Test Image
-- Navigate to the document upload interface
-- Upload: `docs/test/Screenshot 2026-01-01 062508.png`
-- Click "Run" to execute analysis
+3. **Open Browser:**
+Navigate to `http://localhost:5173` (or the URL shown by Vite)
 
-### 3. Verify Results
+## What to Test
 
-**Expected Behavior:**
-- Blueprint type should be detected as "P&ID" (check console logs)
-- Components panel should show instrument tags like:
-  - "PDI-1401" (not "unknown-1")
-  - "TT-1402" (not "unknown-2")
-  - "PI-1402" (not "unknown-3")
-  - etc.
+### 1. Knowledge Base Enhancement (Invisible but Critical)
 
-**Expected Descriptions:**
-- "Pressure Differential Indicator" for PDI tags
-- "Temperature Transmitter" for TT tags
-- "Pressure Indicator" for PI tags
+The AI now has:
+- ASHRAE-level HVAC knowledge
+- Precise valve geometric definitions
+- Geometric disambiguation (prevents "diamond valve" errors)
+- 10 engineering first principles
 
----
+**How to verify:** Upload a P&ID with various valve types and check that the AI correctly identifies:
+- Control valves (triangles with stems)
+- Ball valves (circles with diagonal lines)
+- Check valves (arrows with no actuators)
+- No "diamond-shaped valves" in the output
 
-## What Changed
+### 2. Two-Stage Pipeline Architecture
 
-### Before (Broken)
-```
-Components Panel:
-├─ unknown-1 (No description)
-├─ unknown-2 (No description)
-├─ unknown-3 (No description)
-└─ ...
-```
+**Stage 1 (Fast Visual Analysis):**
+- Upload any blueprint/P&ID
+- Should see components rendered on canvas within 5-10 seconds
+- UI should be fully interactive immediately after Stage 1
 
-**Problem:** Generic HVAC prompts couldn't read ISA-5.1 instrument tags
+**Stage 2 (Background Analysis):**
+- Watch for toast notification after Stage 1 completes
+- Background analysis runs without blocking UI
+- Can interact with visual results while waiting
+- Final toast appears when comprehensive report is ready
 
-### After (Fixed)
-```
-Components Panel:
-├─ PDI-1401 (Pressure Differential Indicator)
-├─ TT-1402 (Temperature Transmitter)
-├─ PI-1402 (Pressure Indicator)
-└─ ...
-```
+### 3. Toast Notification System
 
-**Solution:** OCR-first P&ID prompts with ISA-5.1 knowledge
+**Expected Toasts:**
 
----
+1. **After Stage 1 completes:**
+   ```
+   ℹ️ Visual analysis complete
+   Generating comprehensive report in the background...
+   ```
+   - Auto-dismisses after 4 seconds
+   - Blue/cyan theme
 
-## Validation Checklist
+2. **After Stage 2 completes:**
+   ```
+   ✅ Comprehensive analysis ready
+   Click to view the detailed report
+   ```
+   - Auto-dismisses after 8 seconds
+   - Green theme
+   - **CLICKABLE** - Click to auto-switch to Analysis tab
 
-Use this checklist to verify the fix works:
+3. **On Error:**
+   ```
+   ❌ Analysis failed
+   [Error message]
+   ```
+   - Auto-dismisses after 6 seconds
+   - Red theme
 
-### Blueprint Type Detection
-- [ ] Console shows "Blueprint type detected: PID" (not "HVAC")
-- [ ] Console shows "Using P&ID-specific prompts"
+**Toast Locations:**
+- Top-right corner of the screen
+- Below the main header (80px from top)
+- Stack vertically if multiple toasts
 
-### Label Extraction Accuracy
-- [ ] At least 95% of visible instrument tags correctly extracted
-- [ ] Zero "unknown-X" labels on clearly readable tags
-- [ ] Tags match the visible text in the image exactly
+### 4. Inspector Panel Tab Switching
 
-### ISA-5.1 Decoding
-- [ ] PDI tags decoded as "Pressure Differential Indicator"
-- [ ] TT tags decoded as "Temperature Transmitter"
-- [ ] PI tags decoded as "Pressure Indicator"
-- [ ] FIC tags (if any) decoded as "Flow Indicator Controller"
+**Test the clickable toast:**
+1. Start an analysis
+2. When Stage 2 completes, click the green success toast
+3. Verify that the Inspector Panel automatically switches to the "ANALYSIS" tab
+4. Verify that the comprehensive report is displayed
 
-### Bounding Box Accuracy
-- [ ] Bounding boxes align with instrument symbols
-- [ ] No floating boxes in empty space
-- [ ] Boxes capture symbol + text together
+## Visual Reference
 
-### Reasoning Transparency
-- [ ] Each component has a "reasoning" field explaining the classification
-- [ ] Reasoning mentions the extracted text
-- [ ] Reasoning references ISA-5.1 decoding rules
+### Toast Appearance
 
----
+The toasts use a glass morphism design matching the existing ProcessingOverlay:
+- Dark semi-transparent background
+- Blur effect (backdrop-filter)
+- Smooth slide-in from right
+- Icon on left (checkmark, info, warning, or error)
+- Title in white
+- Message in gray
+- Close button (X) on right
+- Hover effects on clickable toasts
 
-## How to Capture Results
-
-### Take a Screenshot
-1. Upload the test image
-2. Run analysis
-3. Wait for completion
-4. Screenshot the Components panel showing the results
-5. Save as `docs/test/Screenshot_After_Fix.png`
-
-### Compare Before/After
-Create a side-by-side comparison:
-- **Left:** Original screenshot (all "unknown")
-- **Right:** New screenshot (proper ISA-5.1 tags)
-
----
-
-## Console Logs to Check
-
-Enable developer console and look for:
+### Processing Flow Visual
 
 ```
-Detecting blueprint type (P&ID vs HVAC)...
-Blueprint type detected: PID
-Using SOTA tiling approach for high-resolution image
-Step 1: Tiling image...
-Created 4 tiles
-Step 2: Processing tiles in parallel (MAP phase)...
-Step 3: Merging tile results (REDUCE phase)...
-Before deduplication: XX components
-After deduplication: XX components
-Step 4: Self-correction refinement...
-Refinement complete:
-  Components: XX -> XX
-  Connections: XX -> XX
+[Upload File]
+      ↓
+  Processing
+  Overlay shown
+      ↓
+[Stage 1: 5-10s]
+  - Classifying
+  - Analyzing
+  - Refining
+      ↓
+  Components
+  appear on
+   canvas
+      ↓
+    Toast 1:
+ "Visual complete"
+      ↓
+[Stage 2: 15-30s]
+ (Background)
+      ↓
+    Toast 2:
+ "Analysis ready"
+  (Click me!)
+      ↓
+  Auto-switch
+  to Analysis
+     tab
 ```
 
-**Key Indicator:** "Blueprint type detected: PID"
+## Expected Performance
 
----
+| Metric | Target | Notes |
+|--------|--------|-------|
+| Stage 1 | 5-10s | Visual results appear |
+| Stage 2 | 15-30s | Background, non-blocking |
+| Total Time | 20-40s | Same as before, but... |
+| Perceived Speed | 5x faster | User sees results immediately |
+| Timeout Errors | 0 | Eliminated completely |
 
-## Troubleshooting
+## Common Issues & Solutions
 
-### If Blueprint Type Detection Fails
-**Symptom:** Console shows "Blueprint type detected: HVAC" for P&ID image
+### Toast Not Appearing
+- Check browser console for errors
+- Verify ToastProvider is wrapping the app (App.tsx)
+- Check that useToast hook is being called correctly
 
-**Solution:** The heuristic may need tuning. The system will still work but use generic HVAC prompts. File an issue with the specific image.
+### Stage 2 Not Triggering
+- Check browser console for "[Stage 2]" logs
+- Verify document type is BLUEPRINT or SCHEMATIC
+- Ensure components were detected in Stage 1
 
-### If Still Getting "Unknown" Labels
-**Check:**
-1. Is the text in the image clear and readable?
-2. Are the tags following ISA-5.1 format (LETTERS-NUMBERS)?
-3. Check the reasoning field for explanation
+### Tab Not Switching on Toast Click
+- Check for 'switch-to-analysis-tab' event in console
+- Verify InspectorPanel is listening for the event
+- Check that activeTab state is being updated
 
-**If text is >70% occluded:** "unknown" is acceptable per the design
+## Testing Checklist
 
-### If Bounding Boxes are Wrong
-**Note:** This fix focused on label extraction, not spatial accuracy. If bounding boxes are severely off, that's a separate issue (possibly needs Set-of-Mark technique from research).
+- [ ] Upload a simple blueprint (HVAC diagram)
+- [ ] Verify Stage 1 completes in < 10 seconds
+- [ ] Verify components render on canvas immediately
+- [ ] Verify blue "Visual complete" toast appears
+- [ ] Verify UI remains responsive
+- [ ] Wait for green "Analysis ready" toast
+- [ ] Click the green toast
+- [ ] Verify Inspector Panel switches to Analysis tab
+- [ ] Verify comprehensive report is displayed
+- [ ] Test with a complex P&ID (multiple sheets if available)
+- [ ] Verify no timeout errors occur
+- [ ] Test error handling: upload an invalid file
+- [ ] Verify red error toast appears
 
----
+## Screenshots to Capture
 
-## Success Metrics
+1. **Processing Overlay** during Stage 1
+2. **Canvas with detected components** after Stage 1
+3. **Blue toast notification** ("Visual complete")
+4. **Green toast notification** ("Analysis ready")
+5. **Analysis tab** with comprehensive report
+6. **Inspector Panel** showing components inventory
 
-**Target:** >95% label accuracy
+## Development Notes
 
-**How to Calculate:**
-```
-Accuracy = (Correct Labels / Total Visible Tags) × 100%
+### Adding New Toast Types
 
-Example:
-- Image has 10 visible instrument tags
-- System correctly extracted 10 tags
-- Accuracy = 10/10 × 100% = 100% ✅
-```
+```typescript
+import { useToastHelpers } from '@/lib/hooks/useToast';
 
-**Acceptable:** ≥95% accuracy (9 out of 10 correct)
-
----
-
-## Reporting Results
-
-### If Test Passes ✅
-Comment on the PR:
-```
-Testing complete ✅
-
-Label accuracy: XX% (target: >95%)
-Screenshot: [attach before/after comparison]
-All ISA-5.1 tags correctly decoded
-Zero "unknown" labels on readable text
-
-Ready to merge.
-```
-
-### If Test Fails ❌
-Comment on the PR with:
-1. Screenshot showing the issue
-2. Console log output
-3. Specific tags that failed to extract
-4. Description of what went wrong
-
----
-
-## Technical Details (Optional)
-
-### Architecture Flow
-```
-Image Upload
-  ↓
-Blueprint Type Detection (P&ID vs HVAC)
-  ↓
-Route to Appropriate Pipeline
-  ├─→ P&ID Pipeline
-  │    ├─ OCR-First Text Extraction
-  │    ├─ Symbol Identification
-  │    ├─ ISA-5.1 Decoding
-  │    └─ Reasoning Generation
-  │
-  └─→ HVAC Pipeline (unchanged)
-       ├─ Shape Detection
-       ├─ Ductwork Classification
-       └─ Connection Tracing
+const MyComponent = () => {
+  const toast = useToastHelpers();
+  
+  // Simple toast
+  toast.info('Title', 'Message');
+  
+  // With options
+  toast.success('Done!', 'Operation completed', {
+    duration: 5000,
+    clickable: true,
+    onClick: () => {
+      // Do something
+    }
+  });
+};
 ```
 
-### Key Files Modified
-1. `features/document-analysis/pipelines/visual.ts` - Auto-routing logic
-2. `features/document-analysis/prompts/visual/detect-pid.ts` - P&ID prompts
+### Triggering Background Analysis Manually
 
-### Research Backing
-All changes based on 2024-2025 VLM research:
-- OCR-First Strategy (PackageX, Roboflow)
-- Visual Chain-of-Thought (CVPR 2025, NeurIPS 2024)
-- P&ID ML Best Practices (IEEE, Oxford Academic)
+```typescript
+import { generateBackgroundAnalysis } from '@/features/document-analysis/orchestrator';
 
----
+// After Stage 1
+const jobId = await generateBackgroundAnalysis(result, {
+  onProgress: (msg) => console.log(msg),
+  onComplete: (report) => console.log('Done!', report),
+  onError: (err) => console.error(err)
+});
+```
 
-## Questions?
+## Success Criteria
 
-Refer to comprehensive documentation:
-- `docs/SOTA_RESEARCH_REPORT.md` - Research findings
-- `docs/GOLDEN_PROMPT.md` - Prompt engineering strategy
-- `docs/PREPROCESSING_VERDICT.md` - Technical decisions
-- `docs/PID_IMPLEMENTATION_SUMMARY.md` - Executive summary
+The implementation is successful if:
+1. ✅ Visual results appear within 10 seconds
+2. ✅ UI remains responsive during background analysis
+3. ✅ Toasts appear at the correct times
+4. ✅ Clicking the success toast switches tabs
+5. ✅ No timeout errors on complex diagrams
+6. ✅ Comprehensive report is generated correctly
+7. ✅ Error handling works as expected
 
----
+## Next Steps for Future Enhancements
 
-**Good luck with testing!** 🚀
-
-Expected outcome: Transformation from "unknown" labels to precise ISA-5.1 instrument identification.
+1. Add WebSocket real-time progress updates
+2. Implement job history and status page
+3. Add retry logic for failed Stage 2 jobs
+4. Allow user cancellation of running jobs
+5. Persist job store to database/Redis
+6. Add progress bar for Stage 2

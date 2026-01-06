@@ -39,12 +39,20 @@ async function createServerAI() {
 
 // Cache singleton on global to survive module reloads in dev
 const globalKey = '__HVAC_SERVER_AI__';
-if (!(global as any)[globalKey]) {
-  (global as any)[globalKey] = createServerAI();
+// Only create/attach the server AI in Node-like runtimes where `window` is not present
+if (typeof globalThis !== 'undefined' && typeof window === 'undefined' && !(globalThis as any)[globalKey]) {
+  (globalThis as any)[globalKey] = createServerAI();
 }
 
 export async function getServerAI() {
-  return (global as any)[globalKey];
+  // Protect against accidental usage in browser bundles
+  if (typeof window !== 'undefined') {
+    throw new Error('getServerAI() called in a browser runtime. Server-side AI is only available on the server.');
+  }
+
+  if (typeof globalThis === 'undefined') return createServerAI();
+  if (!(globalThis as any)[globalKey]) (globalThis as any)[globalKey] = createServerAI();
+  return (globalThis as any)[globalKey];
 }
 
 export default getServerAI;

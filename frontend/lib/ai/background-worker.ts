@@ -41,42 +41,94 @@ export const queueFinalAnalysis = async (
   };
   
   jobStore.set(jobId, job);
-  
-  // Execute asynchronously (non-blocking)
+  // Browser runtime: forward job to server API and listen for updates via socket
+  if (typeof window !== 'undefined') {
+    try {
+      onProgress?.('Queuing background analysis on server...');
+
+      const resp = await fetch('/api/analysis/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentResult })
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`Server rejected job: ${resp.status} ${text}`);
+      }
+
+      const data = await resp.json();
+      const serverJobId = data.jobId || jobId;
+      job.jobId = serverJobId;
+      jobStore.set(serverJobId, job);
+
+      // Subscribe for server socket updates if socket.io-client available
+      try {
+        const { io } = await import('socket.io-client');
+        const socket = io();
+        socket.on('connect', () => {
+          // Optionally tell server which job we care about
+          socket.emit('subscribe-analysis-job', serverJobId);
+        });
+
+        const handler = (update: any) => {
+          if (!update || update.jobId !== serverJobId) return;
+          jobStore.set(serverJobId, update);
+          if (update.status === 'running') onProgress?.('Background analysis running');
+          if (update.status === 'completed') {
+            onProgress?.('Final analysis complete');
+            onComplete?.(update.result);
+            socket.disconnect();
+          }
+          if (update.status === 'failed') {
+            onError?.(new Error(update.error || 'Background analysis failed'));
+            socket.disconnect();
+          }
+        };
+
+        socket.on('analysis-job-update', handler);
+      } catch (e) {
+        // Socket not available - fall back to no real-time updates
+        console.warn('Socket subscription unavailable:', e);
+      }
+
+      return serverJobId;
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error(String(err)));
+      throw err;
+    }
+  }
+
+  // Server/runtime path: run analysis locally (non-blocking)
   (async () => {
     try {
       // Update job status
       job.status = 'running';
       jobStore.set(jobId, job);
       onProgress?.('Background analysis started...');
-      
+
       console.log(`[Background Worker] Starting final analysis for job ${jobId}`);
-      
-      // Generate the final analysis report
       const finalAnalysisReport = await generateFinalAnalysis(documentResult);
-      
+
       // Update job with result
       job.status = 'completed';
       job.result = finalAnalysisReport;
       job.endTime = Date.now();
       jobStore.set(jobId, job);
-      
+
       console.log(`[Background Worker] Completed job ${jobId} in ${job.endTime - job.startTime}ms`);
       onProgress?.('Final analysis complete');
       onComplete?.(finalAnalysisReport);
-      
     } catch (error) {
       console.error(`[Background Worker] Failed job ${jobId}:`, error);
-      
       job.status = 'failed';
       job.error = error instanceof Error ? error.message : String(error);
       job.endTime = Date.now();
       jobStore.set(jobId, job);
-      
       onError?.(error instanceof Error ? error : new Error(String(error)));
     }
   })();
-  
+
   return jobId;
 };
 
