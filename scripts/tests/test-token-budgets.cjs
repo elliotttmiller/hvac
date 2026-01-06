@@ -9,14 +9,15 @@ console.log('🧪 Testing Token Budget Optimization\n');
 // Configuration constants
 const OLD_TOKEN_BUDGET = 69632; // Previous excessive budget (65k output + 4k thinking)
 
-// Simulate the token budget calculation logic
+// Simulate the token budget calculation logic (Updated with new limits)
 function calculateTokenBudgets(componentCount) {
-  // Output tokens: ~50-100 tokens per component for comprehensive narrative
-  const tokensPerComponent = 75;
-  const baseTokens = 500;
+  // Output tokens: ~100 tokens per component for comprehensive narrative
+  // INCREASED: To ensure complete reports without truncation
+  const tokensPerComponent = 100;
+  const baseTokens = 1000;
   const maxOutputTokens = Math.min(
     baseTokens + (componentCount * tokensPerComponent),
-    4096 // Hard cap at 4k tokens
+    8192 // Increased cap to 8k tokens for comprehensive reports
   );
   
   // Thinking tokens: Dynamic based on complexity
@@ -44,8 +45,8 @@ testCases.forEach(testCase => {
   console.log(`  Thinking tokens: ${budgets.thinkingBudget}`);
   console.log(`  Total budget: ${budgets.maxOutputTokens + budgets.thinkingBudget} tokens`);
   
-  // Validate constraints
-  const valid = budgets.maxOutputTokens <= 4096 && budgets.thinkingBudget <= 6144;
+  // Validate constraints (Updated limits)
+  const valid = budgets.maxOutputTokens <= 8192 && budgets.thinkingBudget <= 6144;
   console.log(`  Status: ${valid ? '✅ Within limits' : '❌ Exceeds limits'}`);
   console.log();
 });
