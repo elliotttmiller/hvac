@@ -787,8 +787,9 @@ Generate a professional engineering analysis that explains this system in narrat
           let extracted = null;
           
           // Strategy 1: Extract JSON from markdown code blocks (```json ... ```)
-          // Use a greedy match inside code blocks to capture nested structures
-          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+          // Use a greedy match to capture complete JSON including nested structures
+          // The pattern matches: ``` optional(json) whitespace { content } whitespace ```
+          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[^`]*\})\s*```/);
           if (codeBlockMatch) {
             extracted = codeBlockMatch[1].trim();
             console.log(`[Stage 2] Job ${jobId} - Found JSON in markdown code block`);
@@ -807,6 +808,7 @@ Generate a professional engineering analysis that explains this system in narrat
               for (let i = firstBrace; i < text.length; i++) {
                 const char = text[i];
                 
+                // Handle escape sequences
                 if (escapeNext) {
                   escapeNext = false;
                   continue;
@@ -817,11 +819,13 @@ Generate a professional engineering analysis that explains this system in narrat
                   continue;
                 }
                 
-                if (char === '"' && !escapeNext) {
+                // Toggle string context on unescaped quotes
+                if (char === '"') {
                   inString = !inString;
                   continue;
                 }
                 
+                // Only count braces outside of strings
                 if (!inString) {
                   if (char === '{') braceCount++;
                   if (char === '}') {
@@ -871,7 +875,16 @@ Generate a professional engineering analysis that explains this system in narrat
         }
 
         // Validate that parsed response has required fields
-        const requiredFields = ['report_title', 'executive_summary', 'system_workflow_narrative', 'control_logic_analysis'];
+        // Extract required fields from the schema to maintain consistency
+        const requiredFields = FINAL_ANALYSIS_RESPONSE_SCHEMA.required || [
+          'report_title', 
+          'executive_summary', 
+          'design_overview',
+          'system_workflow_narrative', 
+          'control_logic_analysis',
+          'equipment_specifications',
+          'standards_compliance'
+        ];
         const missingFields = requiredFields.filter(field => !parsed[field] || parsed[field].length === 0);
         
         if (missingFields.length > 0) {
