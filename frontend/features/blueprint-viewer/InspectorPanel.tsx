@@ -175,25 +175,152 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return { className: 'text-zinc-300', prefix: '' };
   };
 
+   /**
+    * Build professional formatted report text for copying
+    * Formats the report in a clean, industry-standard HVAC structure
+    */
    const buildReportText = (report: any) => {
       if (!report) return '';
-      const parts: string[] = [];
-      if (report.report_title) parts.push(report.report_title);
-      if (report.executive_summary) parts.push(`Executive Summary:\n${report.executive_summary}`);
-      if (report.system_workflow_narrative) parts.push(`System Workflow:\n${report.system_workflow_narrative}`);
-      if (report.control_logic_analysis) parts.push(`Control Logic:\n${report.control_logic_analysis}`);
-      if (report.specifications_and_details) parts.push(`Specifications:\n${report.specifications_and_details}`);
-      if (report.critical_equipment && Array.isArray(report.critical_equipment)) {
-         const ce = report.critical_equipment.map((c: any, i: number) => `${i+1}. ${c.tag || c.name || ''} - ${c.role || ''}`).join('\n');
-         if (ce) parts.push(`Critical Equipment:\n${ce}`);
+      
+      const sections: string[] = [];
+      const line = (char: string = '=', length: number = 80) => char.repeat(length);
+      
+      // Title Section
+      if (report.report_title) {
+         sections.push(line('='));
+         sections.push(report.report_title.toUpperCase());
+         sections.push(line('='));
+         sections.push('');
       }
-      if (report.engineering_observations) parts.push(`Engineering Observations:\n${report.engineering_observations}`);
-      // Fallback: include raw string if present
-      if (parts.length === 0 && report._raw) {
-         if (typeof report._raw === 'string') parts.push(report._raw);
-         else parts.push(JSON.stringify(report._raw, null, 2));
+      
+      // Executive Summary
+      if (report.executive_summary) {
+         sections.push('## EXECUTIVE SUMMARY');
+         sections.push('');
+         sections.push(report.executive_summary);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
       }
-      return parts.join('\n\n');
+      
+      // Design Overview
+      if (report.design_overview) {
+         sections.push('## DESIGN OVERVIEW');
+         sections.push('');
+         sections.push(report.design_overview);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // System Workflow
+      if (report.system_workflow_narrative) {
+         sections.push('## SYSTEM WORKFLOW');
+         sections.push('');
+         sections.push(report.system_workflow_narrative);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Ventilation Design
+      if (report.ventilation_design) {
+         sections.push('## VENTILATION DESIGN');
+         sections.push('');
+         sections.push(report.ventilation_design);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Control Logic
+      if (report.control_logic_analysis) {
+         sections.push('## CONTROL LOGIC ANALYSIS');
+         sections.push('');
+         sections.push(report.control_logic_analysis);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Equipment Specifications
+      if (report.equipment_specifications) {
+         sections.push('## EQUIPMENT SELECTION & SPECIFICATIONS');
+         sections.push('');
+         sections.push(report.equipment_specifications);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Heating & Cooling Loads
+      if (report.heating_cooling_loads) {
+         sections.push('## HEATING & COOLING LOADS');
+         sections.push('');
+         sections.push(report.heating_cooling_loads);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Standards Compliance
+      if (report.standards_compliance) {
+         sections.push('## STANDARDS COMPLIANCE');
+         sections.push('');
+         sections.push(report.standards_compliance);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Technical Specifications (legacy field for backwards compatibility)
+      if (report.specifications_and_details && !report.equipment_specifications) {
+         sections.push('## TECHNICAL SPECIFICATIONS');
+         sections.push('');
+         sections.push(report.specifications_and_details);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Critical Equipment
+      if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
+         sections.push('## CRITICAL EQUIPMENT');
+         sections.push('');
+         report.critical_equipment.forEach((equip: any) => {
+            const tag = equip.tag || equip.name || '';
+            const role = equip.role || '';
+            sections.push(`**${tag}**`);
+            sections.push(`  ${role}`);
+            sections.push('');
+         });
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Engineering Observations
+      if (report.engineering_observations) {
+         sections.push('## ENGINEERING OBSERVATIONS');
+         sections.push('');
+         sections.push(report.engineering_observations);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Footer
+      sections.push('');
+      sections.push(line('='));
+      sections.push(`Report Generated: ${new Date().toISOString().split('T')[0]}`);
+      sections.push(line('='));
+      
+      // Fallback to raw data if no sections were added
+      if (sections.length <= 3 && report._raw) {
+         if (typeof report._raw === 'string') return report._raw;
+         return JSON.stringify(report._raw, null, 2);
+      }
+      
+      return sections.join('\n');
    };
 
    const copyFinalReport = async () => {
@@ -543,6 +670,21 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </div>
                            )}
 
+                           {/* Design Overview */}
+                           {finalAnalysisReport.design_overview && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wide">Design Overview</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.design_overview}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
                            {/* System Workflow Narrative */}
                            {finalAnalysisReport.system_workflow_narrative && (
                               <div>
@@ -553,6 +695,21 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
                                     <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
                                        {finalAnalysisReport.system_workflow_narrative}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Ventilation Design */}
+                           {finalAnalysisReport.ventilation_design && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-sky-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-sky-400 uppercase tracking-wide">Ventilation Design</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.ventilation_design}
                                     </p>
                                  </div>
                               </div>
@@ -573,8 +730,53 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </div>
                            )}
 
-                           {/* Specifications and Details */}
-                           {finalAnalysisReport.specifications_and_details && (
+                           {/* Equipment Specifications */}
+                           {finalAnalysisReport.equipment_specifications && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">Equipment Selection & Specifications</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.equipment_specifications}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Heating & Cooling Loads */}
+                           {finalAnalysisReport.heating_cooling_loads && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-orange-400 uppercase tracking-wide">Heating & Cooling Loads</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.heating_cooling_loads}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Standards Compliance */}
+                           {finalAnalysisReport.standards_compliance && (
+                              <div>
+                                 <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-green-400 uppercase tracking-wide">Standards Compliance</h3>
+                                 </div>
+                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
+                                    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                                       {finalAnalysisReport.standards_compliance}
+                                    </p>
+                                 </div>
+                              </div>
+                           )}
+
+                           {/* Specifications and Details (Legacy - for backwards compatibility) */}
+                           {finalAnalysisReport.specifications_and_details && !finalAnalysisReport.equipment_specifications && (
                               <div>
                                  <div className="flex items-center gap-2 mb-3">
                                     <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
