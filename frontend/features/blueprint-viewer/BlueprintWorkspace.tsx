@@ -31,6 +31,7 @@ const BlueprintWorkspace: React.FC<{
   // Background analysis state
   const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
   const [isBackgroundRunning, setIsBackgroundRunning] = useState(false);
+  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
   
   // Toast notifications
   const toast = useToastHelpers();
@@ -70,6 +71,87 @@ const BlueprintWorkspace: React.FC<{
 
     loadAndMaybeAnalyze();
   }, [fileToAnalyze, onAnalyzed]);
+
+  // Persistent polling for background job completion
+  // Polls the server every 2 seconds to check if Stage 2 analysis is complete
+  useEffect(() => {
+    // Only poll if we have a job ID and background analysis is running
+    if (!backgroundJobId || !isBackgroundRunning) {
+      return;
+    }
+
+    console.log('[Polling] Starting poll for job:', backgroundJobId);
+
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log('[Polling] Checking status for job:', backgroundJobId);
+        const response = await fetch(`/api/analysis/status/${backgroundJobId}`);
+        
+        if (!response.ok) {
+          console.warn('[Polling] Failed to fetch job status:', response.status);
+          return;
+        }
+
+        const jobData = await response.json();
+        console.log('[Polling] Job status:', jobData.status);
+
+        if (jobData.status === 'completed') {
+          console.log('[Polling] Job completed! Setting final analysis report');
+          
+          // Stop polling
+          clearInterval(pollInterval);
+          setPollingIntervalId(null);
+          setIsBackgroundRunning(false);
+          
+          // Update state with the final report
+          if (jobData.result) {
+            setFinalAnalysisReport(jobData.result);
+            
+            // Update analysis raw log with completion message
+            setAnalysisRaw((prev) => `${prev}\n\n[Stage 2 Complete] Final analysis report generated successfully.`);
+            
+            // Show success toast
+            toast.success(
+              'Comprehensive analysis ready',
+              'Click to view the detailed report',
+              {
+                duration: 8000,
+                clickable: true,
+                onClick: () => {
+                  window.dispatchEvent(new CustomEvent('switch-to-analysis-tab'));
+                }
+              }
+            );
+          }
+        } else if (jobData.status === 'failed') {
+          console.error('[Polling] Job failed:', jobData.error);
+          
+          // Stop polling
+          clearInterval(pollInterval);
+          setPollingIntervalId(null);
+          setIsBackgroundRunning(false);
+          
+          // Show error toast
+          toast.error(
+            'Background analysis failed',
+            jobData.error || 'Unable to generate comprehensive report',
+            { duration: 6000 }
+          );
+        }
+        // If status is 'running' or 'pending', continue polling
+      } catch (error) {
+        console.error('[Polling] Error checking job status:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    setPollingIntervalId(pollInterval as unknown as number);
+
+    // Cleanup: stop polling when component unmounts or job changes
+    return () => {
+      console.log('[Polling] Cleanup: stopping poll');
+      clearInterval(pollInterval);
+    };
+  }, [backgroundJobId, isBackgroundRunning, toast]);
 
   // Main analysis function - STAGE 1: Fast visual analysis
   const runAnalysisInternal = async (file: File, url: string) => {
@@ -134,41 +216,32 @@ const BlueprintWorkspace: React.FC<{
           console.log('[Stage 2]', msg);
           appendLog(`[Background] ${msg}`);
         },
+        // Note: onComplete and onError callbacks are now handled by polling
+        // The socket.io events may fire, but polling is the authoritative source
         onComplete: (report) => {
-          console.log('[Stage 2] Final analysis complete:', report);
-          setFinalAnalysisReport(report);
-          setIsBackgroundRunning(false);
-          
-          // Show completion toast with click to view
-          toast.success(
-            'Comprehensive analysis ready',
-            'Click to view the detailed report',
-            {
-              duration: 8000,
-              clickable: true,
-              onClick: () => {
-                // Trigger event to switch to Analysis tab in InspectorPanel
-                window.dispatchEvent(new CustomEvent('switch-to-analysis-tab'));
-              }
-            }
-          );
+          console.log('[Stage 2] Socket event: Final analysis complete:', report);
+          // Fallback in case socket fires before polling
+          if (report && !finalAnalysisReport) {
+            setFinalAnalysisReport(report);
+          }
         },
         onError: (error) => {
-          console.error('[Stage 2] Final analysis failed:', error);
+          console.error('[Stage 2] Socket event: Final analysis failed:', error);
           setIsBackgroundRunning(false);
-          
-          toast.error(
-            'Background analysis failed',
-            error.message || 'Unable to generate comprehensive report',
-            { duration: 6000 }
-          );
         }
       }).then(jobId => {
         setBackgroundJobId(jobId);
         console.log('[Stage 2] Background job queued:', jobId);
+        // Polling will now activate via useEffect watching backgroundJobId
       }).catch(err => {
         console.error('[Stage 2] Failed to queue background job:', err);
         setIsBackgroundRunning(false);
+        
+        toast.error(
+          'Failed to start background analysis',
+          err.message || 'Unable to queue analysis job',
+          { duration: 6000 }
+        );
       });
 
     } catch (error) {
