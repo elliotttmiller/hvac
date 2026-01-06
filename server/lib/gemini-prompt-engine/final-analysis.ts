@@ -196,17 +196,18 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     const prompt = generateFinalAnalysisPrompt(inferenceResults);
     
     // Calculate appropriate output token budget based on component count
-    // Rule of thumb: ~50-100 tokens per component for comprehensive narrative
-    // + 500 tokens base for executive summary and conclusions
+    // Rule of thumb: ~100 tokens per component for comprehensive narrative
+    // + 1000 tokens base for executive summary and conclusions
+    // INCREASED: To ensure full, complete reports without truncation
     const componentCount = inferenceResults.visual?.components?.length || 0;
-    const tokensPerComponent = 75; // Balanced: detailed but not verbose
-    const baseTokens = 500;
+    const tokensPerComponent = 100; // Increased for more detailed narratives
+    const baseTokens = 1000; // Increased base allocation
     const calculatedTokens = Math.min(
       baseTokens + (componentCount * tokensPerComponent),
-      4096 // Hard cap at 4k tokens for narrative reports
+      8192 // Increased cap to 8k tokens for comprehensive reports
     );
     
-    console.log(`   [Token Budget] Components: ${componentCount}, Calculated: ${calculatedTokens} tokens (cap: 4096)`);
+    console.log(`   [Token Budget] Components: ${componentCount}, Calculated: ${calculatedTokens} tokens (cap: 8192)`);
     
     // 2. Inference with optimized configuration
     const response = await ai.models.generateContent({

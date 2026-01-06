@@ -175,25 +175,102 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return { className: 'text-zinc-300', prefix: '' };
   };
 
+   /**
+    * Build professional formatted report text for copying
+    * Formats the report in a clean, industry-standard structure
+    */
    const buildReportText = (report: any) => {
       if (!report) return '';
-      const parts: string[] = [];
-      if (report.report_title) parts.push(report.report_title);
-      if (report.executive_summary) parts.push(`Executive Summary:\n${report.executive_summary}`);
-      if (report.system_workflow_narrative) parts.push(`System Workflow:\n${report.system_workflow_narrative}`);
-      if (report.control_logic_analysis) parts.push(`Control Logic:\n${report.control_logic_analysis}`);
-      if (report.specifications_and_details) parts.push(`Specifications:\n${report.specifications_and_details}`);
-      if (report.critical_equipment && Array.isArray(report.critical_equipment)) {
-         const ce = report.critical_equipment.map((c: any, i: number) => `${i+1}. ${c.tag || c.name || ''} - ${c.role || ''}`).join('\n');
-         if (ce) parts.push(`Critical Equipment:\n${ce}`);
+      
+      const sections: string[] = [];
+      const line = (char: string = '=', length: number = 80) => char.repeat(length);
+      
+      // Title Section
+      if (report.report_title) {
+         sections.push(line('='));
+         sections.push(report.report_title.toUpperCase());
+         sections.push(line('='));
+         sections.push('');
       }
-      if (report.engineering_observations) parts.push(`Engineering Observations:\n${report.engineering_observations}`);
-      // Fallback: include raw string if present
-      if (parts.length === 0 && report._raw) {
-         if (typeof report._raw === 'string') parts.push(report._raw);
-         else parts.push(JSON.stringify(report._raw, null, 2));
+      
+      // Executive Summary
+      if (report.executive_summary) {
+         sections.push('## EXECUTIVE SUMMARY');
+         sections.push('');
+         sections.push(report.executive_summary);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
       }
-      return parts.join('\n\n');
+      
+      // System Workflow
+      if (report.system_workflow_narrative) {
+         sections.push('## SYSTEM WORKFLOW');
+         sections.push('');
+         sections.push(report.system_workflow_narrative);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Control Logic
+      if (report.control_logic_analysis) {
+         sections.push('## CONTROL LOGIC ANALYSIS');
+         sections.push('');
+         sections.push(report.control_logic_analysis);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Technical Specifications
+      if (report.specifications_and_details) {
+         sections.push('## TECHNICAL SPECIFICATIONS');
+         sections.push('');
+         sections.push(report.specifications_and_details);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Critical Equipment
+      if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
+         sections.push('## CRITICAL EQUIPMENT');
+         sections.push('');
+         report.critical_equipment.forEach((equip: any) => {
+            const tag = equip.tag || equip.name || '';
+            const role = equip.role || '';
+            sections.push(`**${tag}**`);
+            sections.push(`  ${role}`);
+            sections.push('');
+         });
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Engineering Observations
+      if (report.engineering_observations) {
+         sections.push('## ENGINEERING OBSERVATIONS');
+         sections.push('');
+         sections.push(report.engineering_observations);
+         sections.push('');
+         sections.push(line('-'));
+         sections.push('');
+      }
+      
+      // Footer
+      sections.push('');
+      sections.push(line('='));
+      sections.push(`Report Generated: ${new Date().toISOString().split('T')[0]}`);
+      sections.push(line('='));
+      
+      // Fallback to raw data if no sections were added
+      if (sections.length <= 3 && report._raw) {
+         if (typeof report._raw === 'string') return report._raw;
+         return JSON.stringify(report._raw, null, 2);
+      }
+      
+      return sections.join('\n');
    };
 
    const copyFinalReport = async () => {
