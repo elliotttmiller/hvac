@@ -90,7 +90,9 @@ const ISA_TAG_PATTERNS: Record<string, string> = {
   '^[0-9]*LIC': 'Level Indicator Controller',
   
   // Valves (should have bowtie shapes)
-  '^[0-9]*[A-Z]*V-': 'Manual Valve',
+  // Note: Pattern is restrictive to avoid false positives
+  // Format: [optional digits][optional prefix letters]V- (e.g., "1VA-121271", "CV-101", "V-201")
+  '^[0-9]*[A-Z]{0,2}V-': 'Manual Valve',  // Max 2 prefix letters before V- to avoid overly broad matching
   '^[0-9]*CV': 'Control Valve',
   '^[0-9]*FV': 'Flow Control Valve',
   '^[0-9]*PV': 'Pressure Control Valve',
@@ -324,6 +326,23 @@ export function normalizeAnalysisResult<T extends {
 }
 
 /**
+ * Confidence adjustment constants for validation corrections
+ * These values control how much confidence is reduced when misclassifications are detected
+ */
+const CONFIDENCE_ADJUSTMENTS = {
+  /** Minimum confidence after auto-correction (prevents zero confidence) */
+  MIN_CONFIDENCE_AFTER_CORRECTION: 0.5,
+  /** Default confidence if not provided */
+  DEFAULT_CONFIDENCE: 0.8,
+  /** Confidence penalty for auto-corrected components (subtracted from original) */
+  AUTO_CORRECTION_PENALTY: 0.3,
+  /** Minimum confidence for validation errors without correction */
+  MIN_CONFIDENCE_VALIDATION_ERROR: 0.3,
+  /** Confidence penalty for validation errors (subtracted from original) */
+  VALIDATION_ERROR_PENALTY: 0.5
+} as const;
+
+/**
  * TIER 3 SAFEGUARD: Validate shape/type compatibility
  * Detects and corrects AI hallucinations where circular symbols are misclassified as valves
  * 
@@ -375,7 +394,10 @@ export function validateShapeTypeCompatibility<T extends {
         return {
           ...comp,
           type: correctedType,
-          confidence: Math.max(0.5, (comp.confidence || 0.8) - 0.3), // Reduce confidence due to correction
+          confidence: Math.max(
+            CONFIDENCE_ADJUSTMENTS.MIN_CONFIDENCE_AFTER_CORRECTION,
+            (comp.confidence || CONFIDENCE_ADJUSTMENTS.DEFAULT_CONFIDENCE) - CONFIDENCE_ADJUSTMENTS.AUTO_CORRECTION_PENALTY
+          ),
           meta: {
             ...comp.meta,
             original_type: type,
@@ -394,7 +416,10 @@ export function validateShapeTypeCompatibility<T extends {
         
         return {
           ...comp,
-          confidence: Math.max(0.3, (comp.confidence || 0.8) - 0.5), // Significantly reduce confidence
+          confidence: Math.max(
+            CONFIDENCE_ADJUSTMENTS.MIN_CONFIDENCE_VALIDATION_ERROR,
+            (comp.confidence || CONFIDENCE_ADJUSTMENTS.DEFAULT_CONFIDENCE) - CONFIDENCE_ADJUSTMENTS.VALIDATION_ERROR_PENALTY
+          ),
           meta: {
             ...comp.meta,
             validation_error: true,
@@ -436,8 +461,9 @@ export function validateShapeTypeCompatibility<T extends {
 function inferTypeFromTag(tag: string): string | null {
   if (!tag) return null;
 
-  // Normalize tag: remove numbers, spaces, special chars for pattern matching
-  const normalizedTag = tag.toUpperCase().replace(/[\s-]/g, '');
+  // Normalize tag: remove all non-word characters (spaces, hyphens, underscores, dots, etc.)
+  // This allows matching tags like "1LI-12422", "1LI_12422", "1LI.12422", etc.
+  const normalizedTag = tag.toUpperCase().replace(/[^\w]/g, '');
 
   for (const [pattern, type] of Object.entries(ISA_TAG_PATTERNS)) {
     const regex = new RegExp(pattern);

@@ -10,6 +10,24 @@ import { generateISAContext } from '@/lib/knowledge-base/isa-5-1';
 import { Type } from '@google/genai';
 
 /**
+ * Standard P&ID shape primitives used in schema and prompts
+ * Maintains consistency between prompt instructions and schema definitions
+ */
+export const VALID_PID_SHAPES = [
+  'circle',
+  'circle_in_square',
+  'square',
+  'diamond',
+  'bowtie',
+  'triangle',
+  'rectangle',
+  'hexagon',
+  'cloud',
+  'line',
+  'complex_assembly'
+] as const;
+
+/**
  * P&ID System Instruction - Maximum Context & Engineering Depth
  * Injects the full ISA-5.1 standard and forces "First Principles" reasoning.
  */
@@ -145,7 +163,7 @@ export const PID_ANALYSIS_SCHEMA = {
           // VISUAL VERIFICATION FIELDS - Critical for preventing shape hallucinations
           shape: {
             type: Type.STRING,
-            description: "MANDATORY: The actual detected geometric shape. You MUST identify the shape BEFORE classifying the type. Enum: ['circle', 'circle_in_square', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']. CRITICAL RULES: 'circle' → instruments only, 'bowtie' → valves only, 'diamond' → logic functions."
+            description: `MANDATORY: The actual detected geometric shape. You MUST identify the shape BEFORE classifying the type. Enum: ${JSON.stringify(VALID_PID_SHAPES)}. CRITICAL RULES: 'circle' → instruments only, 'bowtie' → valves only, 'diamond' → logic functions.`
           },
           bbox: {
             type: Type.ARRAY,
