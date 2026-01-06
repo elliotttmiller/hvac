@@ -611,10 +611,12 @@ app.post('/api/analysis/queue', async (req, res) => {
           }
           
           const mockAnalysis = {
-            "Executive Summary": `This is a mock ${payload.document_type || 'SCHEMATIC'} analysis with ${components.length} components and ${connections.length} connections.`,
-            "System Workflow Narrative": "Mock workflow: The system processes flow from upstream equipment through control valves to downstream destinations. Key components are interconnected via process piping and control signals.",
-            "Control Logic Analysis": "Mock control logic: Instrumentation sensors monitor process variables and send signals to programmable logic controllers, which modulate final control elements to maintain desired setpoints.",
-            "Specifications and Details": "Mock specifications: System includes standard industrial equipment with typical ratings and specifications as shown in the provided data."
+            "report_title": `Mock ${payload.document_type || 'SCHEMATIC'} Analysis Report`,
+            "executive_summary": `This is a mock analysis of a ${payload.document_type || 'SCHEMATIC'} system with ${components.length} components and ${connections.length} connections. The system demonstrates standard industrial process control architecture with instrumentation, control logic, and final control elements.`,
+            "system_workflow_narrative": "The system processes flow from upstream equipment through control valves to downstream destinations. Material enters through the inlet manifold, passes through measurement instrumentation for flow and temperature monitoring, and is distributed via automated control valves to multiple process lines. Each line features independent control loops with feedback from field sensors to maintain optimal operating conditions.",
+            "control_logic_analysis": "The control strategy employs cascaded control loops with primary process variable monitoring feeding into proportional-integral-derivative (PID) controllers. Instrumentation sensors continuously monitor process variables including flow, temperature, and pressure, transmitting 4-20mA signals to programmable logic controllers. The PLCs execute control algorithms to modulate final control elements (control valves and variable frequency drives) maintaining desired setpoints while preventing unsafe operating conditions through interlock logic.",
+            "specifications_and_details": "The system includes standard industrial equipment with ANSI/ISA compliant instrumentation. Process piping follows ASME B31.3 specifications with appropriate material grades for the service conditions. Control valves are sized per ISA-75 standards with fail-safe positions configured for process safety. All instrumentation conforms to ISA-5.1 identification standards with unique tag identifiers.",
+            "engineering_observations": "The design demonstrates industry best practices with redundant measurement points for critical process variables. The control architecture provides both manual and automatic operation modes, allowing operators to override automated control when necessary. Safety instrumented functions are properly segregated from basic process control per IEC 61511 guidelines."
           };
           
           const mockDuration = Date.now() - aiStart;
