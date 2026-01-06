@@ -787,9 +787,10 @@ Generate a professional engineering analysis that explains this system in narrat
           let extracted = null;
           
           // Strategy 1: Extract JSON from markdown code blocks (```json ... ```)
-          // Use a greedy match to capture complete JSON including nested structures
-          // The pattern matches: ``` optional(json) whitespace { content } whitespace ```
-          const codeBlockMatch = text.match(/```(?:json)?\s*(\{[^`]*\})\s*```/);
+          // Matches content between code block markers, excluding additional backticks
+          // Note: If JSON contains backticks in strings, this may not match completely,
+          // but Strategy 2 (balanced braces) will handle it as fallback
+          const codeBlockMatch = text.match(/```(?:json)?\s*(\{(?:[^`]|`(?!``))*\})\s*```/);
           if (codeBlockMatch) {
             extracted = codeBlockMatch[1].trim();
             console.log(`[Stage 2] Job ${jobId} - Found JSON in markdown code block`);
@@ -875,16 +876,8 @@ Generate a professional engineering analysis that explains this system in narrat
         }
 
         // Validate that parsed response has required fields
-        // Extract required fields from the schema to maintain consistency
-        const requiredFields = FINAL_ANALYSIS_RESPONSE_SCHEMA.required || [
-          'report_title', 
-          'executive_summary', 
-          'design_overview',
-          'system_workflow_narrative', 
-          'control_logic_analysis',
-          'equipment_specifications',
-          'standards_compliance'
-        ];
+        // Use the schema's required fields definition directly
+        const requiredFields = FINAL_ANALYSIS_RESPONSE_SCHEMA.required;
         const missingFields = requiredFields.filter(field => !parsed[field] || parsed[field].length === 0);
         
         if (missingFields.length > 0) {
