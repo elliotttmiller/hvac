@@ -571,7 +571,7 @@ function resolveTypeConflict(
   // --- RULE 2: "PV Circle" Rule (HVAC Domain Specific) ---
   // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator, NOT Valve
   if (tagUpper.startsWith('PV') && shapeLower === 'circle') {
-    const isEmptyCircle = sigLower === 'circle_empty' || !sigLower.includes('diagonal') && !sigLower.includes('bar');
+    const isEmptyCircle = sigLower === 'circle_empty' || (!sigLower.includes('diagonal') && !sigLower.includes('bar'));
     if (isEmptyCircle && typeLower.includes('valve')) {
       return {
         correctedType: 'instrument_indicator',
@@ -582,7 +582,7 @@ function resolveTypeConflict(
   
   // --- RULE 3: "*I" Tags (Indicators) ---
   // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Indicator
-  if (tagUpper.match(/^[A-Z]{1,2}I-?\d/) && shapeLower === 'circle') {
+  if (tagUpper.match(/^[A-Z]{1,2}I(-?\d+)?$/) && shapeLower === 'circle') {
     if (typeLower.includes('valve')) {
       return {
         correctedType: 'instrument_indicator',

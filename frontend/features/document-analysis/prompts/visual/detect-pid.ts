@@ -202,7 +202,7 @@ export const PID_ANALYSIS_SCHEMA = {
           },
           visual_signature: {
             type: Type.STRING,
-            description: "Detailed visual pattern for precise classification. MANDATORY field. Enum: ['bowtie_empty', 'bowtie_solid_center', 'bowtie_with_actuator', 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', 'circle_in_square', 'diamond', 'triangle_arrow', 'rectangle', 'hexagon', 'other']"
+            description: "Detailed visual pattern for precise classification. STRONGLY RECOMMENDED - provides critical context for shape-based reasoning. Enum: ['bowtie_empty', 'bowtie_solid_center', 'bowtie_with_actuator', 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', 'circle_in_square', 'diamond', 'triangle_arrow', 'rectangle', 'hexagon', 'other']"
           },
           bbox: {
             type: Type.ARRAY,
@@ -235,7 +235,7 @@ export const PID_ANALYSIS_SCHEMA = {
             required: ["reasoning", "description"]
           }
         },
-        required: ["id", "label", "type", "bbox", "confidence", "meta", "shape", "visual_signature"]
+        required: ["id", "label", "type", "bbox", "confidence", "meta", "shape"]
       }
     },
     connections: {
