@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import InteractiveViewer from '@/features/blueprint-viewer/InteractiveViewer';
 import InspectorPanel from './InspectorPanel';
 import { analyzeDocument, generateBackgroundAnalysis } from '@/features/document-analysis/orchestrator';
@@ -31,7 +31,7 @@ const BlueprintWorkspace: React.FC<{
   // Background analysis state
   const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
   const [isBackgroundRunning, setIsBackgroundRunning] = useState(false);
-  const [pollingIntervalId, setPollingIntervalId] = useState<number | null>(null);
+  const finalAnalysisReportRef = useRef<any>(null);
   
   // Toast notifications
   const toast = useToastHelpers();
@@ -100,12 +100,12 @@ const BlueprintWorkspace: React.FC<{
           
           // Stop polling
           clearInterval(pollInterval);
-          setPollingIntervalId(null);
           setIsBackgroundRunning(false);
           
           // Update state with the final report
           if (jobData.result) {
             setFinalAnalysisReport(jobData.result);
+            finalAnalysisReportRef.current = jobData.result;
             
             // Update analysis raw log with completion message
             setAnalysisRaw((prev) => `${prev}\n\n[Stage 2 Complete] Final analysis report generated successfully.`);
@@ -128,7 +128,6 @@ const BlueprintWorkspace: React.FC<{
           
           // Stop polling
           clearInterval(pollInterval);
-          setPollingIntervalId(null);
           setIsBackgroundRunning(false);
           
           // Show error toast
@@ -144,8 +143,6 @@ const BlueprintWorkspace: React.FC<{
       }
     }, 2000); // Poll every 2 seconds
 
-    setPollingIntervalId(pollInterval as unknown as number);
-
     // Cleanup: stop polling when component unmounts or job changes
     return () => {
       console.log('[Polling] Cleanup: stopping poll');
@@ -158,6 +155,7 @@ const BlueprintWorkspace: React.FC<{
     setIsProcessing(true);
     setProcessingPhase('classifying');
     setFinalAnalysisReport(null); // Clear previous final analysis
+    finalAnalysisReportRef.current = null; // Clear ref as well
 
     // Append-only log helper for the inspector panel
     const appendLog = (msg: string) => {
@@ -221,8 +219,10 @@ const BlueprintWorkspace: React.FC<{
         onComplete: (report) => {
           console.log('[Stage 2] Socket event: Final analysis complete:', report);
           // Fallback in case socket fires before polling
-          if (report && !finalAnalysisReport) {
+          // Use ref to check latest state and avoid race condition
+          if (report && !finalAnalysisReportRef.current) {
             setFinalAnalysisReport(report);
+            finalAnalysisReportRef.current = report;
           }
         },
         onError: (error) => {
