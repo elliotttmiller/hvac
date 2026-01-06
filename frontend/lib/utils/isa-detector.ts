@@ -125,7 +125,8 @@ export function detectISAFunction(
       isaFunction += parsed.modifier;
     }
     if (parsed.functions.length > 0) {
-      isaFunction += parsed.functions.join('');
+      // Extract letter property from each function object
+      isaFunction += parsed.functions.map(f => f.letter).join('');
     }
     
     return {
