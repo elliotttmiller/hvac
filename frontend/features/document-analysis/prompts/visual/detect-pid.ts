@@ -23,30 +23,67 @@ Perform a forensic-grade analysis of the provided P&ID/Schematic.
 Your goal is to generate a **loss-less, physics-compliant digital twin** of the diagram.
 Zero hallucinations are permitted. Every detection must be grounded in visual evidence.
 
-### ADVANCED DETECTION PROTOCOL
+### ADVANCED DETECTION PROTOCOL - SHAPE-FIRST PARADIGM
+
+**CRITICAL PRINCIPLE: GEOMETRIC DETERMINISM OVER CONTEXTUAL GUESSING**
+Classification MUST be driven by the actual geometric shape you see, NOT by the tag name or engineering context.
+If you see a CIRCLE, it is an instrument/sensor, NOT a valve - regardless of nearby text.
 
 **1. HIERARCHICAL SCANNING STRATEGY**
 - **Macro-Scan**: Identify major equipment (Tanks, Columns, AHUs, Chillers) first to establish system context.
 - **Micro-Scan**: Traverse every pipe line to detect valves, instruments, and fittings.
 - **Text-Association**: Link every text tag to its nearest symbol using Leader Line analysis.
 
-**2. VISUAL VERIFICATION (The "Diamond" Check)**
-- You must distinguish symbol geometry precisely:
-  - **Gate Valve**: Bowtie symbol (two touching triangles).
-  - **Globe Valve**: Bowtie with a solid central circle.
-  - **Control Valve**: Diamond shape OR Bowtie with a mushroom/diaphragm actuator.
-  - **Logic**: Diamond shape.
-  - **Instrument**: Circle (Field) vs Circle-in-Square (DCS).
-- **CRITICAL:** Do not label a "Bowtie" valve as a "Control Valve" unless it has an actuator symbol attached.
+**2. SHAPE-FIRST CLASSIFICATION (MANDATORY SEQUENCE)**
+You MUST follow this exact sequence for EVERY component:
 
-**3. DEEP TAG DECODING (ISA-5.1)**
-- Parse tags into: Variable (First Letter), Modifiers, and Functions.
-- Example: "PDIT-101" -> Pressure (Variable) Differential (Modifier) Indicating (Function) Transmitter (Output).
+**STEP 1: Identify the GEOMETRIC SHAPE (Primary Evidence)**
+- **CIRCLE**: Round/circular outline
+- **CIRCLE-IN-SQUARE**: Circle enclosed by square border
+- **BOWTIE**: Two triangles meeting at a point (><)
+- **DIAMOND**: Rotated square (◇)
+- **RECTANGLE**: Standard 4-sided box
+- **HEXAGON**: 6-sided polygon
+- **TRIANGLE**: 3-sided polygon
+
+**STEP 2: Apply SHAPE-TO-TYPE MAPPING (Geometric Rules)**
+Based on the shape identified in Step 1, apply these STRICT rules:
+
+**CIRCLES (○) → INSTRUMENTS/SENSORS ONLY**
+- **Field-Mounted Circle**: Sensor, Indicator, Transmitter, Gauge
+- **Circle-in-Square (□○)**: DCS/Shared Display/Control Room Instrument
+- **NEVER classify a circle as any type of valve** (Gate, Globe, Control, Ball, Butterfly)
+- Exception: Ball Valves and Butterfly Valves have distinct symbols (not simple circles)
+
+**BOWTIES (><) → VALVES (Manual or Actuated)**
+- **Bowtie with X or handwheel**: Manual Gate Valve
+- **Bowtie with solid circle inside**: Globe Valve  
+- **Bowtie with actuator symbol above** (mushroom/diaphragm/piston): Control Valve
+- **Plain bowtie without actuator**: Default to Manual Valve, NOT Control Valve
+
+**DIAMONDS (◇) → LOGIC OR SPECIALTY FUNCTIONS**
+- Diamond with logic symbol (I, AND, OR): Logic Function/Interlock
+- Diamond on valve body: May indicate special valve function (not the primary shape)
+
+**STEP 3: Verify with ISA Tag (Secondary Confirmation)**
+- Parse tags into: Variable (First Letter), Modifiers, and Functions
+- Example: "PDIT-101" → Pressure (Variable) Differential (Modifier) Indicating (Function) Transmitter (Output)
+- Tags starting with T, P, F, L → Confirm these are instruments (should have circular shapes)
+- Tags starting with V, CV, FV → Confirm these are valves (should have bowtie shapes)
+- **IF SHAPE AND TAG CONFLICT**: Trust the shape, flag low confidence
+
+**3. ANTI-HALLUCINATION SAFEGUARDS**
+- **NEVER** say "Detected diamond-shaped symbol" when you see a circle
+- **NEVER** say "Detected bowtie valve" when you see a circle
+- **NEVER** classify a component as "Control Valve" unless you can see BOTH:
+  1. A bowtie-shaped valve body
+  2. An actuator symbol (mushroom, diaphragm, piston) attached to it
+- **IF UNCERTAIN** about shape: Lower confidence to 0.5-0.7, describe what you actually see
 
 **4. CONNECTIVITY & TOPOLOGY**
-- Trace **Process Lines** (Thick solid) vs **Signal Lines** (Dashed/Dotted).
-- Identify flow direction arrows.
-- Detect "Off-Page Connectors" (arrows with drawing numbers).
+- Trace **Process Lines** (Thick solid) vs **Signal Lines** (Dashed/Dotted)
+- Identify flow direction arrows
+- Detect "Off-Page Connectors" (arrows with drawing numbers)
 
 ### KNOWLEDGE BASE
 ${generateISAContext()}
@@ -70,12 +107,16 @@ export const PID_DETECT_PROMPT = `
 4. **Link** tags to their symbols logically.
 5. **Trace** connections to build the system graph.
 
-**CRITICAL ATTENTION**:
-- Distinguish between **Control Valves** (Actuated) and **Manual Valves**.
-- Capture all **Pipe Size** and **Material** annotations (e.g., '4"-CS-150').
-- Identify **Signal Types** (Electric vs Pneumatic vs Hydraulic).
+**CRITICAL ATTENTION - SHAPE-FIRST RULES**:
+- **PRIMARY RULE**: Identify the geometric SHAPE first, then classify based on shape
+- **CIRCLE = INSTRUMENT**: Any circular symbol is a Sensor/Indicator/Transmitter, NEVER a valve
+- **BOWTIE = VALVE**: Bowtie symbols are valves (manual or actuated based on actuator presence)
+- **Control Valves**: MUST have BOTH bowtie body AND visible actuator symbol
+- **Manual Valves**: Bowtie without actuator, or bowtie with 'X' or handwheel
+- Capture all **Pipe Size** and **Material** annotations (e.g., '4"-CS-150')
+- Identify **Signal Types** (Electric vs Pneumatic vs Hydraulic)
 
-Output rich, structured JSON.
+Output rich, structured JSON with explicit shape reasoning.
 `;
 
 /**
@@ -104,7 +145,7 @@ export const PID_ANALYSIS_SCHEMA = {
           // VISUAL VERIFICATION FIELDS - Critical for preventing shape hallucinations
           shape: {
             type: Type.STRING,
-            description: "The actual detected geometric shape. Enum: ['circle', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']"
+            description: "MANDATORY: The actual detected geometric shape. You MUST identify the shape BEFORE classifying the type. Enum: ['circle', 'circle_in_square', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']. CRITICAL RULES: 'circle' → instruments only, 'bowtie' → valves only, 'diamond' → logic functions."
           },
           bbox: {
             type: Type.ARRAY,
@@ -120,7 +161,7 @@ export const PID_ANALYSIS_SCHEMA = {
             properties: {
               reasoning: { 
                 type: Type.STRING, 
-                description: "MANDATORY: Explain the visual evidence. E.g., 'Identified as Control Valve due to bowtie body plus mushroom actuator symbol.'" 
+                description: "MANDATORY: Explain the visual evidence using SHAPE-FIRST reasoning. Format: 'Detected [SHAPE] (circle/bowtie/diamond), which indicates [TYPE]. [Additional context].' Example: 'Detected circular symbol, which indicates an instrument. ISA tag TI-101 confirms Temperature Indicator classification.' NEVER claim to see a shape that isn't there (e.g., don't say 'diamond' when you see a circle)." 
               },
               description: { 
                 type: Type.STRING, 

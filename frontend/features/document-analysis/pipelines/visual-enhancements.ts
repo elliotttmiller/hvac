@@ -14,7 +14,7 @@ import {
   validateAndCorrectConnectionTypes
 } from '../../../lib/utils/connection-engine';
 import { applySpatialAssociation } from '../../../lib/utils/spatial-association';
-import { normalizeComponents, normalizeConnections } from '../../../lib/utils/type-normalization';
+import { normalizeComponents, normalizeConnections, normalizeAndValidateComponents } from '../../../lib/utils/type-normalization';
 import type { VisualAnalysisResult, DetectedComponent, Connection } from '../types';
 
 /**
@@ -45,10 +45,11 @@ export async function enhanceVisualAnalysis(
   let connections = [...result.connections];
   
   // Step -1: Normalize AI output types to schema enums (ZERO-HITL Data Integrity)
+  // AND validate shape/type compatibility to catch hallucinations (TIER 3 SAFEGUARD)
   console.log('[Enhancement] Normalizing component and connection types...');
-  components = normalizeComponents(components);
+  components = normalizeAndValidateComponents(components);
   connections = normalizeConnections(connections);
-  console.log('[Enhancement] Type normalization complete');
+  console.log('[Enhancement] Type normalization and shape validation complete');
   
   // Step 0: Apply spatial association to merge orphaned labels (ZERO-HITL Priority)
   // This must run BEFORE ISA detection to ensure proper tagging

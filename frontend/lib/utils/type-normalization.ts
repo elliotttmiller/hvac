@@ -2,7 +2,100 @@
  * Type Normalization Utilities
  * Normalizes loose string outputs from AI models to strict schema enums
  * Prevents false-positive validation warnings
+ * 
+ * TIER 3: Implements deterministic safeguards to catch shape/type mismatches
+ * and prevent "Prompt Biasing" hallucinations where circular symbols are
+ * misclassified as valves.
  */
+
+/**
+ * Shape-to-Type Compatibility Rules
+ * Defines which shapes are compatible with which component types
+ * Used for sanity checking to catch AI hallucinations
+ */
+const SHAPE_TYPE_COMPATIBILITY: Record<string, {
+  allowed_types: string[];
+  forbidden_types: string[];
+  reasoning: string;
+}> = {
+  'circle': {
+    allowed_types: [
+      'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level',
+      'instrument_indicator', 'instrument_transmitter', 'instrument_gauge',
+      'Level Indicator', 'Level Transmitter', 'Level Indicating Transmitter',
+      'Level Gauge', 'Pressure Indicator', 'Pressure Transmitter',
+      'Temperature Indicator', 'Temperature Transmitter',
+      'Flow Indicator', 'Flow Transmitter',
+      'pump', 'fan' // Rotary equipment can be circular
+    ],
+    forbidden_types: [
+      'valve_gate', 'valve_globe', 'valve_control', 'Manual Valve', 'Control Valve',
+      'Gate Valve', 'Globe Valve'
+    ],
+    reasoning: 'Circular shapes represent instruments/sensors or rotary equipment, NEVER linear valves'
+  },
+  'circle_in_square': {
+    allowed_types: [
+      'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level',
+      'instrument_indicator', 'instrument_transmitter', 'instrument_gauge',
+      'Level Indicator', 'Level Gauge', 'controller'
+    ],
+    forbidden_types: [
+      'valve_gate', 'valve_globe', 'valve_control', 'Manual Valve', 'Control Valve'
+    ],
+    reasoning: 'Circle-in-square represents DCS/shared display instruments, NEVER valves'
+  },
+  'bowtie': {
+    allowed_types: [
+      'valve_gate', 'valve_globe', 'valve_control', 'valve_ball', 'valve_butterfly',
+      'Manual Valve', 'Control Valve', 'Gate Valve', 'Globe Valve'
+    ],
+    forbidden_types: [
+      'sensor_temperature', 'sensor_pressure', 'sensor_flow', 'sensor_level',
+      'instrument_indicator', 'instrument_transmitter',
+      'Level Indicator', 'Level Transmitter', 'Temperature Indicator', 'Pressure Indicator'
+    ],
+    reasoning: 'Bowtie shapes represent valves, NEVER instruments/sensors'
+  },
+  'diamond': {
+    allowed_types: [
+      'Logic Function', 'instrument_logic', 'controller', 'interlock'
+    ],
+    forbidden_types: [
+      'valve_gate', 'valve_globe', 'Manual Valve' // Valves use bowtie, not diamond
+    ],
+    reasoning: 'Diamond shapes represent logic functions or interlocks'
+  }
+};
+
+/**
+ * ISA Tag Patterns for Type Inference
+ * Used as a fallback when shape/type mismatch is detected
+ */
+const ISA_TAG_PATTERNS: Record<string, string> = {
+  // Instruments (should have circular shapes)
+  '^[0-9]*TI': 'Temperature Indicator',
+  '^[0-9]*TT': 'Temperature Transmitter',
+  '^[0-9]*TIC': 'Temperature Indicator Controller',
+  '^[0-9]*PI': 'Pressure Indicator',
+  '^[0-9]*PT': 'Pressure Transmitter',
+  '^[0-9]*PIC': 'Pressure Indicator Controller',
+  '^[0-9]*FI': 'Flow Indicator',
+  '^[0-9]*FT': 'Flow Transmitter',
+  '^[0-9]*FIC': 'Flow Indicator Controller',
+  '^[0-9]*LI': 'Level Indicator',
+  '^[0-9]*LT': 'Level Transmitter',
+  '^[0-9]*LIT': 'Level Indicating Transmitter',
+  '^[0-9]*LG': 'Level Gauge',
+  '^[0-9]*LIC': 'Level Indicator Controller',
+  
+  // Valves (should have bowtie shapes)
+  '^[0-9]*[A-Z]*V-': 'Manual Valve',
+  '^[0-9]*CV': 'Control Valve',
+  '^[0-9]*FV': 'Flow Control Valve',
+  '^[0-9]*PV': 'Pressure Control Valve',
+  '^[0-9]*TV': 'Temperature Control Valve'
+};
 
 /**
  * Valid connection types per schema enum
@@ -228,4 +321,151 @@ export function normalizeAnalysisResult<T extends {
     components: result.components ? normalizeComponents(result.components) : undefined,
     connections: result.connections ? normalizeConnections(result.connections) : undefined
   };
+}
+
+/**
+ * TIER 3 SAFEGUARD: Validate shape/type compatibility
+ * Detects and corrects AI hallucinations where circular symbols are misclassified as valves
+ * 
+ * @param components - Array of detected components with shape and type fields
+ * @returns Validated and corrected components with sanity check metadata
+ */
+export function validateShapeTypeCompatibility<T extends { 
+  type?: string; 
+  shape?: string;
+  label?: string;
+  meta?: any;
+  confidence?: number;
+}>(components: T[]): T[] {
+  return components.map(comp => {
+    // Skip if no shape information
+    if (!comp.shape || !comp.type) {
+      return comp;
+    }
+
+    const shape = comp.shape.toLowerCase();
+    const type = comp.type;
+    const compatibility = SHAPE_TYPE_COMPATIBILITY[shape];
+
+    // Skip if shape not in compatibility rules
+    if (!compatibility) {
+      return comp;
+    }
+
+    // Check for forbidden type (critical error - likely hallucination)
+    const isForbidden = compatibility.forbidden_types.some(forbidden => 
+      type.toLowerCase().includes(forbidden.toLowerCase())
+    );
+
+    if (isForbidden) {
+      console.warn(
+        `[Shape Sanity Check] CRITICAL: Detected shape/type mismatch for component "${comp.label || comp.type}".\n` +
+        `  Shape: ${shape}\n` +
+        `  Type: ${type}\n` +
+        `  Issue: ${compatibility.reasoning}\n` +
+        `  Attempting auto-correction...`
+      );
+
+      // Attempt auto-correction using ISA tag pattern
+      const correctedType = inferTypeFromTag(comp.label || '');
+      
+      if (correctedType) {
+        console.log(`[Shape Sanity Check] Auto-corrected: ${type} → ${correctedType} (based on tag: ${comp.label})`);
+        
+        return {
+          ...comp,
+          type: correctedType,
+          confidence: Math.max(0.5, (comp.confidence || 0.8) - 0.3), // Reduce confidence due to correction
+          meta: {
+            ...comp.meta,
+            original_type: type,
+            correction_applied: true,
+            correction_reason: `Shape/type mismatch: ${shape} cannot be ${type}. ${compatibility.reasoning}`,
+            reasoning: `[CORRECTED] Original classification "${type}" contradicted detected shape "${shape}". ` +
+                      `Re-classified as "${correctedType}" based on ISA tag pattern. ${compatibility.reasoning}`
+          }
+        };
+      } else {
+        // No ISA tag available for correction - flag as error
+        console.error(
+          `[Shape Sanity Check] ERROR: Cannot auto-correct ${comp.label || type}. ` +
+          `No ISA tag pattern match found.`
+        );
+        
+        return {
+          ...comp,
+          confidence: Math.max(0.3, (comp.confidence || 0.8) - 0.5), // Significantly reduce confidence
+          meta: {
+            ...comp.meta,
+            validation_error: true,
+            validation_issue: `Shape/type mismatch: ${shape} shape incompatible with ${type} type`,
+            reasoning: `[ERROR] ${comp.meta?.reasoning || ''} | VALIDATION FAILED: Shape "${shape}" is incompatible with type "${type}". ${compatibility.reasoning}`
+          }
+        };
+      }
+    }
+
+    // Check if type is in allowed list (validation success)
+    const isAllowed = compatibility.allowed_types.some(allowed =>
+      type.toLowerCase().includes(allowed.toLowerCase())
+    );
+
+    if (isAllowed) {
+      // Validation passed - optionally add confirmation metadata
+      return {
+        ...comp,
+        meta: {
+          ...comp.meta,
+          shape_validation: 'passed'
+        }
+      };
+    }
+
+    // Type not explicitly allowed or forbidden - pass through with warning
+    return comp;
+  });
+}
+
+/**
+ * Infer component type from ISA tag pattern
+ * Used as fallback correction strategy when shape/type mismatch is detected
+ * 
+ * @param tag - ISA tag string (e.g., "TI-101", "1LIT-12422A")
+ * @returns Inferred component type or null if no pattern matches
+ */
+function inferTypeFromTag(tag: string): string | null {
+  if (!tag) return null;
+
+  // Normalize tag: remove numbers, spaces, special chars for pattern matching
+  const normalizedTag = tag.toUpperCase().replace(/[\s-]/g, '');
+
+  for (const [pattern, type] of Object.entries(ISA_TAG_PATTERNS)) {
+    const regex = new RegExp(pattern);
+    if (regex.test(normalizedTag)) {
+      console.log(`[ISA Inference] Matched pattern "${pattern}" for tag "${tag}" → Type: ${type}`);
+      return type;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Enhanced component normalization with shape/type validation
+ * Combines type normalization with sanity checking
+ */
+export function normalizeAndValidateComponents<T extends { 
+  type?: string;
+  shape?: string;
+  label?: string;
+  meta?: any;
+  confidence?: number;
+}>(components: T[]): T[] {
+  // First, normalize types
+  const normalized = normalizeComponents(components);
+  
+  // Then, validate shape/type compatibility and auto-correct errors
+  const validated = validateShapeTypeCompatibility(normalized);
+  
+  return validated;
 }
