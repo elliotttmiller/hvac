@@ -511,28 +511,23 @@ const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
   properties: {
     report_title: {
       type: "string",
-      description: "A concise title for the analysis report (e.g., 'Hydraulic Pump System Analysis')",
-      nullable: false
+      description: "A concise title for the analysis report (e.g., 'Hydraulic Pump System Analysis')"
     },
     executive_summary: {
       type: "string",
-      description: "A high-level overview (2-3 sentences) describing the system type and primary purpose",
-      nullable: false
+      description: "A high-level overview (2-3 sentences) describing the system type and primary purpose"
     },
     system_workflow_narrative: {
       type: "string",
-      description: "Detailed paragraph describing the complete process flow from start to finish, following physical connections",
-      nullable: false
+      description: "Detailed paragraph describing the complete process flow from start to finish, following physical connections"
     },
     control_logic_analysis: {
       type: "string",
-      description: "Paragraph explaining control strategies, showing how instruments send signals to controllers which modulate final control elements",
-      nullable: false
+      description: "Paragraph explaining control strategies, showing how instruments send signals to controllers which modulate final control elements"
     },
     specifications_and_details: {
       type: "string",
-      description: "Paragraph summarizing engineering details like pipe sizes, material specs, equipment ratings, or special notes",
-      nullable: false
+      description: "Paragraph summarizing engineering details like pipe sizes, material specs, equipment ratings, or special notes"
     },
     critical_equipment: {
       type: "array",
@@ -544,13 +539,11 @@ const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
           role: { type: "string", description: "Brief description of equipment's critical role" }
         },
         required: ["tag", "role"]
-      },
-      nullable: true
+      }
     },
     engineering_observations: {
       type: "string",
-      description: "Optional paragraph with additional engineering insights or observations",
-      nullable: true
+      description: "Optional paragraph with additional engineering insights or observations"
     }
   },
   required: ["report_title", "executive_summary", "system_workflow_narrative", "control_logic_analysis", "specifications_and_details"]
