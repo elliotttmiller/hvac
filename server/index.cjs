@@ -490,17 +490,69 @@ app.post('/api/analysis/queue', async (req, res) => {
         analysisJobs.set(jobId, job);
         io.emit('analysis-job-update', { jobId, status: 'running' });
 
-        // VALIDATION: Check AI configuration
-        if (!genAI) {
-          throw new Error('AI not configured on server. Check GEMINI_API_KEY in environment.');
-        }
-
         // LIFECYCLE: Payload Minification
         console.log(`[Stage 2] Job ${jobId} - Minifying payload...`);
         const minifyStart = Date.now();
         const { components, connections, stats } = minifyForAnalysis(payload.visual || {});
         const minifyDuration = Date.now() - minifyStart;
         console.log(`[Stage 2] Job ${jobId} - Minification complete in ${minifyDuration}ms`);
+
+        // MOCK MODE: Skip AI and return mock analysis
+        if (MOCK_MODE_ENABLED) {
+          console.warn(`[Stage 2] Job ${jobId} - MOCK MODE: Generating synthetic analysis`);
+          
+          const aiStart = Date.now();
+          
+          // Simulate processing delay
+          if (MOCK_MODE_DELAY_MS > 0) {
+            await new Promise(resolve => setTimeout(resolve, MOCK_MODE_DELAY_MS));
+          }
+          
+          const mockAnalysis = {
+            "Executive Summary": `This is a mock ${payload.document_type || 'SCHEMATIC'} analysis with ${components.length} components and ${connections.length} connections.`,
+            "System Workflow Narrative": "Mock workflow: The system processes flow from upstream equipment through control valves to downstream destinations. Key components are interconnected via process piping and control signals.",
+            "Control Logic Analysis": "Mock control logic: Instrumentation sensors monitor process variables and send signals to programmable logic controllers, which modulate final control elements to maintain desired setpoints.",
+            "Specifications and Details": "Mock specifications: System includes standard industrial equipment with typical ratings and specifications as shown in the provided data."
+          };
+          
+          const mockDuration = Date.now() - aiStart;
+          const parsed = mockAnalysis;
+          
+          // Jump to completion handling
+          job.status = 'completed'; 
+          job.result = parsed; 
+          job.endTime = Date.now();
+          job.performance = {
+            total: job.endTime - perfStart,
+            minification: minifyDuration,
+            ai_inference: mockDuration,
+            db_save: 0,
+            stats: stats,
+            mock_mode: true
+          };
+          analysisJobs.set(jobId, job);
+          
+          console.log(`[Stage 2] Job ${jobId} - Status: COMPLETED (MOCK MODE)`);
+          console.log(`[Stage 2] Job ${jobId} - Performance: Total=${job.performance.total}ms (Mock)`);
+          
+          // Update project store with final report
+          const project = projectsStore.get(job.projectId);
+          if (project) {
+            project.status = 'completed';
+            project.finalReport = parsed;
+            project.lastUpdated = Date.now();
+            projectsStore.set(job.projectId, project);
+            console.log(`[Stage 2] Project ${job.projectId} - Final report saved (MOCK MODE)`);
+          }
+          
+          io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
+          return;
+        }
+
+        // VALIDATION: Check AI configuration (only in live mode)
+        if (!genAI) {
+          throw new Error('AI not configured on server. Check GEMINI_API_KEY in environment.');
+        }
 
         // LIFECYCLE: Building Prompt
         const prompt = `
