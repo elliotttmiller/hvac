@@ -84,28 +84,31 @@ const BlueprintWorkspace: React.FC<{
 
     const pollInterval = setInterval(async () => {
       try {
-        console.log('[Polling] Checking status for job:', backgroundJobId);
-        const response = await fetch(`/api/analysis/status/${backgroundJobId}`);
+        // Poll the project endpoint instead of the ephemeral job endpoint
+        // This ensures persistence across page refreshes
+        const projectId = 'default'; // TODO: Make this configurable per project
+        console.log('[Polling] Checking project status:', projectId);
+        const response = await fetch(`/api/projects/${projectId}`);
         
         if (!response.ok) {
-          console.warn('[Polling] Failed to fetch job status:', response.status);
+          console.warn('[Polling] Failed to fetch project status:', response.status);
           return;
         }
 
-        const jobData = await response.json();
-        console.log('[Polling] Job status:', jobData.status);
+        const projectData = await response.json();
+        console.log('[Polling] Project status:', projectData.status);
 
-        if (jobData.status === 'completed') {
-          console.log('[Polling] Job completed! Setting final analysis report');
+        if (projectData.status === 'completed') {
+          console.log('[Polling] Project completed! Setting final analysis report');
           
           // Stop polling
           clearInterval(pollInterval);
           setIsBackgroundRunning(false);
           
           // Update state with the final report
-          if (jobData.result) {
-            setFinalAnalysisReport(jobData.result);
-            finalAnalysisReportRef.current = jobData.result;
+          if (projectData.finalReport) {
+            setFinalAnalysisReport(projectData.finalReport);
+            finalAnalysisReportRef.current = projectData.finalReport;
             
             // Update analysis raw log with completion message
             setAnalysisRaw((prev) => `${prev}\n\n[Stage 2 Complete] Final analysis report generated successfully.`);
@@ -123,8 +126,8 @@ const BlueprintWorkspace: React.FC<{
               }
             );
           }
-        } else if (jobData.status === 'failed') {
-          console.error('[Polling] Job failed:', jobData.error);
+        } else if (projectData.status === 'failed') {
+          console.error('[Polling] Project failed:', projectData.error);
           
           // Stop polling
           clearInterval(pollInterval);
@@ -133,13 +136,13 @@ const BlueprintWorkspace: React.FC<{
           // Show error toast
           toast.error(
             'Background analysis failed',
-            jobData.error || 'Unable to generate comprehensive report',
+            projectData.error || 'Unable to generate comprehensive report',
             { duration: 6000 }
           );
         }
-        // If status is 'running' or 'pending', continue polling
+        // If status is 'processing' or 'idle', continue polling
       } catch (error) {
-        console.error('[Polling] Error checking job status:', error);
+        console.error('[Polling] Error checking project status:', error);
       }
     }, 2000); // Poll every 2 seconds
 

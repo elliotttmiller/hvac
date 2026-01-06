@@ -57,7 +57,10 @@ export const queueFinalAnalysis = async (
       const resp = await fetch('/api/analysis/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentResult })
+        body: JSON.stringify({ 
+          documentResult,
+          projectId: 'default' // TODO: Make this configurable per project
+        })
       });
 
     if (!resp.ok) {

@@ -336,6 +336,19 @@ const analysisJobs = new Map();
 let analysisJobCounter = 0;
 function genAnalysisJobId() { return `analysis-job-${++analysisJobCounter}-${Date.now()}`; }
 
+// In-memory project store for persistence across page refreshes
+// Maps projectId -> { id, name, status, finalReport, lastUpdated }
+const projectsStore = new Map();
+
+// Initialize default project
+projectsStore.set('default', {
+  id: 'default',
+  name: 'Default Project',
+  status: 'idle', // idle | processing | completed | failed
+  finalReport: null,
+  lastUpdated: Date.now()
+});
+
 /**
  * PHASE 2: Data Minification Layer
  * Aggressively strips visual metadata and filters invalid connections
@@ -451,13 +464,21 @@ app.post('/api/analysis/queue', async (req, res) => {
     if (!payload || !payload.document_id) return res.status(400).json({ error: 'Missing documentResult' });
 
     const jobId = genAnalysisJobId();
-    const job = { jobId, documentId: payload.document_id, status: 'pending', startTime: Date.now() };
+    // Get projectId from request or default to 'default'
+    const projectId = req.body.projectId || 'default';
+    const job = { jobId, documentId: payload.document_id, projectId, status: 'pending', startTime: Date.now() };
     analysisJobs.set(jobId, job);
+
+    // Update project status to processing
+    const project = projectsStore.get(projectId) || { id: projectId, name: projectId, status: 'idle', finalReport: null };
+    project.status = 'processing';
+    project.lastUpdated = Date.now();
+    projectsStore.set(projectId, project);
 
     console.log(`[Stage 2] Job ${jobId} queued for document ${payload.document_id}`);
 
     // Respond immediately with jobId
-    res.json({ jobId });
+    res.json({ jobId, projectId });
 
     // Run analysis async with comprehensive error handling
     (async () => {
@@ -469,17 +490,69 @@ app.post('/api/analysis/queue', async (req, res) => {
         analysisJobs.set(jobId, job);
         io.emit('analysis-job-update', { jobId, status: 'running' });
 
-        // VALIDATION: Check AI configuration
-        if (!genAI) {
-          throw new Error('AI not configured on server. Check GEMINI_API_KEY in environment.');
-        }
-
         // LIFECYCLE: Payload Minification
         console.log(`[Stage 2] Job ${jobId} - Minifying payload...`);
         const minifyStart = Date.now();
         const { components, connections, stats } = minifyForAnalysis(payload.visual || {});
         const minifyDuration = Date.now() - minifyStart;
         console.log(`[Stage 2] Job ${jobId} - Minification complete in ${minifyDuration}ms`);
+
+        // MOCK MODE: Skip AI and return mock analysis
+        if (MOCK_MODE_ENABLED) {
+          console.warn(`[Stage 2] Job ${jobId} - MOCK MODE: Generating synthetic analysis`);
+          
+          const aiStart = Date.now();
+          
+          // Simulate processing delay
+          if (MOCK_MODE_DELAY_MS > 0) {
+            await new Promise(resolve => setTimeout(resolve, MOCK_MODE_DELAY_MS));
+          }
+          
+          const mockAnalysis = {
+            "Executive Summary": `This is a mock ${payload.document_type || 'SCHEMATIC'} analysis with ${components.length} components and ${connections.length} connections.`,
+            "System Workflow Narrative": "Mock workflow: The system processes flow from upstream equipment through control valves to downstream destinations. Key components are interconnected via process piping and control signals.",
+            "Control Logic Analysis": "Mock control logic: Instrumentation sensors monitor process variables and send signals to programmable logic controllers, which modulate final control elements to maintain desired setpoints.",
+            "Specifications and Details": "Mock specifications: System includes standard industrial equipment with typical ratings and specifications as shown in the provided data."
+          };
+          
+          const mockDuration = Date.now() - aiStart;
+          const parsed = mockAnalysis;
+          
+          // Jump to completion handling
+          job.status = 'completed'; 
+          job.result = parsed; 
+          job.endTime = Date.now();
+          job.performance = {
+            total: job.endTime - perfStart,
+            minification: minifyDuration,
+            ai_inference: mockDuration,
+            db_save: 0,
+            stats: stats,
+            mock_mode: true
+          };
+          analysisJobs.set(jobId, job);
+          
+          console.log(`[Stage 2] Job ${jobId} - Status: COMPLETED (MOCK MODE)`);
+          console.log(`[Stage 2] Job ${jobId} - Performance: Total=${job.performance.total}ms (Mock)`);
+          
+          // Update project store with final report
+          const project = projectsStore.get(job.projectId);
+          if (project) {
+            project.status = 'completed';
+            project.finalReport = parsed;
+            project.lastUpdated = Date.now();
+            projectsStore.set(job.projectId, project);
+            console.log(`[Stage 2] Project ${job.projectId} - Final report saved (MOCK MODE)`);
+          }
+          
+          io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
+          return;
+        }
+
+        // VALIDATION: Check AI configuration (only in live mode)
+        if (!genAI) {
+          throw new Error('AI not configured on server. Check GEMINI_API_KEY in environment.');
+        }
 
         // LIFECYCLE: Building Prompt
         const prompt = `
@@ -606,6 +679,16 @@ Generate a professional engineering analysis that explains this system in narrat
         console.log(`[Stage 2] Job ${jobId} - Status: COMPLETED`);
         console.log(`[Stage 2] Job ${jobId} - Performance: Total=${job.performance.total}ms, AI=${aiDuration}ms, Minify=${minifyDuration}ms, DB=${dbDuration}ms`);
         
+        // Update project store with final report
+        const project = projectsStore.get(job.projectId);
+        if (project) {
+          project.status = 'completed';
+          project.finalReport = parsed;
+          project.lastUpdated = Date.now();
+          projectsStore.set(job.projectId, project);
+          console.log(`[Stage 2] Project ${job.projectId} - Final report saved`);
+        }
+        
         io.emit('analysis-job-update', { jobId, status: 'completed', result: parsed });
         
       } catch (err) {
@@ -623,6 +706,15 @@ Generate a professional engineering analysis that explains this system in narrat
         };
         analysisJobs.set(jobId, job);
         
+        // Update project store with failed status
+        const project = projectsStore.get(job.projectId);
+        if (project) {
+          project.status = 'failed';
+          project.error = errorMessage;
+          project.lastUpdated = Date.now();
+          projectsStore.set(job.projectId, project);
+        }
+        
         // Emit failure to frontend so UI stops polling and shows error
         io.emit('analysis-job-update', { jobId, status: 'failed', error: errorMessage });
       }
@@ -637,6 +729,27 @@ app.get('/api/analysis/status/:jobId', (req, res) => {
   const job = analysisJobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ error: 'Job not found' });
   res.json(job);
+});
+
+// Get individual project with status and finalReport
+app.get('/api/projects/:id', (req, res) => {
+  const { id } = req.params;
+  const project = projectsStore.get(id);
+  
+  if (!project) {
+    // Create a new project if it doesn't exist
+    const newProject = {
+      id,
+      name: id,
+      status: 'idle',
+      finalReport: null,
+      lastUpdated: Date.now()
+    };
+    projectsStore.set(id, newProject);
+    return res.json(newProject);
+  }
+  
+  res.json(project);
 });
 
 // --- 4. Project & File Management ---
