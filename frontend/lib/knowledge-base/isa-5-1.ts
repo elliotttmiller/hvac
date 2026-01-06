@@ -221,30 +221,36 @@ VALVE FAIL MODES:
 - **FSO**: Fail Safe Open.
 - **FSC**: Fail Safe Closed.
 
-VALVE TYPES & SYMBOLS:
-- **Control Valve**: Triangle or diamond with stem line
-- **Ball Valve**: Circle with diagonal line (quarter-turn)
-- **Globe Valve**: Circular body with perpendicular stem
-- **Butterfly Valve**: Circle with diagonal bar (BFV)
-- **Check Valve**: Triangle or arrow pointing flow direction
-- **Gate Valve**: Rectangle with gate symbol
-- **Plug Valve**: Circle with plug representation
-- **Three-Way Valve**: Y-shaped or T-junction with diverter
-- **Pressure Relief Valve**: Spring-loaded symbol (PRV)
-- **Solenoid Valve**: Box with coil symbol or 'SOL'
-- **Needle Valve**: Tapered stem symbol
-- **Diaphragm Valve**: Diaphragm actuated symbol
+VALVE TYPES & PRECISE GEOMETRIC DEFINITIONS:
+- **Control Valve (Modulating)**: Triangle body (▽) with vertical stem line. NOT to be confused with gate valve (wedge shape) or check valve (arrow). Typical Cv range: 0.5-500.
+- **Ball Valve**: Circle (○) with diagonal line bisecting center (quarter-turn, 90°). Distinguishing feature: SINGLE diagonal, not double like butterfly.
+- **Globe Valve**: Circular body with PERPENDICULAR stem entering from top. Body has S-shaped internal path (not visible but implied by vertical stem + side ports).
+- **Butterfly Valve (BFV)**: Circle (○) with SINGLE horizontal or diagonal bar representing disc. Similar to ball valve but bar is centered, not edge-to-edge.
+- **Check Valve**: Solid triangle (►) or arrow pointing in flow direction. Single direction indicator, no stem. Distinguished from control valve by lack of stem and actuator.
+- **Gate Valve**: Rectangle body with wedge/gate symbol (perpendicular line inside). Full bore when open. NOT a diamond (that's logic/PLC).
+- **Plug Valve**: Circle with cylindrical plug representation (small rectangle or tapered shape inside).
+- **Three-Way Valve**: Y-shape or T-junction with diverter element. Three ports visible. Used for mixing or diverting flows.
+- **Pressure Relief Valve (PRV/PSV)**: Spring-loaded symbol - triangle with coil spring on top. Opens at setpoint pressure.
+- **Solenoid Valve**: Rectangle/box with electrical coil symbol (|||) or 'SOV' label. Fast-acting, on/off only.
+- **Needle Valve**: Small body with tapered needle stem for fine flow control (throttling).
+- **Diaphragm Valve**: Body with flexible diaphragm actuator shown as curved membrane.
+
+CRITICAL DISTINCTIONS (Common Confusion Points):
+1. **Diamond vs Triangle**: Diamond (◇) = PLC/Logic function. Triangle (▽) = Control valve body.
+2. **Ball vs Butterfly**: Ball has diagonal line. Butterfly has centered bar/disc.
+3. **Control Valve vs Check Valve**: Control valve has stem + actuator. Check valve is passive, arrow-shaped, no actuator.
+4. **Gate Valve vs Control Valve**: Gate is rectangular with internal wedge. Control is triangular with modulating actuator.
 
 ACTUATOR SYMBOLS:
-- **Diaphragm**: Semicircle/Mushroom top.
-- **Motor (M)**: Circle with 'M' or motor winding symbol.
-- **Solenoid (S)**: Box with 'S' or coil symbol.
-- **Electric**: Lightning bolt or 'E'.
-- **Pneumatic**: Double slash marks (//).
-- **Hydraulic**: 'H' or hydraulic symbol.
-- **Piston**: Cylinder shape with rod.
-- **Hand**: T-Bar or Wheel symbol.
-- **Spring**: Coil spring symbol (for return).
+- **Diaphragm**: Semicircle/Mushroom top (spring-opposed or double-acting).
+- **Motor (M)**: Circle with 'M' or motor winding symbol. Electric rotary actuator for MOV (Motor Operated Valve).
+- **Solenoid (S)**: Box with 'S' or coil symbol (|||). Fast on/off action.
+- **Electric (E)**: Lightning bolt or 'E'. Generic electric actuation.
+- **Pneumatic**: Double slash marks (//) on signal line. Air-operated (3-15 PSI typical).
+- **Hydraulic**: 'H' or hydraulic cylinder symbol. Liquid-operated (high force).
+- **Piston**: Cylinder shape with rod. Linear motion actuator.
+- **Hand (Manual)**: T-Bar (hand wheel), Lever, or Wrench symbol. Manual operation only.
+- **Spring**: Coil spring symbol (for return-to-position on loss of signal).
 `;
 
 // --- 5. HVAC SPECIFIC CONTEXT ---
@@ -297,16 +303,141 @@ export const HVAC_EQUIPMENT_PATTERNS: Record<string, string> = {
   "SEP": "Separator"
 };
 
+// --- ASHRAE & SMACNA STANDARDS (Token-Optimized) ---
+
+export const ASHRAE_STANDARDS = {
+  // Temperature ranges (ASHRAE 90.1, 55)
+  comfort_zone: { heating: "68-75°F", cooling: "73-79°F", humidity: "30-60% RH" },
+  chilled_water: { supply: "42-48°F", return: "54-58°F", delta_t: "10-14°F" },
+  hot_water: { supply: "140-180°F", return: "120-160°F", delta_t: "20-40°F" },
+  condenser_water: { supply: "85-95°F", return: "95-105°F", approach: "7-10°F to WB" },
+  
+  // Pressure & flow standards
+  duct_velocity_limits: { supply: "1500-2500 FPM", return: "1000-1500 FPM", exhaust: "1500-2000 FPM" },
+  static_pressure: { supply: "1.0-4.0 in w.g.", return: "-0.5 to -2.0 in w.g." },
+  hydronic_pressure: { typical: "10-50 PSI", max_design: "125-150 PSI" },
+  
+  // Ventilation (ASHRAE 62.1)
+  outdoor_air: { office: "5-20 CFM/person", classroom: "10-15 CFM/person", lab: "0.5-2.0 ACH" },
+  
+  // Energy efficiency (ASHRAE 90.1)
+  economizer: "Required for cooling > 54k BTU/h in most climates",
+  vav_turndown: "30% minimum (Standard 90.1-2019)",
+  chiller_efficiency: { water: ">0.6 kW/ton", air: ">1.0 kW/ton" }
+};
+
+export const SMACNA_DUCT_STANDARDS = {
+  pressure_classes: {
+    low: "±2 in w.g. or less",
+    medium: "±2 to ±6 in w.g.",
+    high: "±6 to ±10 in w.g."
+  },
+  sealing: {
+    seal_class_a: "Leakage ≤ 4 CFM/100 sq ft @ 1 in w.g.",
+    seal_class_b: "Leakage ≤ 8 CFM/100 sq ft @ 1 in w.g.",
+    seal_class_c: "Leakage ≤ 24 CFM/100 sq ft @ 1 in w.g."
+  },
+  construction: "Follow SMACNA HVAC Duct Construction Standards - Metal & Flexible (latest edition)"
+};
+
+// --- COMMON P&ID CONVENTIONS & LEGEND SYMBOLS ---
+
+export const COMMON_PID_CONVENTIONS = {
+  // Line types (ISO 14617, ISA-5.1)
+  process_line: "Solid thick line (1.0-1.5mm) - Main process flow (piping, ductwork)",
+  instrument_signal: "Dashed line (---) or dot-dash (·-·-) - Electrical/electronic signal",
+  pneumatic_signal: "Line with // marks - Pneumatic signal (3-15 PSI)",
+  hydraulic_signal: "Line with H or -H-H- - Hydraulic signal",
+  capillary_tube: "Line with X marks - Filled system (thermostat capillary)",
+  software_link: "Line with ○○○ - Digital/data communication (Ethernet, fieldbus)",
+  mechanical_link: "Double line or chain symbol - Mechanical connection (shaft, linkage)",
+  
+  // Equipment symbols
+  heat_exchanger_shell_tube: "Circle with X or horizontal lines (tubes)",
+  heat_exchanger_plate: "Stacked rectangles or PHX label",
+  pump_centrifugal: "Circle with impeller blades (curved lines)",
+  pump_positive_displacement: "Circle with gear teeth or lobes",
+  compressor: "Circle with diagonal shaft, often labeled COMP",
+  tank_vessel: "Vertical rectangle (vessel) or horizontal ellipse (tank)",
+  filter_strainer: "Triangle or mesh symbol with label FLTR/STRN",
+  
+  // Valve positioning conventions
+  normally_open: "Shown in NO (Normally Open) position unless labeled NC",
+  normally_closed: "Labeled NC (Normally Closed) if not default",
+  fail_position: "Arrow indicates fail mode: ↑=FO (Fail Open), ↓=FC (Fail Closed)"
+};
+
+// --- GEOMETRIC DISAMBIGUATION (Prevent "Diamond Shape" Hallucination) ---
+
+export const GEOMETRIC_VISUAL_GUIDE = `
+CRITICAL: DIAMOND vs TRIANGLE vs CIRCLE DISTINCTION
+
+**DIAMOND (◇)**: 4 equal sides, 90° rotated square
+- **USE**: PLC/Logic functions, Binary control, Sequencing, Interlocks
+- **NEVER**: Control valves (those are TRIANGLES)
+- Example: "Start/Stop Logic", "High Pressure Interlock"
+
+**TRIANGLE (▽ or △)**: 3 sides, pointed shape
+- **USE**: Control valves (modulating), Check valves (flow direction arrow)
+- **STEM INDICATOR**: Control valve has vertical line (stem) from top
+- Example: "TCV-101" (Temperature Control Valve), "CHV-202" (Check Valve)
+
+**CIRCLE (○)**: Round shape
+- **USE**: Instruments, Sensors, Ball valves, Butterfly valves
+- **INTERNAL MARKINGS**: Letters inside indicate function (TT, PI, FIC, etc.)
+- Example: "TT-101" (Temperature Transmitter), "BV-301" (Ball Valve with diagonal line)
+
+**HEXAGON (⬡)**: 6 sides
+- **USE**: Computer functions, Data logging, Supervisory control
+- Example: "Historian", "SCADA Server"
+
+**SQUARE (□)**: 4 equal sides, straight edges
+- **USE**: Shared display (HMI), Panel instruments (when containing a circle)
+- Example: Circle-in-square = DCS faceplate
+
+**RECTANGLE (▬)**: 4 sides, longer than tall
+- **USE**: Gate valves, Orifice plates, Equipment outlines
+- Example: "GV-101" (Gate Valve)
+
+REASONING RULES FOR AI:
+1. If you see 4 sides at 90° rotation → DIAMOND → Logic/PLC → NOT a valve
+2. If you see 3 sides with a stem → TRIANGLE → Control Valve
+3. If you see a circle with text inside → INSTRUMENT → Read the ISA tag
+4. If you see diagonal line in circle → Ball or Butterfly Valve (check if single line or bar)
+5. NEVER say "diamond-shaped valve" - Diamonds are for logic, Triangles are for valves
+`;
+
 export const ENGINEERING_FIRST_PRINCIPLES = `
 PHYSICS & TOPOLOGY RULES:
 1. **Control Loop Integrity**: A Sensor (T) must eventually influence an Actuator (V/DMP) via a Controller (C).
+   - Example: TT-101 (Temp Transmitter) → TIC-101 (Temp Controller) → TV-101 (Temp Control Valve)
 2. **Mass Balance**: In HVAC, Supply Air Flow = Return Air + Exhaust Air + Leakage.
+   - Closed systems: What goes in must come out (conservation of mass).
 3. **Heat Exchange**: Coils require piping connections (Supply & Return). 
    - If you see a coil symbol inside an AHU, look for "CHWS/CHWR" (Chilled Water) or "HWS/HWR" (Hot Water) tags.
+   - Typical setpoints: CHW 42-48°F supply, 54-58°F return. HW 140-180°F supply, 120-160°F return.
 4. **Pressure Relationships**: Higher pressure flows to lower pressure. Check valve prevents backflow.
+   - HVAC typical static pressures: Supply 1-4" w.g., Return -0.5 to -2" w.g.
+   - Hydronic systems: 10-50 PSI typical, 125-150 PSI max design.
 5. **Signal Flow**: Sensors → Transmitters → Controllers → Actuators (typical control loop).
+   - 4-20mA standard for analog signals (0% = 4mA, 100% = 20mA).
+   - 3-15 PSI standard for pneumatic signals (0% = 3 PSI, 100% = 15 PSI).
 6. **Instrumentation Hierarchy**: Primary Element (E) → Transmitter (T) → Indicator/Controller (I/C) → Final Element (V).
 7. **Safety Interlocks**: High/Low switches (SH/SL) typically connect to alarms or shutdown sequences.
+   - High temp alarm (TSH): Triggers at T_max to prevent overheating.
+   - Low flow alarm (FSL): Triggers at F_min to prevent equipment damage.
+8. **Pump Configurations**:
+   - Primary/Secondary: Decouples production from distribution. Primary serves load, secondary distributes.
+   - Primary-Only Variable Flow: Single loop with VFDs, requires careful ΔP control.
+   - Constant/Variable: Constant primary + variable secondary for energy efficiency.
+9. **Air Distribution Principles**:
+   - VAV systems: Vary airflow, maintain temp. Typical turndown 30-100% of design CFM.
+   - CAV systems: Fixed airflow, vary temp via reheat or damper control.
+   - Duct sizing: Velocity limits - Supply 1500-2500 FPM, Return 1000-1500 FPM (ASHRAE/SMACNA).
+10. **Refrigeration Cycle** (ASHRAE Fundamentals):
+    - Evaporator (low P, low T) → Compressor (ΔP, ΔT) → Condenser (high P, high T) → Expansion Valve (ΔP).
+    - Superheat: Temp above saturation at suction (5-15°F typical).
+    - Subcooling: Temp below saturation at liquid line (10-20°F typical).
 `;
 
 // --- 7. ADVANCED ISA TAG DETECTION ---
@@ -431,9 +562,17 @@ export const generateISAContext = (): string => {
     ${LINE_SYMBOLOGY}
     ${VALVE_ACTUATOR_LOGIC}
     
+    ${GEOMETRIC_VISUAL_GUIDE}
+    
     [HVAC DOMAIN]
     EQUIPMENT_MAP: ${JSON.stringify(HVAC_EQUIPMENT_PATTERNS)}
     ${ENGINEERING_FIRST_PRINCIPLES}
+    
+    [ASHRAE STANDARDS]
+    ${JSON.stringify(ASHRAE_STANDARDS, null, 2)}
+    
+    [P&ID CONVENTIONS]
+    ${JSON.stringify(COMMON_PID_CONVENTIONS, null, 2)}
     
     === END KNOWLEDGE BASE ===
   `;
