@@ -503,6 +503,60 @@ function normalizeFinalReport(raw) {
 }
 
 /**
+ * JSON Schema for final analysis report response.
+ * Enforces the structure that normalizeFinalReport() expects.
+ */
+const FINAL_ANALYSIS_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    report_title: {
+      type: "string",
+      description: "A concise title for the analysis report (e.g., 'Hydraulic Pump System Analysis')",
+      nullable: false
+    },
+    executive_summary: {
+      type: "string",
+      description: "A high-level overview (2-3 sentences) describing the system type and primary purpose",
+      nullable: false
+    },
+    system_workflow_narrative: {
+      type: "string",
+      description: "Detailed paragraph describing the complete process flow from start to finish, following physical connections",
+      nullable: false
+    },
+    control_logic_analysis: {
+      type: "string",
+      description: "Paragraph explaining control strategies, showing how instruments send signals to controllers which modulate final control elements",
+      nullable: false
+    },
+    specifications_and_details: {
+      type: "string",
+      description: "Paragraph summarizing engineering details like pipe sizes, material specs, equipment ratings, or special notes",
+      nullable: false
+    },
+    critical_equipment: {
+      type: "array",
+      description: "Optional list of critical equipment with their roles",
+      items: {
+        type: "object",
+        properties: {
+          tag: { type: "string", description: "Equipment tag identifier" },
+          role: { type: "string", description: "Brief description of equipment's critical role" }
+        },
+        required: ["tag", "role"]
+      },
+      nullable: true
+    },
+    engineering_observations: {
+      type: "string",
+      description: "Optional paragraph with additional engineering insights or observations",
+      nullable: true
+    }
+  },
+  required: ["report_title", "executive_summary", "system_workflow_narrative", "control_logic_analysis", "specifications_and_details"]
+};
+
+/**
  * PHASE 3: Background Analysis Queue with Enhanced Observability
  * Implements lifecycle logging, explicit error handling, and timeout support
  */
@@ -662,11 +716,12 @@ Generate a professional engineering analysis that explains this system in narrat
         );
         console.log(`[Stage 2] Job ${jobId} - Thinking budget: ${thinkingBudget} tokens`);
         
-        // Configure AI with timeout support
+        // Configure AI with timeout support and response schema
         const geminiModel = genAI.getGenerativeModel({ 
           model: AI_MODEL_DEFAULT,
           generationConfig: { 
             responseMimeType: 'application/json',
+            responseSchema: FINAL_ANALYSIS_RESPONSE_SCHEMA,
             temperature: 0.2,
             maxOutputTokens: maxOutputTokens
           },
