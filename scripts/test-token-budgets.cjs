@@ -6,6 +6,9 @@
 
 console.log('🧪 Testing Token Budget Optimization\n');
 
+// Configuration constants
+const OLD_TOKEN_BUDGET = 69632; // Previous excessive budget (65k output + 4k thinking)
+
 // Simulate the token budget calculation logic
 function calculateTokenBudgets(componentCount) {
   // Output tokens: ~50-100 tokens per component for comprehensive narrative
@@ -49,10 +52,10 @@ testCases.forEach(testCase => {
 
 console.log('📈 Budget Comparison:');
 console.log('========================================\n');
-console.log('Old approach (65k tokens):');
-console.log('  Output: 65,536 tokens (❌ EXCESSIVE)');
-console.log('  Thinking: 4,096 tokens');
-console.log('  Total: ~69,632 tokens per request\n');
+console.log(`Old approach (65k tokens):`);
+console.log(`  Output: 65,536 tokens (❌ EXCESSIVE)`);
+console.log(`  Thinking: 4,096 tokens`);
+console.log(`  Total: ${OLD_TOKEN_BUDGET} tokens per request\n`);
 
 const medium = calculateTokenBudgets(21);
 console.log('New optimized approach (21 component diagram):');
@@ -60,7 +63,7 @@ console.log(`  Output: ${medium.maxOutputTokens} tokens (✅ OPTIMIZED)`);
 console.log(`  Thinking: ${medium.thinkingBudget} tokens`);
 console.log(`  Total: ${medium.maxOutputTokens + medium.thinkingBudget} tokens per request\n`);
 
-const reduction = (1 - (medium.maxOutputTokens + medium.thinkingBudget) / 69632) * 100;
+const reduction = (1 - (medium.maxOutputTokens + medium.thinkingBudget) / OLD_TOKEN_BUDGET) * 100;
 console.log(`💰 Token savings: ${reduction.toFixed(1)}% reduction`);
 console.log(`💵 Cost savings: ~${reduction.toFixed(1)}% per analysis request\n`);
 

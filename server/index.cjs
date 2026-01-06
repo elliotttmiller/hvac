@@ -23,6 +23,18 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 // and fall back to the recommended model (gemini-2.5-flash).
 const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MODEL || 'gemini-2.5-flash';
 
+// Token Budget Configuration (Dynamic Calculation)
+// These values determine how token budgets scale with diagram complexity
+const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '75', 10);
+const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '500', 10);
+const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '4096', 10);
+const THINKING_TOKENS_PER_COMPONENT = parseInt(process.env.THINKING_TOKENS_PER_COMPONENT || '100', 10);
+const BASE_THINKING_TOKENS = parseInt(process.env.BASE_THINKING_TOKENS || '2048', 10);
+const MAX_THINKING_TOKENS_CAP = parseInt(process.env.MAX_THINKING_TOKENS_CAP || '6144', 10);
+
+// Timeout Configuration
+const DEFAULT_AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '180000', 10); // 3 minutes
+
 // Mock Mode Configuration (for zero-cost debugging)
 const MOCK_MODE_ENABLED = process.env.MOCK_MODE_ENABLED === 'true';
 const MOCK_DATA_PATH = path.join(__dirname, 'mocks', 'golden-record.json');
@@ -507,27 +519,23 @@ Generate a professional engineering analysis that explains this system in narrat
         const aiStart = Date.now();
         
         // OPTIMIZED TOKEN BUDGET: Calculate based on component count
-        // Rule of thumb: ~50-100 tokens per component for comprehensive narrative
-        // + 500 tokens base for executive summary and conclusions
+        // Uses configurable values from environment variables
         const componentCount = components.length;
-        const tokensPerComponent = 75; // Balanced: detailed but not verbose
-        const baseTokens = 500;
         const maxOutputTokens = Math.min(
-          baseTokens + (componentCount * tokensPerComponent),
-          4096 // Hard cap at 4k tokens for narrative reports
+          BASE_OUTPUT_TOKENS + (componentCount * TOKENS_PER_COMPONENT),
+          MAX_OUTPUT_TOKENS_CAP
         );
         
-        console.log(`[Stage 2] Job ${jobId} - Token budget: ${maxOutputTokens} tokens (${componentCount} components * ${tokensPerComponent} + ${baseTokens} base, cap: 4096)`);
+        console.log(`[Stage 2] Job ${jobId} - Token budget: ${maxOutputTokens} tokens (${componentCount} components × ${TOKENS_PER_COMPONENT} + ${BASE_OUTPUT_TOKENS} base, cap: ${MAX_OUTPUT_TOKENS_CAP})`);
         
         // OPTIMIZED THINKING BUDGET: Dynamic based on complexity
-        // Simple diagrams (<10 components): 2048 tokens
-        // Medium diagrams (10-30 components): 4096 tokens  
-        // Complex diagrams (>30 components): 6144 tokens (max)
-        const thinkingBudget = Math.min(2048 + (componentCount * 100), 6144);
+        const thinkingBudget = Math.min(
+          BASE_THINKING_TOKENS + (componentCount * THINKING_TOKENS_PER_COMPONENT),
+          MAX_THINKING_TOKENS_CAP
+        );
         console.log(`[Stage 2] Job ${jobId} - Thinking budget: ${thinkingBudget} tokens`);
         
-        // Configure AI with timeout support for large token generation
-        const AI_TIMEOUT_MS = parseInt(process.env.AI_GENERATION_TIMEOUT_MS || '180000', 10); // 3 minutes default (reduced from 5)
+        // Configure AI with timeout support
         const geminiModel = genAI.getGenerativeModel({ 
           model: AI_MODEL_DEFAULT,
           generationConfig: { 
@@ -538,12 +546,12 @@ Generate a professional engineering analysis that explains this system in narrat
           systemInstruction: FINAL_ANALYSIS_SYSTEM_INSTRUCTION
         });
 
-        console.log(`[Stage 2] Job ${jobId} - AI timeout configured: ${AI_TIMEOUT_MS}ms`);
+        console.log(`[Stage 2] Job ${jobId} - AI timeout configured: ${DEFAULT_AI_TIMEOUT_MS}ms`);
         
         const result = await Promise.race([
           geminiModel.generateContent(prompt),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error(`AI generation timeout after ${AI_TIMEOUT_MS}ms`)), AI_TIMEOUT_MS)
+            setTimeout(() => reject(new Error(`AI generation timeout after ${DEFAULT_AI_TIMEOUT_MS}ms`)), DEFAULT_AI_TIMEOUT_MS)
           )
         ]);
         
@@ -559,13 +567,23 @@ Generate a professional engineering analysis that explains this system in narrat
         try { 
           parsed = JSON.parse(text); 
         } catch (e) { 
-          console.warn(`[Stage 2] Job ${jobId} - JSON parse fallback`);
-          // Try to extract JSON from markdown code blocks
+          console.warn(`[Stage 2] Job ${jobId} - JSON parse error, attempting fallback extraction`);
+          // Try to extract JSON from markdown code blocks or text
           const match = text.match(/\{[\s\S]*\}/);
           if (match) {
-            parsed = JSON.parse(match[0]);
+            try {
+              parsed = JSON.parse(match[0]);
+              console.log(`[Stage 2] Job ${jobId} - Fallback extraction successful`);
+            } catch (e2) {
+              console.error(`[Stage 2] Job ${jobId} - Fallback extraction also failed:`, e2.message);
+              parsed = { 
+                raw: text, 
+                error: 'Could not parse JSON response',
+                parseError: e2.message 
+              };
+            }
           } else {
-            parsed = { raw: text, error: 'Could not parse JSON response' };
+            parsed = { raw: text, error: 'No JSON structure found in response' };
           }
         }
 
