@@ -134,8 +134,9 @@ export function normalizeConnectionType(rawType: string | undefined): ValidConne
   const normalized = rawType.toLowerCase().trim();
   
   // Direct match
-  if (VALID_CONNECTION_TYPES.includes(normalized as any)) {
-    return normalized as ValidConnectionType;
+  const validType = VALID_CONNECTION_TYPES.find(t => t === normalized);
+  if (validType) {
+    return validType;
   }
   
   // Lookup in mapping
@@ -181,22 +182,38 @@ export function normalizeComponentType(rawType: string | undefined): string {
 
 /**
  * Normalize all connection types in an array
+ * Optimized: only normalizes if type doesn't match expected format
  */
 export function normalizeConnections<T extends { type?: string }>(connections: T[]): T[] {
-  return connections.map(conn => ({
-    ...conn,
-    type: normalizeConnectionType(conn.type)
-  }));
+  return connections.map(conn => {
+    // Skip if already normalized (matches a valid type exactly)
+    if (conn.type && VALID_CONNECTION_TYPES.includes(conn.type as any)) {
+      return conn;
+    }
+    
+    return {
+      ...conn,
+      type: normalizeConnectionType(conn.type)
+    };
+  });
 }
 
 /**
  * Normalize all component types in an array
+ * Optimized: only normalizes if type contains spaces or uppercase (needs normalization)
  */
 export function normalizeComponents<T extends { type?: string }>(components: T[]): T[] {
-  return components.map(comp => ({
-    ...comp,
-    type: normalizeComponentType(comp.type)
-  }));
+  return components.map(comp => {
+    // Skip if type appears already normalized (lowercase, underscores, no spaces)
+    if (comp.type && /^[a-z_]+$/.test(comp.type)) {
+      return comp;
+    }
+    
+    return {
+      ...comp,
+      type: normalizeComponentType(comp.type)
+    };
+  });
 }
 
 /**
