@@ -343,6 +343,60 @@ const CONFIDENCE_ADJUSTMENTS = {
 } as const;
 
 /**
+ * Infer shape from component type and ISA tag when shape field is missing
+ * CRITICAL: This is a fallback for when AI doesn't return shape field
+ * 
+ * @param comp - Component without shape field
+ * @returns Inferred shape based on type and tag patterns
+ */
+function inferShapeFromComponent<T extends {
+  type?: string;
+  label?: string;
+  meta?: any;
+}>(comp: T): string | null {
+  const type = (comp.type || '').toLowerCase();
+  const label = (comp.label || '').toUpperCase();
+  const reasoning = (comp.meta?.reasoning || '').toLowerCase();
+  
+  // Check reasoning text for explicit shape mentions
+  if (reasoning.includes('circle') || reasoning.includes('circular')) {
+    return 'circle';
+  }
+  if (reasoning.includes('bowtie') || reasoning.includes('bow-tie')) {
+    return 'bowtie';
+  }
+  if (reasoning.includes('diamond')) {
+    return 'diamond';
+  }
+  if (reasoning.includes('square') && reasoning.includes('circle')) {
+    return 'circle_in_square';
+  }
+  
+  // Infer from ISA tag patterns (instruments = circles)
+  const instrumentPrefixes = ['TI', 'TT', 'TIC', 'PI', 'PT', 'PIC', 'FI', 'FT', 'FIC', 'LI', 'LT', 'LIT', 'LG', 'LIC'];
+  for (const prefix of instrumentPrefixes) {
+    if (label.includes(prefix)) {
+      console.log(`[Shape Inference] Inferred shape 'circle' for ${comp.label} based on ISA tag pattern ${prefix}`);
+      return 'circle';
+    }
+  }
+  
+  // Infer from component type
+  const instrumentTypes = ['sensor', 'indicator', 'transmitter', 'gauge', 'instrument'];
+  const valveTypes = ['valve'];
+  
+  if (instrumentTypes.some(t => type.includes(t))) {
+    return 'circle';
+  }
+  if (valveTypes.some(t => type.includes(t))) {
+    return 'bowtie';
+  }
+  
+  // Could not infer
+  return null;
+}
+
+/**
  * TIER 3 SAFEGUARD: Validate shape/type compatibility
  * Detects and corrects AI hallucinations where circular symbols are misclassified as valves
  * 
@@ -357,8 +411,29 @@ export function validateShapeTypeCompatibility<T extends {
   confidence?: number;
 }>(components: T[]): T[] {
   return components.map(comp => {
-    // Skip if no shape information
-    if (!comp.shape || !comp.type) {
+    let shape = comp.shape;
+    let shapeInferred = false;
+    
+    // CRITICAL FIX: If shape is missing, try to infer it
+    if (!shape && comp.type) {
+      shape = inferShapeFromComponent(comp);
+      if (shape) {
+        shapeInferred = true;
+        console.warn(
+          `[Shape Inference] Component "${comp.label || comp.type}" missing shape field. ` +
+          `Inferred shape: "${shape}". AI should have provided this!`
+        );
+      }
+    }
+    
+    // Skip validation if still no shape information
+    if (!shape || !comp.type) {
+      if (!shape && comp.type) {
+        console.warn(
+          `[Shape Sanity Check] WARNING: Component "${comp.label || comp.type}" missing shape field ` +
+          `and could not be inferred. Validation skipped. This may allow misclassifications!`
+        );
+      }
       return comp;
     }
 
@@ -393,6 +468,7 @@ export function validateShapeTypeCompatibility<T extends {
         
         return {
           ...comp,
+          shape: shape, // Add inferred or existing shape
           type: correctedType,
           confidence: Math.max(
             CONFIDENCE_ADJUSTMENTS.MIN_CONFIDENCE_AFTER_CORRECTION,
@@ -400,6 +476,7 @@ export function validateShapeTypeCompatibility<T extends {
           ),
           meta: {
             ...comp.meta,
+            shape_inferred: shapeInferred,
             original_type: type,
             correction_applied: true,
             correction_reason: `Shape/type mismatch: ${shape} cannot be ${type}. ${compatibility.reasoning}`,
@@ -416,12 +493,14 @@ export function validateShapeTypeCompatibility<T extends {
         
         return {
           ...comp,
+          shape: shape, // Add inferred or existing shape
           confidence: Math.max(
             CONFIDENCE_ADJUSTMENTS.MIN_CONFIDENCE_VALIDATION_ERROR,
             (comp.confidence || CONFIDENCE_ADJUSTMENTS.DEFAULT_CONFIDENCE) - CONFIDENCE_ADJUSTMENTS.VALIDATION_ERROR_PENALTY
           ),
           meta: {
             ...comp.meta,
+            shape_inferred: shapeInferred,
             validation_error: true,
             validation_issue: `Shape/type mismatch: ${shape} shape incompatible with ${type} type`,
             reasoning: `[ERROR] ${comp.meta?.reasoning || ''} | VALIDATION FAILED: Shape "${shape}" is incompatible with type "${type}". ${compatibility.reasoning}`
@@ -436,18 +515,23 @@ export function validateShapeTypeCompatibility<T extends {
     );
 
     if (isAllowed) {
-      // Validation passed - optionally add confirmation metadata
+      // Validation passed - add shape if inferred and mark as validated
       return {
         ...comp,
+        shape: shape, // Ensure shape is in output
         meta: {
           ...comp.meta,
+          shape_inferred: shapeInferred,
           shape_validation: 'passed'
         }
       };
     }
 
-    // Type not explicitly allowed or forbidden - pass through with warning
-    return comp;
+    // Type not explicitly allowed or forbidden - pass through with shape
+    return {
+      ...comp,
+      shape: shape // Ensure shape is included
+    };
   });
 }
 
