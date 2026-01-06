@@ -437,9 +437,9 @@ export function validateShapeTypeCompatibility<T extends {
       return comp;
     }
 
-    const shape = comp.shape.toLowerCase();
+    const normalizedShape = shape.toLowerCase();
     const type = comp.type;
-    const compatibility = SHAPE_TYPE_COMPATIBILITY[shape];
+    const compatibility = SHAPE_TYPE_COMPATIBILITY[normalizedShape];
 
     // Skip if shape not in compatibility rules
     if (!compatibility) {
@@ -454,7 +454,7 @@ export function validateShapeTypeCompatibility<T extends {
     if (isForbidden) {
       console.warn(
         `[Shape Sanity Check] CRITICAL: Detected shape/type mismatch for component "${comp.label || comp.type}".\n` +
-        `  Shape: ${shape}\n` +
+        `  Shape: ${normalizedShape}\n` +
         `  Type: ${type}\n` +
         `  Issue: ${compatibility.reasoning}\n` +
         `  Attempting auto-correction...`
@@ -479,8 +479,8 @@ export function validateShapeTypeCompatibility<T extends {
             shape_inferred: shapeInferred,
             original_type: type,
             correction_applied: true,
-            correction_reason: `Shape/type mismatch: ${shape} cannot be ${type}. ${compatibility.reasoning}`,
-            reasoning: `[CORRECTED] Original classification "${type}" contradicted detected shape "${shape}". ` +
+            correction_reason: `Shape/type mismatch: ${normalizedShape} cannot be ${type}. ${compatibility.reasoning}`,
+            reasoning: `[CORRECTED] Original classification "${type}" contradicted detected shape "${normalizedShape}". ` +
                       `Re-classified as "${correctedType}" based on ISA tag pattern. ${compatibility.reasoning}`
           }
         };
@@ -502,8 +502,8 @@ export function validateShapeTypeCompatibility<T extends {
             ...comp.meta,
             shape_inferred: shapeInferred,
             validation_error: true,
-            validation_issue: `Shape/type mismatch: ${shape} shape incompatible with ${type} type`,
-            reasoning: `[ERROR] ${comp.meta?.reasoning || ''} | VALIDATION FAILED: Shape "${shape}" is incompatible with type "${type}". ${compatibility.reasoning}`
+            validation_issue: `Shape/type mismatch: ${normalizedShape} shape incompatible with ${type} type`,
+            reasoning: `[ERROR] ${comp.meta?.reasoning || ''} | VALIDATION FAILED: Shape "${normalizedShape}" is incompatible with type "${type}". ${compatibility.reasoning}`
           }
         };
       }
