@@ -327,12 +327,13 @@ export const generateFinalAnalysis = async (inferenceResults: any): Promise<any>
     
     // Check for truncation indicators (incomplete sentences in narrative fields)
     const narrativeFields = ['system_workflow_narrative', 'control_logic_analysis', 'design_overview', 'equipment_specifications'];
+    const sentenceTerminators = ['.', '!', '?', '"', ')'];
     for (const field of narrativeFields) {
       if (analysisReport[field]) {
         const text = analysisReport[field].trim();
         const lastChar = text[text.length - 1];
         // Check if ends with incomplete sentence (not ending with . ! ? " or ))
-        if (lastChar && !'.!?")'.includes(lastChar)) {
+        if (lastChar && !sentenceTerminators.includes(lastChar)) {
           console.warn(`⚠️  Field '${field}' may be truncated (doesn't end with sentence terminator)`);
           console.warn(`   Last 50 chars: "${text.slice(-50)}"`);
         }
