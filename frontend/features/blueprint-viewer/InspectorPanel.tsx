@@ -34,8 +34,23 @@ interface InspectorPanelProps {
 
 type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
 
+// Configuration constants for component visualization
+const MAX_CHART_TYPES = 8; // Maximum number of component types to display in chart
+const CHART_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
+
+// Helper function to group components by type
+const groupComponentsByType = (components: DetectedComponent[]): Record<string, DetectedComponent[]> => {
+  const groups: Record<string, DetectedComponent[]> = {};
+  components.forEach(comp => {
+    const type = comp.meta?.equipment_type || comp.type || 'Other';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(comp);
+  });
+  return groups;
+};
 
 // Confidence quality thresholds (matches visual pipeline assessDetectionQuality)
 const CONFIDENCE_THRESHOLDS = {
@@ -154,13 +169,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   
   // Group filtered components by type for categorized display
   const filteredComponentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
-    const groups: Record<string, DetectedComponent[]> = {};
-    filteredBoxes.forEach(comp => {
-      const type = comp.meta?.equipment_type || comp.type || 'Other';
-      if (!groups[type]) groups[type] = [];
-      groups[type].push(comp);
-    });
-    return groups;
+    return groupComponentsByType(filteredBoxes);
   }, [filteredBoxes]);
 
   // Derived state for Pricing
@@ -404,13 +413,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   // Memoize component analysis data
   const componentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
-    const groups: Record<string, DetectedComponent[]> = {};
-    detectedBoxes.forEach(comp => {
-      const type = comp.meta?.equipment_type || comp.type || 'Other';
-      if (!groups[type]) groups[type] = [];
-      groups[type].push(comp);
-    });
-    return groups;
+    return groupComponentsByType(detectedBoxes);
   }, [detectedBoxes]);
 
   const componentStats = useMemo<{
@@ -442,10 +445,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, [detectedBoxes]);
 
   const renderComponentsTab = () => {
-    // Configuration constants
-    const MAX_CHART_TYPES = 8; // Maximum number of component types to display in chart
-    const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
-    
     // Prepare chart data for subsystems
     const subsystemChartData = Object.entries(componentStats.bySubsystem).map(([name, count]) => ({
       name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -554,7 +553,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               <div key={item.name} className="flex items-center gap-2">
                                  <div 
                                     className="w-3 h-3 rounded-sm shrink-0" 
-                                    style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                                    style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
                                  />
                                  <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
@@ -566,7 +565,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                           className="h-1.5 rounded-full transition-all"
                                           style={{ 
                                              width: `${item.percentage}%`,
-                                             backgroundColor: COLORS[idx % COLORS.length]
+                                             backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
                                           }}
                                        />
                                     </div>
@@ -598,7 +597,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             <div className="space-y-2">
                {Object.keys(filteredComponentsByType).length > 0 ? (
                   Object.entries(filteredComponentsByType)
-                     .sort(([, aComps]: [string, DetectedComponent[]], [, bComps]: [string, DetectedComponent[]]) => bComps.length - aComps.length) // Sort by count descending
+                     .sort(([, aComps], [, bComps]) => (bComps as DetectedComponent[]).length - (aComps as DetectedComponent[]).length) // Sort by count descending
                      .map(([categoryName, categoryComponents]: [string, DetectedComponent[]]) => {
                         const isCategoryExpanded = expandedCategories.has(categoryName);
                         const categoryCount = categoryComponents.length;
