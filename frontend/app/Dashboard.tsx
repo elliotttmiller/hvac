@@ -39,11 +39,13 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 p-8 overflow-y-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    // Use an explicit solid background to avoid any remaining colored gradient bleed
+    <div className="flex-1 p-8 overflow-y-auto bg-[#09090b]">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Hero Section with Gradient */}
         <header className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 via-purple-500/5 to-cyan-500/5 blur-3xl -z-10" />
+          {/* Neutral, dark overlay to keep dashboard background consistent with app theme */}
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-900/5 via-zinc-800/4 to-zinc-900/5 blur-3xl -z-10" />
           <h1 className="text-3xl font-bold text-white tracking-tight">Welcome back</h1>
           <p className="text-zinc-400 text-sm mt-2">Monitor your HVAC analysis platform and system performance.</p>
         </header>
