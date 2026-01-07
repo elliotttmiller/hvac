@@ -95,19 +95,35 @@ const COMPONENT_TYPE_MAP: Record<string, string> = {
   'needle valve': 'valve_needle',
   'plug valve': 'valve_plug',
   
-  // Instrument variants
-  'temperature sensor': 'sensor_temperature',
-  'pressure sensor': 'sensor_pressure',
-  'flow sensor': 'sensor_flow',
-  'level sensor': 'sensor_level',
-  'temperature indicator': 'instrument_indicator',
-  'pressure indicator': 'instrument_indicator',
-  'temperature transmitter': 'instrument_transmitter',
-  'pressure transmitter': 'instrument_transmitter',
-  'flow transmitter': 'instrument_transmitter',
-  'controller': 'instrument_controller',
-  'pid controller': 'instrument_controller',
-  'logic controller': 'instrument_logic',
+  // Instrument variants - ALL consolidated to 'instrument' type
+  // Measured variable is stored in metadata, not in type
+  'temperature sensor': 'instrument',
+  'pressure sensor': 'instrument',
+  'flow sensor': 'instrument',
+  'level sensor': 'instrument',
+  'temperature indicator': 'instrument',
+  'pressure indicator': 'instrument',
+  'temperature transmitter': 'instrument',
+  'pressure transmitter': 'instrument',
+  'flow transmitter': 'instrument',
+  'level transmitter': 'instrument',
+  'controller': 'instrument',
+  'pid controller': 'instrument',
+  'logic controller': 'instrument',
+  'indicating controller': 'instrument',
+  'sensor': 'instrument',
+  'transmitter': 'instrument',
+  'indicator': 'instrument',
+  
+  // Legacy sensor types - map to consolidated 'instrument' type
+  'sensor_temperature': 'instrument',
+  'sensor_pressure': 'instrument',
+  'sensor_flow': 'instrument',
+  'sensor_level': 'instrument',
+  'instrument_indicator': 'instrument',
+  'instrument_transmitter': 'instrument',
+  'instrument_controller': 'instrument',
+  'instrument_logic': 'instrument',
   
   // Equipment variants
   'air handler': 'ahu',

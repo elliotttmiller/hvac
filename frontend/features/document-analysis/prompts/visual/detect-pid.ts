@@ -72,13 +72,14 @@ IF you see a **CIRCLE**:
   1. Check for internal markings:
      - **Diagonal line** (edge-to-edge) → Ball Valve
      - **Vertical/Horizontal bar** (centered) → Butterfly Valve
-     - **Letters/Numbers only** (no geometric lines) → Instrument/Sensor/Indicator
+     - **Letters/Numbers only** (no geometric lines) → Instrument (all ISA-5.1 instrument symbols)
   2. Classification:
      - Circle with diagonal → type: "valve_ball"
      - Circle with bar → type: "valve_butterfly"
-     - Circle with text only → type: "instrument_indicator" OR "sensor_*" (based on tag)
-  3. **CRITICAL**: A simple circle with "PV" text = "Pressure Indicator", NOT "Pressure Valve"
-  4. **NEVER** classify a simple circle as: gate_valve, globe_valve, control_valve
+     - Circle with text only → type: "instrument" (ALWAYS use "instrument", not sensor_* or instrument_indicator)
+  3. **CRITICAL**: A simple circle with "PV" text = "Pressure Indicator" → type: "instrument", NOT "Pressure Valve"
+  4. **CRITICAL**: ALL ISA-5.1 instrument bubbles (PI, TI, FIT, PIT, TIC, TE, FE, etc.) → type: "instrument"
+  5. **NEVER** classify a simple circle as: gate_valve, globe_valve, control_valve, sensor_*, instrument_indicator
 
 **RULE 2: Bowtie Shape Analysis**
 IF you see a **BOWTIE** (two triangles touching):
@@ -123,22 +124,22 @@ When text tag conflicts with visual shape, **SHAPE WINS**:
 ### SHAPE-TO-TYPE MAPPING (STRICT LOGIC)
 
 **Circles:**
-- circle_empty → instrument_indicator, sensor_*, transmitter_*
-- circle_with_diagonal → valve_ball
-- circle_with_bar → valve_butterfly
-- circle_in_square → instrument_controller (DCS/HMI)
+- circle_empty → type: "instrument" (all ISA-5.1 instrument bubbles)
+- circle_with_diagonal → type: "valve_ball"
+- circle_with_bar → type: "valve_butterfly"
+- circle_in_square → type: "instrument" (DCS/HMI panel instruments)
 
 **Bowties:**
-- bowtie_empty → valve_gate
-- bowtie_solid_center → valve_globe
-- bowtie_with_actuator → valve_control
+- bowtie_empty → type: "valve_gate"
+- bowtie_solid_center → type: "valve_globe"
+- bowtie_with_actuator → type: "valve_control"
 
 **Other Shapes:**
-- diamond → logic_function, plc_function
-- triangle_arrow → valve_check
-- rectangle → equipment, gate_valve (if valve context)
-- hexagon → computer_function
-- square → panel_instrument (if containing circle)
+- diamond → type: "logic_function" or "plc_function"
+- triangle_arrow → type: "valve_check"
+- rectangle → type: "equipment" or "valve_gate" (if valve context)
+- hexagon → type: "computer_function"
+- square → type: "instrument" (if containing circle - panel instrument)
 
 ### KNOWLEDGE BASE
 ${generateISAContext()}
@@ -176,25 +177,25 @@ export const PID_DETECT_PROMPT = `
 
 2. **CLASSIFY BY GEOMETRY** (Shape determines type):
    - **Circles**:
-     * With diagonal line → Ball Valve
-     * With bar/disc → Butterfly Valve
-     * With text only → Instrument/Sensor/Indicator
+     * With diagonal line → type: "valve_ball"
+     * With bar/disc → type: "valve_butterfly"
+     * With text only (ISA tags: PI, TI, FIT, PIT, TE, etc.) → type: "instrument"
    - **Bowties** (two touching triangles):
-     * Empty → Gate Valve
-     * Solid dot center → Globe Valve
-     * Actuator on top → Control Valve
-   - **Diamonds** → Logic/PLC (NEVER valves)
-   - **Triangles** (single, arrow-shaped) → Check Valve
+     * Empty → type: "valve_gate"
+     * Solid dot center → type: "valve_globe"
+     * Actuator on top → type: "valve_control"
+   - **Diamonds** → type: "logic_function" or "plc_function" (NEVER valves)
+   - **Triangles** (single, arrow-shaped) → type: "valve_check"
 
 3. **READ TEXT LABELS**:
    - Extract every text tag exactly as written
-   - Use tag to determine subtype AFTER shape confirms category
+   - Store ISA function codes in metadata (PI, TI, FIT, etc.)
    - Link each label to nearest symbol
 
 4. **APPLY HVAC DOMAIN RULES**:
-   - IF Circle + "PV" tag → Pressure Indicator (NOT valve)
-   - IF Circle + "*I" tag (PI, TI, FI, etc.) → Indicator (NOT valve)
-   - IF Bowtie + Actuator → Control Valve (automated)
+   - IF Circle + ISA instrument tag (PI, TI, FIT, PIT, TE, FE, etc.) → type: "instrument"
+   - IF Circle + "PV" tag → type: "instrument" (Pressure Indicator, NOT valve)
+   - IF Bowtie + Actuator → type: "valve_control" (automated)
 
 5. **TRACE CONNECTIONS**:
    - Follow pipe lines (solid) and signal lines (dashed)
@@ -202,8 +203,10 @@ export const PID_DETECT_PROMPT = `
 
 **CRITICAL RULES**:
 - **SHAPE OVERRIDES TAG**: Trust visual geometry over text
-- **Circle without internal line = NEVER a valve** (except Ball/Butterfly)
-- **PV on Circle = Pressure Indicator** in HVAC
+- **ALL circular ISA instrument bubbles = type: "instrument"** (PI, TI, FIT, PIT, PIC, TIC, TE, FE, PDI, PDIT, ZC, etc.)
+- **Circle without internal line = NEVER a valve** (except Ball/Butterfly with actuating line)
+- **PV on Circle = type: "instrument"** (Pressure Indicator in HVAC context)
+- **DO NOT use sensor_*, instrument_indicator, instrument_transmitter** - use "instrument" only
 - If text is unclear, mark as "UNREADABLE" rather than guessing
 
 **OUTPUT FORMAT**:

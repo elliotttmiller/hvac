@@ -544,7 +544,7 @@ function resolveTypeConflict(
   
   // --- RULE 1: "Circle Safety" Rule ---
   // IF Shape = Circle (without internal actuating line) AND Type contains "valve" (but NOT Ball/Butterfly)
-  // THEN: Auto-correct to instrument/indicator
+  // THEN: Auto-correct to instrument
   if (shapeLower === 'circle') {
     // Check if it's a Ball or Butterfly valve (allowed circular valves)
     const isBallValve = sigLower.includes('diagonal') || typeLower.includes('ball');
@@ -553,40 +553,44 @@ function resolveTypeConflict(
     if (!isBallValve && !isButterflyValve) {
       // Simple circle - check if incorrectly classified as valve
       if (typeLower.includes('valve') && !typeLower.includes('ball') && !typeLower.includes('butterfly')) {
-        // Determine correct instrument type based on tag
-        let correctedType = 'instrument_indicator';
-        if (tagUpper.startsWith('P')) correctedType = 'sensor_pressure';
-        else if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
-        else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
-        else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+        // All circular ISA instruments should be type "instrument"
+        const correctedType = 'instrument';
         
         return {
           correctedType,
-          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments/sensors, not valves. Tag '${tag}' likely indicates an indicator or sensor.`
+          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments, not valves. Tag '${tag}' indicates an ISA-5.1 instrument.`
+        };
+      }
+      
+      // Also correct legacy sensor_* types to consolidated "instrument" type
+      if (typeLower.startsWith('sensor_') || typeLower.includes('instrument_indicator') || typeLower.includes('instrument_transmitter')) {
+        return {
+          correctedType: 'instrument',
+          reasoning: `Consolidated from ${aiType} to "instrument" type for consistent classification. Circular ISA-5.1 instrument symbols (PI, TI, FIT, etc.) are all classified as "instrument" type.`
         };
       }
     }
   }
   
   // --- RULE 2: "PV Circle" Rule (HVAC Domain Specific) ---
-  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator, NOT Valve
+  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator (type: instrument), NOT Valve
   if (tagUpper.startsWith('PV') && shapeLower === 'circle') {
     const isEmptyCircle = sigLower === 'circle_empty' || (!sigLower.includes('diagonal') && !sigLower.includes('bar'));
     if (isEmptyCircle && typeLower.includes('valve')) {
       return {
-        correctedType: 'instrument_indicator',
+        correctedType: 'instrument',
         reasoning: `Shape-based correction: Circle labeled 'PV' is a Pressure Indicator (Pressure View), not a Pressure Valve. Visual geometry (simple circle) confirms this is an instrument for displaying pressure readings, per HVAC/BAS conventions.`
       };
     }
   }
   
   // --- RULE 3: "*I" Tags (Indicators) ---
-  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Indicator
+  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Instrument
   if (tagUpper.match(/^[A-Z]{1,2}I(-?\d+)?$/) && shapeLower === 'circle') {
     if (typeLower.includes('valve')) {
       return {
-        correctedType: 'instrument_indicator',
-        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to instrument_indicator per ISA-5.1 standards.`
+        correctedType: 'instrument',
+        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to instrument per ISA-5.1 standards.`
       };
     }
   }
@@ -630,23 +634,33 @@ function resolveTypeConflict(
 }
 
 // ISA-5.1 prefix-based type mapping
+// CRITICAL: All ISA-5.1 instrument symbols (sensors, transmitters, indicators, controllers)
+// should be classified as "instrument" type to ensure proper grouping and counting.
+// The specific measured variable is stored in metadata for filtering/analysis.
 const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
-  'TT': 'sensor_temperature',
-  'TI': 'sensor_temperature',
-  'TE': 'sensor_temperature',
-  'TIC': 'instrument_controller',
-  'PT': 'sensor_pressure',
-  'PI': 'sensor_pressure',
-  'PE': 'sensor_pressure',
-  'PIC': 'instrument_controller',
-  'FT': 'sensor_flow',
-  'FI': 'sensor_flow',
-  'FE': 'sensor_flow',
-  'FIC': 'instrument_controller',
-  'LT': 'sensor_level',
-  'LI': 'sensor_level',
-  'LE': 'sensor_level',
-  'LIC': 'instrument_controller',
+  'TT': 'instrument',  // Temperature Transmitter
+  'TI': 'instrument',  // Temperature Indicator
+  'TE': 'instrument',  // Temperature Element
+  'TIT': 'instrument', // Temperature Indicating Transmitter
+  'TIC': 'instrument', // Temperature Indicating Controller
+  'PT': 'instrument',  // Pressure Transmitter
+  'PI': 'instrument',  // Pressure Indicator
+  'PE': 'instrument',  // Pressure Element
+  'PIT': 'instrument', // Pressure Indicating Transmitter
+  'PIC': 'instrument', // Pressure Indicating Controller
+  'FT': 'instrument',  // Flow Transmitter
+  'FI': 'instrument',  // Flow Indicator
+  'FE': 'instrument',  // Flow Element
+  'FIT': 'instrument', // Flow Indicating Transmitter
+  'FIC': 'instrument', // Flow Indicating Controller
+  'LT': 'instrument',  // Level Transmitter
+  'LI': 'instrument',  // Level Indicator
+  'LE': 'instrument',  // Level Element
+  'LIT': 'instrument', // Level Indicating Transmitter
+  'LIC': 'instrument', // Level Indicating Controller
+  'PDI': 'instrument', // Pressure Differential Indicator
+  'PDIT': 'instrument', // Pressure Differential Indicating Transmitter
+  'ZC': 'instrument',  // Position Controller
   'FV': 'valve_control',
   'TV': 'valve_control',
   'PV': 'valve_control',
@@ -665,6 +679,7 @@ const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
 
 /**
  * Normalize HVAC component type based on ISA-5.1 tag prefix
+ * Also extracts measured variable for instruments and stores in metadata
  */
 function normalizeHVACComponentType(comp: any): any {
   if (!comp.meta?.tag && !comp.label) return comp;
@@ -676,6 +691,27 @@ function normalizeHVACComponentType(comp: any): any {
   for (const [prefix, type] of Object.entries(ISA_PREFIX_TYPE_MAP)) {
     if (tag.startsWith(prefix)) {
       normalized.type = type;
+      
+      // If this is an instrument, extract the measured variable from the tag prefix
+      if (type === 'instrument') {
+        const firstLetter = tag.charAt(0);
+        const measuredVariableMap: Record<string, string> = {
+          'T': 'temperature',
+          'P': 'pressure',
+          'F': 'flow',
+          'L': 'level',
+          'Z': 'position'
+        };
+        
+        if (measuredVariableMap[firstLetter]) {
+          normalized.meta = {
+            ...normalized.meta,
+            measured_variable: measuredVariableMap[firstLetter],
+            instrument_type: prefix // Store the full ISA prefix (TT, PI, FIT, etc.)
+          };
+        }
+      }
+      
       break;
     }
   }
@@ -867,9 +903,9 @@ function generateShapeBasedReasoning(shape: string, type: string): string | null
     } else if (shapeLower === 'bowtie' || shapeLower === 'triangle') {
       reasoning += '. Valve body identified with appropriate actuator symbol.';
     }
-  } else if (typeLower.includes('sensor') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
+  } else if (typeLower === 'instrument' || typeLower.includes('sensor') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
     if (shapeLower === 'circle') {
-      reasoning += '. Circular symbols are standard for field-mounted instrumentation.';
+      reasoning += '. Circular symbols are standard for field-mounted ISA-5.1 instrumentation.';
     }
   } else if (typeLower.includes('controller')) {
     reasoning += '. Controller identified with appropriate ISA function code.';
@@ -901,8 +937,9 @@ function getHVACComponentCategory(comp: any): string {
     return 'refrigeration';
   }
   
-  // Controls (sensors, controllers, valves, dampers)
+  // Controls (instruments, sensors, controllers, valves, dampers)
   if (subsystem === 'controls' || 
+      type === 'instrument' ||
       type.includes('sensor') || 
       type.includes('controller') || 
       type.includes('valve') || 
