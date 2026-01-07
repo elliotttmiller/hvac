@@ -132,6 +132,15 @@ export interface VisualAnalysisResult {
     process_log?: string; // AI reasoning trace for user transparency
     parse_error?: string; // Capture parsing errors
     error?: string; // Add error property for additional error details
+    // Enhancement metadata
+    enhancement?: any;
+    quality_metrics?: any;
+    label_generation?: {
+      generated_count: number;
+      conflicts_resolved: number;
+    };
+    control_loops?: any[];
+    validation_issues?: any[];
   };
 }
 
