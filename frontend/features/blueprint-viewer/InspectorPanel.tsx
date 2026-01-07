@@ -12,8 +12,12 @@ import {
    MoreHorizontal,
    Plus,
    Copy,
-   ClipboardList
+   ClipboardList,
+   BarChart3,
+   PieChart,
+   TrendingUp
 } from 'lucide-react';
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
 
@@ -30,8 +34,23 @@ interface InspectorPanelProps {
 
 type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
 
+// Configuration constants for component visualization
+const MAX_CHART_TYPES = 8; // Maximum number of component types to display in chart
+const CHART_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
+
+// Helper function to group components by type
+const groupComponentsByType = (components: DetectedComponent[]): Record<string, DetectedComponent[]> => {
+  const groups: Record<string, DetectedComponent[]> = {};
+  components.forEach(comp => {
+    const type = comp.meta?.equipment_type || comp.type || 'Other';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(comp);
+  });
+  return groups;
+};
 
 // Confidence quality thresholds (matches visual pipeline assessDetectionQuality)
 const CONFIDENCE_THRESHOLDS = {
@@ -69,6 +88,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       
       // State for expanded component details
       const [expandedComponentId, setExpandedComponentId] = useState<string | null>(null);
+      
+      // State for expanded categories (collapsed by default for cleaner view)
+      const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
       useEffect(() => {
          // initialize from prop when it changes (e.g., new analysis run)
@@ -122,6 +144,19 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          console.warn('Copy failed', e);
       }
    };
+   
+   // Toggle category expansion
+   const toggleCategory = (categoryName: string) => {
+      setExpandedCategories(prev => {
+         const newSet = new Set(prev);
+         if (newSet.has(categoryName)) {
+            newSet.delete(categoryName);
+         } else {
+            newSet.add(categoryName);
+         }
+         return newSet;
+      });
+   };
 
   // Derived state for filtered components
   const filteredBoxes = useMemo(() => {
@@ -131,6 +166,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       box.meta?.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [detectedBoxes, searchQuery]);
+  
+  // Group filtered components by type for categorized display
+  const filteredComponentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
+    return groupComponentsByType(filteredBoxes);
+  }, [filteredBoxes]);
 
   // Derived state for Pricing
   const pricingData = useMemo(() => {
@@ -283,19 +323,25 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       }
       
       // ============================================================================
-      // CRITICAL EQUIPMENT (H2 with unordered list)
+      // CRITICAL EQUIPMENT (H2 with Markdown Table)
       // ============================================================================
       if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
          sections.push('## Critical Equipment');
          sections.push('');
          
-         report.critical_equipment.forEach((equip: any) => {
+         // Create a markdown table with better visual organization
+         sections.push('| # | Equipment Tag | Role & Description |');
+         sections.push('|---|---------------|-------------------|');
+         
+         report.critical_equipment.forEach((equip: any, idx: number) => {
             const tag = equip.tag || equip.name || 'N/A';
             const role = equip.role || 'No description';
             
-            sections.push(`- **${tag}**: ${role}`);
+            sections.push(`| ${idx + 1} | **${tag}** | ${role} |`);
          });
          
+         sections.push('');
+         sections.push(`*Total Equipment: ${report.critical_equipment.length} items*`);
          sections.push('');
       }
       
@@ -367,13 +413,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   // Memoize component analysis data
   const componentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
-    const groups: Record<string, DetectedComponent[]> = {};
-    detectedBoxes.forEach(comp => {
-      const type = comp.meta?.equipment_type || comp.type || 'Other';
-      if (!groups[type]) groups[type] = [];
-      groups[type].push(comp);
-    });
-    return groups;
+    return groupComponentsByType(detectedBoxes);
   }, [detectedBoxes]);
 
   const componentStats = useMemo<{
@@ -404,10 +444,141 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return stats;
   }, [detectedBoxes]);
 
-  const renderComponentsTab = () => (
+  const renderComponentsTab = () => {
+    // Prepare chart data for subsystems
+    const subsystemChartData = Object.entries(componentStats.bySubsystem).map(([name, count]) => ({
+      name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      count: count as number,
+      percentage: parseFloat((((count as number) / componentStats.total) * 100).toFixed(1))
+    })).sort((a, b) => b.count - a.count);
+    
+    // Prepare chart data for component types (top types only for readability)
+    const typeChartData = Object.entries(componentsByType).map(([name, components]: [string, DetectedComponent[]]) => ({
+      name: name.replace(/_/g, ' '),
+      count: components.length,
+      percentage: parseFloat(((components.length / componentStats.total) * 100).toFixed(1))
+    })).sort((a, b) => b.count - a.count).slice(0, MAX_CHART_TYPES);
+    
+    return (
       <div className="flex flex-col h-full">
          {/* Scrollable content area */}
          <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-3">
+            {/* Statistics Dashboard - Only show when components exist */}
+            {detectedBoxes.length > 0 && (
+               <div className="space-y-3 pt-1">
+                  {/* Key Metrics Cards */}
+                  <div className="grid grid-cols-2 gap-2">
+                     <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <Layers size={12} className="text-cyan-400" />
+                           <span className="text-[9px] text-cyan-400 uppercase tracking-wider font-bold">Total Components</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.total}</div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <TrendingUp size={12} className="text-emerald-400" />
+                           <span className="text-[9px] text-emerald-400 uppercase tracking-wider font-bold">Avg Confidence</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{(componentStats.avgConfidence * 100).toFixed(1)}%</div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <BarChart3 size={12} className="text-purple-400" />
+                           <span className="text-[9px] text-purple-400 uppercase tracking-wider font-bold">High Quality</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.excellentQuality}</div>
+                        <div className="text-[9px] text-zinc-500 mt-0.5">
+                           {((componentStats.excellentQuality / componentStats.total) * 100).toFixed(0)}% excellent
+                        </div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <FileText size={12} className="text-amber-400" />
+                           <span className="text-[9px] text-amber-400 uppercase tracking-wider font-bold">ISA Tagged</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.isaCompliant}</div>
+                        <div className="text-[9px] text-zinc-500 mt-0.5">
+                           {((componentStats.isaCompliant / componentStats.total) * 100).toFixed(0)}% compliant
+                        </div>
+                     </div>
+                  </div>
+                  
+                  {/* Component Types Distribution Bar Chart */}
+                  {typeChartData.length > 0 && (
+                     <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                           <BarChart3 size={14} className="text-cyan-400" />
+                           <h4 className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Component Types Distribution</h4>
+                        </div>
+                        <ResponsiveContainer width="100%" height={180}>
+                           <BarChart data={typeChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                              <XAxis 
+                                 dataKey="name" 
+                                 tick={{ fill: '#a1a1aa', fontSize: 9 }}
+                                 angle={-45}
+                                 textAnchor="end"
+                                 height={60}
+                              />
+                              <YAxis tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+                              <Tooltip 
+                                 contentStyle={{ 
+                                    backgroundColor: '#1a1a1a', 
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    fontSize: '11px'
+                                 }}
+                                 labelStyle={{ color: '#e4e4e7', fontWeight: 'bold' }}
+                                 itemStyle={{ color: '#06b6d4' }}
+                              />
+                              <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                           </BarChart>
+                        </ResponsiveContainer>
+                     </div>
+                  )}
+                  
+                  {/* HVAC Subsystems Breakdown */}
+                  {subsystemChartData.length > 0 && (
+                     <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                           <PieChart size={14} className="text-purple-400" />
+                           <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">HVAC Subsystems</h4>
+                        </div>
+                        <div className="space-y-2">
+                           {subsystemChartData.map((item, idx) => (
+                              <div key={item.name} className="flex items-center gap-2">
+                                 <div 
+                                    className="w-3 h-3 rounded-sm shrink-0" 
+                                    style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
+                                 />
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                       <span className="text-[10px] text-zinc-300 truncate">{item.name}</span>
+                                       <span className="text-[10px] text-zinc-500 font-mono">{item.count}</span>
+                                    </div>
+                                    <div className="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                       <div 
+                                          className="h-1.5 rounded-full transition-all"
+                                          style={{ 
+                                             width: `${item.percentage}%`,
+                                             backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
+                                          }}
+                                       />
+                                    </div>
+                                 </div>
+                                 <span className="text-[9px] text-zinc-500 font-bold w-10 text-right">{item.percentage}%</span>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+               </div>
+            )}
+            
             {/* Search */}
             <div className="px-0 pb-0">
                <div className="relative">
@@ -422,61 +593,107 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                </div>
             </div>
 
-            {/* Components List */}
-            <div className="space-y-1">
-               {filteredBoxes.length > 0 ? (
-                  filteredBoxes.map((box) => {
-                     const isSelected = selectedBoxId === box.id;
-                     const isExpanded = expandedComponentId === box.id;
-                     return (
-                        <div 
-                           key={box.id}
-                           ref={isSelected ? selectedRowRef : null}
-                           className={`rounded border transition-all ${
-                              isSelected
-                                 ? 'bg-cyan-500/10 border-cyan-500/30' 
-                                 : 'border-transparent hover:bg-white/5'
-                           }`}
-                        >
-                           {/* Component Header */}
-                           <div 
-                              onClick={() => {
-                                 onSelectBox(box.id);
-                                 setExpandedComponentId(isExpanded ? null : box.id);
-                              }}
-                              onMouseEnter={() => onSelectBox(box.id)}
-                              onMouseLeave={() => onSelectBox(null)}
-                              className="flex items-center gap-3 p-2 cursor-pointer group"
-                           >
-                              {/* Expand/Collapse Icon */}
-                              <div className="shrink-0">
-                                 {isExpanded ? (
-                                    <ChevronDown size={14} className="text-cyan-400" />
-                                 ) : (
-                                    <ChevronRight size={14} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
-                                 )}
+            {/* Components List - Organized by Category */}
+            <div className="space-y-2">
+               {Object.keys(filteredComponentsByType).length > 0 ? (
+                  Object.entries(filteredComponentsByType)
+                     .sort(([, aComps], [, bComps]) => (bComps as DetectedComponent[]).length - (aComps as DetectedComponent[]).length) // Sort by count descending
+                     .map(([categoryName, categoryComponents]: [string, DetectedComponent[]]) => {
+                        const isCategoryExpanded = expandedCategories.has(categoryName);
+                        const categoryCount = categoryComponents.length;
+                        
+                        return (
+                           <div key={categoryName} className="bg-[#1e1e1e] rounded-lg border border-white/5 overflow-hidden">
+                              {/* Category Header */}
+                              <div 
+                                 onClick={() => toggleCategory(categoryName)}
+                                 className="flex items-center justify-between p-3 cursor-pointer bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 transition-colors group"
+                              >
+                                 <div className="flex items-center gap-3">
+                                    {/* Category Expand/Collapse Icon */}
+                                    <div className="shrink-0">
+                                       {isCategoryExpanded ? (
+                                          <ChevronDown size={16} className="text-cyan-400" />
+                                       ) : (
+                                          <ChevronRight size={16} className="text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+                                       )}
+                                    </div>
+                                    
+                                    {/* Category Icon */}
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                                       <Layers size={14} className="text-cyan-400" />
+                                    </div>
+                                    
+                                    {/* Category Name and Count */}
+                                    <div>
+                                       <div className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
+                                          {categoryName.replace(/_/g, ' ')}
+                                       </div>
+                                       <div className="text-[10px] text-zinc-500">
+                                          {categoryCount} {categoryCount === 1 ? 'component' : 'components'}
+                                       </div>
+                                    </div>
+                                 </div>
+                                 
+                                 {/* Category Count Badge */}
+                                 <div className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30">
+                                    <span className="text-xs font-bold text-cyan-400 font-mono">{categoryCount}</span>
+                                 </div>
                               </div>
-                      
-                              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                                   isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-                              }`}>
-                                   <Box size={14} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                   <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                                      {box.label}
-                                   </div>
-                                   <div className="text-[10px] text-zinc-500 truncate">
-                                      {box.meta?.description || 'No description'}
-                                   </div>
-                              </div>
-                              {isSelected && (
-                                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-                              )}
-                           </div>
+                              
+                              {/* Category Components (collapsible) */}
+                              {isCategoryExpanded && (
+                                 <div className="border-t border-white/5">
+                                    {categoryComponents.map((box) => {
+                                       const isSelected = selectedBoxId === box.id;
+                                       const isExpanded = expandedComponentId === box.id;
+                                       return (
+                                          <div 
+                                             key={box.id}
+                                             ref={isSelected ? selectedRowRef : null}
+                                             className={`border-b border-white/5 last:border-0 transition-all ${
+                                                isSelected ? 'bg-cyan-500/10' : 'hover:bg-white/5'
+                                             }`}
+                                          >
+                                             {/* Component Header */}
+                                             <div 
+                                                onClick={() => {
+                                                   onSelectBox(box.id);
+                                                   setExpandedComponentId(isExpanded ? null : box.id);
+                                                }}
+                                                onMouseEnter={() => onSelectBox(box.id)}
+                                                onMouseLeave={() => onSelectBox(null)}
+                                                className="flex items-center gap-3 p-3 pl-14 cursor-pointer group"
+                                             >
+                                                {/* Component Expand/Collapse Icon */}
+                                                <div className="shrink-0">
+                                                   {isExpanded ? (
+                                                      <ChevronDown size={12} className="text-cyan-400" />
+                                                   ) : (
+                                                      <ChevronRight size={12} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
+                                                   )}
+                                                </div>
+                                        
+                                                <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                                                     isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                                                }`}>
+                                                     <Box size={12} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                     <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
+                                                        {box.label}
+                                                     </div>
+                                                     <div className="text-[10px] text-zinc-500 truncate">
+                                                        {box.meta?.description || 'No description'}
+                                                     </div>
+                                                </div>
+                                                {isSelected && (
+                                                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                                                )}
+                                             </div>
 
-                           {/* Expanded Details */}
-                           {isExpanded && (
+                                             {/* Expanded Details */}
+                                             {isExpanded && (
                               <div className="px-2 pb-2 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                  {/* Component Specifications */}
                                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
@@ -588,6 +805,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  )}
 
                       {/* Additional Metadata removed per UI request */}
+                                             </div>
+                                          )}
+                                       </div>
+                                    );
+                                 })}
                               </div>
                            )}
                         </div>
@@ -631,7 +853,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   )}
          </div>
       </div>
-  );
+    );
+  };
 
   const renderAnalysisTab = () => {
     const hasData = detectedBoxes.length > 0;
@@ -809,13 +1032,54 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
                                     <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">Critical Equipment</h3>
                                  </div>
-                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
-                                    {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
-                                       <div key={idx} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
-                                          <div className="text-xs font-bold text-amber-300 mb-1">{equip.tag}</div>
-                                          <div className="text-xs text-zinc-400 leading-relaxed">{equip.role}</div>
+                                 <div className="bg-[#1a1a1a] rounded-lg border border-white/5 overflow-hidden">
+                                    {/* Table Header */}
+                                    <div className="grid grid-cols-12 gap-3 px-4 py-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-b border-amber-500/20">
+                                       <div className="col-span-1 text-[10px] font-bold text-amber-400 uppercase tracking-wider">#</div>
+                                       <div className="col-span-3 text-[10px] font-bold text-amber-400 uppercase tracking-wider">Equipment Tag</div>
+                                       <div className="col-span-8 text-[10px] font-bold text-amber-400 uppercase tracking-wider">Role & Description</div>
+                                    </div>
+                                    
+                                    {/* Table Body */}
+                                    <div className="divide-y divide-white/5">
+                                       {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
+                                          <div key={idx} className="grid grid-cols-12 gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+                                             {/* Index Number with Status Indicator */}
+                                             <div className="col-span-1 flex items-center">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
+                                                   <span className="text-[10px] font-bold text-amber-300">{idx + 1}</span>
+                                                </div>
+                                             </div>
+                                             
+                                             {/* Equipment Tag with Icon */}
+                                             <div className="col-span-3 flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                                                   <Box size={12} className="text-amber-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                   <div className="text-xs font-bold text-amber-300 font-mono truncate group-hover:text-amber-200 transition-colors">
+                                                      {equip.tag}
+                                                   </div>
+                                                </div>
+                                             </div>
+                                             
+                                             {/* Role Description */}
+                                             <div className="col-span-8 flex items-center">
+                                                <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-zinc-200 transition-colors">
+                                                   {equip.role}
+                                                </p>
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                    
+                                    {/* Table Footer with Summary */}
+                                    <div className="px-4 py-2 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-t border-amber-500/20">
+                                       <div className="flex items-center justify-between">
+                                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Total Equipment</span>
+                                          <span className="text-xs font-bold text-amber-400 font-mono">{finalAnalysisReport.critical_equipment.length} items</span>
                                        </div>
-                                    ))}
+                                    </div>
                                  </div>
                               </div>
                            )}
