@@ -11,6 +11,21 @@
  * - Contextual label generation based on type and metadata
  */
 
+// Configuration constants
+const SAME_ROW_THRESHOLD = 0.05; // 5% threshold for considering components on same row
+const LABEL_NUMBER_PADDING = 3; // Number of digits for zero-padding (e.g., 001, 002)
+
+/**
+ * Check if a label is non-descriptive (single letter or generic text)
+ */
+function isNonDescriptiveLabel(label: string): boolean {
+  if (!label || label.trim() === '') return true;
+  if (label === 'unknown' || label.toLowerCase() === 'unknown') return true;
+  // Single letter labels (A-Z) are not descriptive
+  if (label.length === 1 && /^[A-Z]$/i.test(label)) return true;
+  return false;
+}
+
 /**
  * Component type to ISA prefix mapping
  */
@@ -65,13 +80,7 @@ const TYPE_TO_ISA_PREFIX: Record<string, string> = {
  */
 export function generateIntelligentLabels(components: any[]): any[] {
   // First pass: identify components that need labels
-  const needsLabel = components.filter(c => 
-    !c.label || 
-    c.label === 'unknown' || 
-    c.label.toLowerCase() === 'unknown' ||
-    c.label.trim() === '' ||
-    c.label === 'X' // Single letter labels are not descriptive
-  );
+  const needsLabel = components.filter(c => isNonDescriptiveLabel(c.label));
   
   if (needsLabel.length === 0) {
     return components; // No changes needed
@@ -86,7 +95,7 @@ export function generateIntelligentLabels(components: any[]): any[] {
     const [, by] = b.bbox;
     
     // Primary sort: Y position (top to bottom)
-    if (Math.abs(ay - by) > 0.05) { // 5% threshold for "same row"
+    if (Math.abs(ay - by) > SAME_ROW_THRESHOLD) {
       return ay - by;
     }
     
@@ -99,16 +108,18 @@ export function generateIntelligentLabels(components: any[]): any[] {
   // Count existing labels by type to continue numbering sequence
   const typeCounts: Record<string, number> = {};
   
+  // Pre-compile regex pattern for performance
+  const existingLabelPattern = /^([A-Z]{2,5})[- ]?(\d+)/i;
+  
   // Initialize counts from existing labeled components
   sorted.forEach(comp => {
-    if (comp.label && comp.label !== 'unknown' && comp.label !== 'X') {
+    if (!isNonDescriptiveLabel(comp.label)) {
       const prefix = getISAPrefix(comp.type, comp);
       if (prefix && !typeCounts[prefix]) {
         // Find highest number for this prefix
-        const pattern = new RegExp(`^${prefix}[- ]?(\\d+)`, 'i');
-        const match = comp.label.match(pattern);
+        const match = comp.label.match(existingLabelPattern);
         if (match) {
-          const num = parseInt(match[1], 10);
+          const num = parseInt(match[2], 10);
           typeCounts[prefix] = Math.max(typeCounts[prefix] || 0, num);
         }
       }
@@ -118,10 +129,7 @@ export function generateIntelligentLabels(components: any[]): any[] {
   // Generate labels for components that need them
   const labeled = sorted.map(comp => {
     // Skip if already has a good label
-    if (comp.label && 
-        comp.label !== 'unknown' && 
-        comp.label !== 'X' && 
-        comp.label.trim() !== '') {
+    if (!isNonDescriptiveLabel(comp.label)) {
       return comp;
     }
     
@@ -145,7 +153,7 @@ export function generateIntelligentLabels(components: any[]): any[] {
     const number = typeCounts[prefix];
     
     // Generate label in standard ISA format: PREFIX-NUMBER
-    const newLabel = `${prefix}-${number.toString().padStart(3, '0')}`;
+    const newLabel = `${prefix}-${number.toString().padStart(LABEL_NUMBER_PADDING, '0')}`;
     
     return {
       ...comp,
@@ -270,7 +278,7 @@ export function validateLabels(components: any[]): {
   const labelCounts = new Map<string, number>();
   
   components.forEach(comp => {
-    if (comp.label && comp.label !== 'unknown') {
+    if (!isNonDescriptiveLabel(comp.label)) {
       const count = labelCounts.get(comp.label) || 0;
       labelCounts.set(comp.label, count + 1);
     }
@@ -301,7 +309,7 @@ export function resolveConflicts(components: any[]): any[] {
   
   // Group components by label
   components.forEach(comp => {
-    if (comp.label && comp.label !== 'unknown') {
+    if (!isNonDescriptiveLabel(comp.label)) {
       const group = labelGroups.get(comp.label) || [];
       group.push(comp);
       labelGroups.set(comp.label, group);
