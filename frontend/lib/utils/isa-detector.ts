@@ -211,6 +211,10 @@ function inferISAFromComponentType(type: string, label: string): ISAFunctionResu
     'valve_control': { isa: 'CV', var: 'Control', mod: 'Valve', conf: 0.80 },
     'valve_ball': { isa: 'BV', var: 'Ball', mod: 'Valve', conf: 0.90 },
     'valve_solenoid': { isa: 'SDV', var: 'Solenoid', mod: 'Valve', conf: 0.90 },
+    'valve_check': { isa: 'CHV', var: 'Check', mod: 'Valve', conf: 0.90 },
+    'valve_gate': { isa: 'GV', var: 'Gate', mod: 'Valve', conf: 0.85 },
+    'valve_globe': { isa: 'GLV', var: 'Globe', mod: 'Valve', conf: 0.85 },
+    'valve_butterfly': { isa: 'BFV', var: 'Butterfly', mod: 'Valve', conf: 0.85 },
     'instrument_controller': { isa: 'IC', var: 'Indicating', mod: 'Control', conf: 0.75 },
     'instrument_indicator': { isa: 'I', var: 'Indicate', mod: 'Display', conf: 0.75 },
     'instrument_relay': { isa: 'Y', var: 'Relay', mod: 'Compute', conf: 0.70 }
