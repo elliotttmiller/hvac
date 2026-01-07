@@ -57,12 +57,13 @@ global.Image = class {
 };
 
 // Mock crypto for hash generation (simplified for testing)
+// Note: Real Web Crypto API returns fixed-size ArrayBuffers (e.g., 32 bytes for SHA-256)
 global.crypto = {
   subtle: {
     async digest(algorithm, data) {
-      // Mock hash - return ArrayBuffer to match Web Crypto API
-      const hash = Buffer.from(data).toString('base64').substring(0, 32);
-      return new Uint8Array(Buffer.from(hash)).buffer;
+      // Mock hash - return fixed-size ArrayBuffer (32 bytes for SHA-256)
+      const mockHash = Buffer.from(data).toString('base64').substring(0, 32).padEnd(32, '0');
+      return new Uint8Array(Buffer.from(mockHash)).buffer;
     }
   }
 };

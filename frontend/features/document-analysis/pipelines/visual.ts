@@ -369,8 +369,15 @@ async function shouldUseTiling(imageData: string): Promise<boolean> {
   const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
   
   try {
+    // Detect MIME type from data URI if available, fallback to png
+    let mimeType = 'image/png';
+    if (imageData.includes('data:')) {
+      const match = imageData.match(/data:([^;]+);/);
+      if (match) mimeType = match[1];
+    }
+    
     // Load image to get actual dimensions
-    const img = await loadImageFromBase64(normalized, 'image/png');
+    const img = await loadImageFromBase64(normalized, mimeType);
     const width = img.width;
     const height = img.height;
     

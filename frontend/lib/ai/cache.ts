@@ -206,16 +206,27 @@ export class SemanticCache {
    */
   private estimateCacheSize(): number {
     // Return cached size if available and cache hasn't changed significantly
-    if (this.currentSizeBytes > 0 && this.cache.size > 0) {
+    // Periodically recalculate to prevent drift (every 20 operations or if size is 0)
+    const shouldRecalculate = this.currentSizeBytes === 0 || 
+                              this.cache.size % 20 === 0;
+    
+    if (this.currentSizeBytes > 0 && this.cache.size > 0 && !shouldRecalculate) {
       return this.currentSizeBytes;
     }
     
-    // Full recalculation when needed
+    // Full recalculation when needed (prevents drift from rounding errors)
     try {
       const entries = Array.from(this.cache.entries());
       const serialized = JSON.stringify(entries);
-      // Multiply by 2 to account for UTF-16 encoding in JavaScript strings
-      this.currentSizeBytes = serialized.length * 2;
+      
+      // Use Blob API for accurate byte size if available (accounts for actual encoding)
+      if (typeof Blob !== 'undefined') {
+        this.currentSizeBytes = new Blob([serialized]).size;
+      } else {
+        // Fallback: estimate UTF-16 encoding (2 bytes per char)
+        this.currentSizeBytes = serialized.length * 2;
+      }
+      
       return this.currentSizeBytes;
     } catch (error) {
       console.warn('Failed to estimate cache size:', error);
@@ -236,7 +247,14 @@ export class SemanticCache {
   private estimateEntrySize(entry: CacheEntry): number {
     try {
       const serialized = JSON.stringify(entry);
-      return serialized.length * 2; // UTF-16 encoding
+      
+      // Use Blob API for accurate byte size if available
+      if (typeof Blob !== 'undefined') {
+        return new Blob([serialized]).size;
+      }
+      
+      // Fallback: estimate UTF-16 encoding
+      return serialized.length * 2;
     } catch (error) {
       return 0;
     }
