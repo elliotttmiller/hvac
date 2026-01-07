@@ -1,7 +1,12 @@
 /**
  * Semantic Cache for AI Responses
  * Caches responses based on MD5 hash of input to save costs and improve speed
+ * 
+ * STORAGE LIMITS: Browsers typically limit localStorage to 5-10MB.
+ * This cache implements quota monitoring and automatic eviction to stay within limits.
  */
+
+import { clientConfig } from '../clientConfig';
 
 export interface CacheEntry<T = any> {
   hash: string;
@@ -13,9 +18,13 @@ export interface CacheEntry<T = any> {
 export class SemanticCache {
   private cache: Map<string, CacheEntry>;
   private readonly DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly MAX_CACHE_SIZE_BYTES: number;
+  private readonly WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
 
   constructor() {
     this.cache = new Map();
+    // Use configuration value, fallback to 4MB if not set
+    this.MAX_CACHE_SIZE_BYTES = clientConfig.CACHE_MAX_SIZE_BYTES || (4 * 1024 * 1024);
     this.loadFromStorage();
   }
 
@@ -78,6 +87,20 @@ export class SemanticCache {
     };
 
     this.cache.set(hash, entry);
+    
+    // Check if we're exceeding storage quota
+    if (!this.checkStorageQuota()) {
+      // Evict old entries to make room (target 70% capacity)
+      const targetSize = Math.floor(this.MAX_CACHE_SIZE_BYTES * 0.7);
+      this.evictOldEntries(targetSize);
+      
+      // Try again after eviction
+      if (!this.checkStorageQuota()) {
+        console.error('[Cache] Unable to free enough space, clearing cache');
+        this.cache.clear();
+      }
+    }
+    
     this.saveToStorage();
   }
 
@@ -143,13 +166,78 @@ export class SemanticCache {
   }
 
   /**
-   * Get cache statistics
+   * Get cache statistics including size in bytes
    */
-  getStats(): { size: number; entries: number } {
+  getStats(): { size: number; entries: number; sizeBytes: number; maxSizeBytes: number; percentFull: number } {
+    const sizeBytes = this.estimateCacheSize();
+    const percentFull = (sizeBytes / this.MAX_CACHE_SIZE_BYTES) * 100;
+    
     return {
       size: this.cache.size,
       entries: this.cache.size,
+      sizeBytes,
+      maxSizeBytes: this.MAX_CACHE_SIZE_BYTES,
+      percentFull: Math.round(percentFull * 10) / 10, // Round to 1 decimal
     };
+  }
+
+  /**
+   * Estimate the size of cached data in bytes
+   */
+  private estimateCacheSize(): number {
+    try {
+      const entries = Array.from(this.cache.entries());
+      const serialized = JSON.stringify(entries);
+      // Multiply by 2 to account for UTF-16 encoding in JavaScript strings
+      return serialized.length * 2;
+    } catch (error) {
+      console.warn('Failed to estimate cache size:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if cache is approaching storage limits
+   */
+  private checkStorageQuota(): boolean {
+    const sizeBytes = this.estimateCacheSize();
+    const percentFull = (sizeBytes / this.MAX_CACHE_SIZE_BYTES);
+    
+    if (percentFull >= 1.0) {
+      console.warn(`[Cache] Storage quota exceeded (${Math.round(sizeBytes / 1024)}KB / ${Math.round(this.MAX_CACHE_SIZE_BYTES / 1024)}KB)`);
+      return false;
+    }
+    
+    if (percentFull >= this.WARNING_THRESHOLD) {
+      console.warn(`[Cache] Storage quota warning: ${Math.round(percentFull * 100)}% full (${Math.round(sizeBytes / 1024)}KB / ${Math.round(this.MAX_CACHE_SIZE_BYTES / 1024)}KB)`);
+    }
+    
+    return true;
+  }
+
+  /**
+   * Evict oldest entries to free up space
+   * @param targetBytes - Target size to reduce cache to
+   */
+  private evictOldEntries(targetBytes: number): void {
+    const entries = Array.from(this.cache.entries());
+    // Sort by timestamp (oldest first)
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    let currentSize = this.estimateCacheSize();
+    let evicted = 0;
+    
+    for (const [hash, entry] of entries) {
+      if (currentSize <= targetBytes) break;
+      
+      this.cache.delete(hash);
+      currentSize = this.estimateCacheSize();
+      evicted++;
+    }
+    
+    if (evicted > 0) {
+      console.log(`[Cache] Evicted ${evicted} old entries to free space`);
+    }
   }
 
   /**
@@ -179,9 +267,30 @@ export class SemanticCache {
       if (typeof localStorage === 'undefined') return;
 
       const entries = Array.from(this.cache.entries());
-      localStorage.setItem('gemini-cache', JSON.stringify(entries));
+      const serialized = JSON.stringify(entries);
+      
+      // Check if serialized data is too large before attempting to save
+      const estimatedSize = serialized.length * 2; // Account for UTF-16 encoding
+      if (estimatedSize > this.MAX_CACHE_SIZE_BYTES) {
+        console.warn(`[Cache] Data too large to save (${Math.round(estimatedSize / 1024)}KB), evicting entries`);
+        this.evictOldEntries(Math.floor(this.MAX_CACHE_SIZE_BYTES * 0.7));
+        return; // Don't save, try again on next set
+      }
+      
+      localStorage.setItem('gemini-cache', serialized);
     } catch (error) {
-      console.warn('Failed to save cache to storage:', error);
+      console.warn('[Cache] Failed to save cache to storage:', error);
+      
+      // If we hit QuotaExceededError, try to recover
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.warn('[Cache] QuotaExceededError detected, clearing cache');
+        this.cache.clear();
+        try {
+          localStorage.removeItem('gemini-cache');
+        } catch (e) {
+          console.error('[Cache] Failed to clear localStorage:', e);
+        }
+      }
     }
   }
 }

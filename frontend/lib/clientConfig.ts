@@ -49,6 +49,14 @@ export const clientConfig = {
   // Thresholds - Calibrated for High Recall (Zero-HITL)
   HIGH_CONFIDENCE_THRESHOLD: parseFloatOr(import.meta.env.VITE_HIGH_CONFIDENCE_THRESHOLD, 0.90),
 
+  // Visual Processing - Selective Tiling Configuration
+  // Only tile images larger than this dimension to avoid wasting API calls on small PDFs
+  TILING_THRESHOLD_PX: parseIntOr(import.meta.env.VITE_TILING_THRESHOLD_PX, 2000),
+  
+  // Cache Management - LocalStorage Limits
+  // Conservative limit to stay under browser 5-10MB quota
+  CACHE_MAX_SIZE_BYTES: parseIntOr(import.meta.env.VITE_CACHE_MAX_SIZE_BYTES, 4 * 1024 * 1024), // 4MB
+
   // Feature flags
   MOCK_MODE_ENABLED: (import.meta.env.MOCK_MODE_ENABLED || 'false') === 'true',
   FEATURE_FILE_PROCESSING: (import.meta.env.VITE_FEATURE_FILE_PROCESSING || 'true') === 'true',

@@ -14,6 +14,7 @@
 import { getAIClient } from '../../../lib/ai/client';
 import { getSemanticCache } from '../../../lib/ai/cache';
 import { config } from '../../../app/config';
+import { clientConfig } from '../../../lib/clientConfig';
 import { VisualAnalysisResult, VISUAL_ANALYSIS_SCHEMA, DetectedComponent, Connection } from '../types';
 import { DETECT_SYSTEM_INSTRUCTION, DETECT_PROMPT } from '../prompts/visual/detect';
 import { 
@@ -366,11 +367,38 @@ async function refineWithFullImage(
 async function shouldUseTiling(imageData: string): Promise<boolean> {
   try {
     const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
-    // Tiling is expensive. Only use for images > 500KB or very large dimensions.
-    return normalized.length > 500000; 
-  } catch {
-    return false;
+    
+    // Load image to get actual dimensions
+    const img = await loadImageFromBase64(normalized, 'image/png');
+    const width = img.width;
+    const height = img.height;
+    
+    // Use configuration-based threshold for selective tiling
+    // This prevents tiling small PDFs and only tiles high-resolution images
+    const TILING_THRESHOLD = clientConfig.TILING_THRESHOLD_PX;
+    const shouldTile = width >= TILING_THRESHOLD || height >= TILING_THRESHOLD;
+    
+    console.log(`[Visual Pipeline] Image dimensions: ${width}x${height}px, tiling: ${shouldTile ? 'YES' : 'NO'} (threshold: ${TILING_THRESHOLD}px)`);
+    
+    return shouldTile;
+  } catch (error) {
+    console.warn('[Visual Pipeline] Failed to determine image dimensions, falling back to size-based check:', error);
+    // Fallback to file size check if dimension detection fails
+    const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
+    return normalized.length > 500000;
   }
+}
+
+/**
+ * Load image from base64 data to get dimensions
+ */
+function loadImageFromBase64(base64Data: string, mimeType: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = `data:${mimeType};base64,${base64Data}`;
+  });
 }
 
 /**
