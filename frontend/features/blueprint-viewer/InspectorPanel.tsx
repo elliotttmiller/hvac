@@ -87,7 +87,9 @@ const groupComponentsHierarchically = (components: DetectedComponent[]): Record<
   return hierarchical;
 };
 
-// Helper function to group components by type (legacy - keep for backwards compatibility)
+// Helper function to group components by type (flat grouping - used for non-hierarchical views)
+// Note: This function is maintained for simple type-based filtering and legacy component views
+// The hierarchical grouping function (groupComponentsHierarchically) is preferred for the main UI
 const groupComponentsByType = (components: DetectedComponent[]): Record<string, DetectedComponent[]> => {
   const groups: Record<string, DetectedComponent[]> = {};
   components.forEach(comp => {

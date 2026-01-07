@@ -205,7 +205,8 @@ export const PID_DETECT_PROMPT = `
 
 **CRITICAL RULES**:
 - **SHAPE OVERRIDES TAG**: Trust visual geometry over text
-- **ALL circular ISA instrument bubbles** → use specific sensor type (sensor_temperature, sensor_pressure, sensor_flow)
+- **ALL circular ISA instrument bubbles with measurement tags** (PI, TI, FIT, PT, TT, TE, FE, etc.) → use specific sensor type (sensor_temperature, sensor_pressure, sensor_flow)
+- **Controllers and non-sensor instruments** (PIC, TIC, FIC with controller function) → use sensor_* type with controller metadata
 - **Circle without internal line = NEVER a valve** (except Ball/Butterfly with actuating line)
 - **PV on Circle = type: "sensor_pressure"** (Pressure Indicator in HVAC context)
 - **Use sensor_temperature, sensor_pressure, sensor_flow** for proper subcategorization under "instruments" parent
