@@ -248,12 +248,29 @@ app.post('/api/ai/generateVision', async (req, res) => {
         lastErr = err;
         // Log attempt-level error with a short indicator
         console.error(`AI Vision attempt ${attempt} failed:`, err && err.message ? err.message : err);
+        
+        // Don't retry on rate limit errors (429) or auth errors (401/403) - fail fast
+        const isRateLimitError = err.status === 429 || (err.message && (err.message.includes('quota') || err.message.includes('rate limit')));
+        const isAuthError = err.status === 401 || err.status === 403 || (err.message && err.message.includes('API key'));
+        
+        if (isRateLimitError) {
+          console.error(`AI Vision: Rate limit error detected, failing fast without retry`);
+          throw lastErr;
+        }
+        
+        if (isAuthError) {
+          console.error(`AI Vision: Authentication error detected, failing fast without retry`);
+          throw lastErr;
+        }
+        
         // If it's the last attempt, rethrow to be handled by outer catch
         if (attempt === MAX_ATTEMPTS) {
           throw lastErr;
         }
-        // Backoff delay calculation (exponential or linear)
+        
+        // Backoff delay calculation (exponential or linear) for transient errors
         const delayMs = EXP_BACKOFF ? BASE_DELAY_MS * Math.pow(2, attempt - 1) : BASE_DELAY_MS * attempt;
+        console.log(`AI Vision: Retrying in ${delayMs}ms (attempt ${attempt + 1}/${MAX_ATTEMPTS})...`);
         await new Promise(resolve => setTimeout(resolve, Math.min(delayMs, 60_000)));
       }
     }
@@ -304,9 +321,34 @@ app.post('/api/ai/generateVision', async (req, res) => {
   } catch (error) {
     console.error('AI Vision Error:', error.message);
     console.error('Full error details:', error);
-    res.status(500).json({ 
-      error: error.message,
-      details: 'An error occurred while processing the AI request. Check server logs for details.'
+    
+    // Improved error handling to distinguish between error types
+    let statusCode = 500;
+    let errorMessage = error.message;
+    let errorDetails = 'An error occurred while processing the AI request. Check server logs for details.';
+    
+    // Check for rate limiting / quota errors (429)
+    if (error.status === 429 || error.statusText === 'Too Many Requests' || 
+        errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+      statusCode = 429;
+      errorDetails = 'API rate limit exceeded. Please check your API quota and billing details, or try again later. Consider enabling MOCK_MODE_ENABLED=true in your .env file for testing without consuming API quota.';
+    }
+    // Check for authentication errors (401/403)
+    else if (error.status === 401 || error.status === 403 || 
+             errorMessage.includes('API key') || errorMessage.includes('authentication')) {
+      statusCode = 401;
+      errorDetails = 'API authentication failed. Please verify your GEMINI_API_KEY in the .env file is valid.';
+    }
+    // Check for timeout errors
+    else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
+      statusCode = 504;
+      errorDetails = 'AI request timed out. The model took too long to respond. Try reducing image size or increasing VITE_AI_REQUEST_TIMEOUT_MS in .env.';
+    }
+    
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: errorDetails,
+      statusCode: statusCode
     });
   }
 });
@@ -1032,6 +1074,17 @@ app.get('/api/projects/:projectId/tree', async (req, res) => {
     const targetDir = dir === '.' ? projectRoot : path.join(projectRoot, dir);
     if (!targetDir.startsWith(projectRoot)) return res.status(403).json({ error: 'Access denied' });
 
+    // Check if directory exists, create if it doesn't
+    try {
+      await fs.access(targetDir);
+    } catch (accessErr) {
+      // Directory doesn't exist, create it
+      console.log(`[File Tree] Creating missing directory: ${targetDir}`);
+      await fs.mkdir(targetDir, { recursive: true });
+      // Return empty tree for newly created directory
+      return res.json({ tree: [] });
+    }
+
     const entries = await fs.readdir(targetDir, { withFileTypes: true });
     const children = [];
 
@@ -1057,7 +1110,8 @@ app.get('/api/projects/:projectId/tree', async (req, res) => {
     
     res.json({ tree: children });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[File Tree] Error:', err.message);
+    res.status(500).json({ error: err.message, details: 'Failed to read project directory structure' });
   }
 });
 
