@@ -515,47 +515,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             {/* Statistics Dashboard - Only show when components exist */}
             {detectedBoxes.length > 0 && (
                <div className="space-y-3 pt-1">
-                  {/* Key Metrics Cards */}
-                  <div className="grid grid-cols-2 gap-2">
-                     <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                           <Layers size={12} className="text-cyan-400" />
-                           <span className="text-[9px] text-cyan-400 uppercase tracking-wider font-bold">Total Components</span>
-                        </div>
-                        <div className="text-2xl font-bold text-white">{componentStats.total}</div>
-                     </div>
-                     
-                     <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                           <TrendingUp size={12} className="text-emerald-400" />
-                           <span className="text-[9px] text-emerald-400 uppercase tracking-wider font-bold">Avg Confidence</span>
-                        </div>
-                        <div className="text-2xl font-bold text-white">{(componentStats.avgConfidence * 100).toFixed(1)}%</div>
-                     </div>
-                     
-                     <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                           <BarChart3 size={12} className="text-purple-400" />
-                           <span className="text-[9px] text-purple-400 uppercase tracking-wider font-bold">High Quality</span>
-                        </div>
-                        <div className="text-2xl font-bold text-white">{componentStats.excellentQuality}</div>
-                        <div className="text-[9px] text-zinc-500 mt-0.5">
-                           {((componentStats.excellentQuality / componentStats.total) * 100).toFixed(0)}% excellent
-                        </div>
-                     </div>
-                     
-                     <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                           <FileText size={12} className="text-amber-400" />
-                           <span className="text-[9px] text-amber-400 uppercase tracking-wider font-bold">ISA Tagged</span>
-                        </div>
-                        <div className="text-2xl font-bold text-white">{componentStats.isaCompliant}</div>
-                        <div className="text-[9px] text-zinc-500 mt-0.5">
-                           {((componentStats.isaCompliant / componentStats.total) * 100).toFixed(0)}% compliant
-                        </div>
-                     </div>
-                  </div>
-                  
                   {/* Component Types Distribution Bar Chart */}
                   {typeChartData.length > 0 && (
                      <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
