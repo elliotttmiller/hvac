@@ -119,14 +119,21 @@ function formatFinalAnalysisReport(report) {
   if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
     sections.push('## CRITICAL EQUIPMENT');
     sections.push('');
+    
+    // Create a formatted table for better visual presentation
+    sections.push(line('-', 80));
+    sections.push(formatTableRow(['#', 'Equipment Tag', 'Role & Description'], [3, 20, 57]));
+    sections.push(line('=', 80));
+    
     report.critical_equipment.forEach((equip, idx) => {
       const tag = equip.tag || equip.name || `Equipment ${idx + 1}`;
       const role = equip.role || 'No description available';
-      sections.push(`**${tag}**`);
-      sections.push(`  ${role}`);
-      sections.push('');
+      sections.push(formatTableRow([`${idx + 1}`, tag, role], [3, 20, 57]));
+      sections.push(line('-', 80));
     });
-    sections.push(line('-'));
+    
+    sections.push('');
+    sections.push(`Total Equipment: ${report.critical_equipment.length} items`);
     sections.push('');
   }
 
@@ -187,6 +194,26 @@ function formatParagraph(text) {
 }
 
 /**
+ * Formats a table row with proper column widths and padding
+ * @param {Array<string>} columns - Array of column values
+ * @param {Array<number>} widths - Array of column widths
+ * @returns {string} - Formatted table row
+ */
+function formatTableRow(columns, widths) {
+  const paddedColumns = columns.map((col, idx) => {
+    const width = widths[idx] || 20;
+    const text = String(col || '');
+    // Truncate if too long, pad if too short
+    if (text.length > width) {
+      return text.substring(0, width - 3) + '...';
+    }
+    return text.padEnd(width, ' ');
+  });
+  
+  return paddedColumns.join(' | ');
+}
+
+/**
  * Exports the report to a file-ready string with proper metadata
  * @param {Object} report - The analysis report object
  * @param {Object} metadata - Additional metadata (document type, classification, etc.)
@@ -218,5 +245,6 @@ function exportReportWithMetadata(report, metadata = {}) {
 module.exports = {
   formatFinalAnalysisReport,
   formatParagraph,
+  formatTableRow,
   exportReportWithMetadata
 };

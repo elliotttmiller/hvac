@@ -283,19 +283,25 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       }
       
       // ============================================================================
-      // CRITICAL EQUIPMENT (H2 with unordered list)
+      // CRITICAL EQUIPMENT (H2 with Markdown Table)
       // ============================================================================
       if (report.critical_equipment && Array.isArray(report.critical_equipment) && report.critical_equipment.length > 0) {
          sections.push('## Critical Equipment');
          sections.push('');
          
-         report.critical_equipment.forEach((equip: any) => {
+         // Create a markdown table with better visual organization
+         sections.push('| # | Equipment Tag | Role & Description |');
+         sections.push('|---|---------------|-------------------|');
+         
+         report.critical_equipment.forEach((equip: any, idx: number) => {
             const tag = equip.tag || equip.name || 'N/A';
             const role = equip.role || 'No description';
             
-            sections.push(`- **${tag}**: ${role}`);
+            sections.push(`| ${idx + 1} | **${tag}** | ${role} |`);
          });
          
+         sections.push('');
+         sections.push(`*Total Equipment: ${report.critical_equipment.length} items*`);
          sections.push('');
       }
       
@@ -809,13 +815,54 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
                                     <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">Critical Equipment</h3>
                                  </div>
-                                 <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5 space-y-3">
-                                    {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
-                                       <div key={idx} className="border-b border-white/5 last:border-0 pb-3 last:pb-0">
-                                          <div className="text-xs font-bold text-amber-300 mb-1">{equip.tag}</div>
-                                          <div className="text-xs text-zinc-400 leading-relaxed">{equip.role}</div>
+                                 <div className="bg-[#1a1a1a] rounded-lg border border-white/5 overflow-hidden">
+                                    {/* Table Header */}
+                                    <div className="grid grid-cols-12 gap-3 px-4 py-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-b border-amber-500/20">
+                                       <div className="col-span-1 text-[10px] font-bold text-amber-400 uppercase tracking-wider">#</div>
+                                       <div className="col-span-3 text-[10px] font-bold text-amber-400 uppercase tracking-wider">Equipment Tag</div>
+                                       <div className="col-span-8 text-[10px] font-bold text-amber-400 uppercase tracking-wider">Role & Description</div>
+                                    </div>
+                                    
+                                    {/* Table Body */}
+                                    <div className="divide-y divide-white/5">
+                                       {finalAnalysisReport.critical_equipment.map((equip: any, idx: number) => (
+                                          <div key={idx} className="grid grid-cols-12 gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
+                                             {/* Index Number with Status Indicator */}
+                                             <div className="col-span-1 flex items-center">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
+                                                   <span className="text-[10px] font-bold text-amber-300">{idx + 1}</span>
+                                                </div>
+                                             </div>
+                                             
+                                             {/* Equipment Tag with Icon */}
+                                             <div className="col-span-3 flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                                                   <Box size={12} className="text-amber-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                   <div className="text-xs font-bold text-amber-300 font-mono truncate group-hover:text-amber-200 transition-colors">
+                                                      {equip.tag}
+                                                   </div>
+                                                </div>
+                                             </div>
+                                             
+                                             {/* Role Description */}
+                                             <div className="col-span-8 flex items-center">
+                                                <p className="text-xs text-zinc-300 leading-relaxed group-hover:text-zinc-200 transition-colors">
+                                                   {equip.role}
+                                                </p>
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                    
+                                    {/* Table Footer with Summary */}
+                                    <div className="px-4 py-2 bg-gradient-to-r from-amber-500/5 to-orange-500/5 border-t border-amber-500/20">
+                                       <div className="flex items-center justify-between">
+                                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Total Equipment</span>
+                                          <span className="text-xs font-bold text-amber-400 font-mono">{finalAnalysisReport.critical_equipment.length} items</span>
                                        </div>
-                                    ))}
+                                    </div>
                                  </div>
                               </div>
                            )}
