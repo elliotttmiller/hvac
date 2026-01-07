@@ -12,8 +12,12 @@ import {
    MoreHorizontal,
    Plus,
    Copy,
-   ClipboardList
+   ClipboardList,
+   BarChart3,
+   PieChart,
+   TrendingUp
 } from 'lucide-react';
+import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
 
@@ -410,10 +414,144 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     return stats;
   }, [detectedBoxes]);
 
-  const renderComponentsTab = () => (
+  const renderComponentsTab = () => {
+    // Prepare chart data for subsystems
+    const subsystemChartData = Object.entries(componentStats.bySubsystem).map(([name, count]) => ({
+      name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      count: count as number,
+      percentage: parseFloat((((count as number) / componentStats.total) * 100).toFixed(1))
+    })).sort((a, b) => b.count - a.count);
+    
+    // Prepare chart data for component types
+    const typeChartData = Object.entries(componentsByType).map(([name, components]: [string, DetectedComponent[]]) => ({
+      name: name.replace(/_/g, ' '),
+      count: components.length,
+      percentage: parseFloat(((components.length / componentStats.total) * 100).toFixed(1))
+    })).sort((a, b) => b.count - a.count).slice(0, 8); // Top 8 types
+    
+    // Color palette for charts
+    const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+    
+    return (
       <div className="flex flex-col h-full">
          {/* Scrollable content area */}
          <div className="flex-1 overflow-y-auto scrollbar-thin px-3 space-y-3">
+            {/* Statistics Dashboard - Only show when components exist */}
+            {detectedBoxes.length > 0 && (
+               <div className="space-y-3 pt-1">
+                  {/* Key Metrics Cards */}
+                  <div className="grid grid-cols-2 gap-2">
+                     <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <Layers size={12} className="text-cyan-400" />
+                           <span className="text-[9px] text-cyan-400 uppercase tracking-wider font-bold">Total Components</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.total}</div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <TrendingUp size={12} className="text-emerald-400" />
+                           <span className="text-[9px] text-emerald-400 uppercase tracking-wider font-bold">Avg Confidence</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{(componentStats.avgConfidence * 100).toFixed(1)}%</div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <BarChart3 size={12} className="text-purple-400" />
+                           <span className="text-[9px] text-purple-400 uppercase tracking-wider font-bold">High Quality</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.excellentQuality}</div>
+                        <div className="text-[9px] text-zinc-500 mt-0.5">
+                           {((componentStats.excellentQuality / componentStats.total) * 100).toFixed(0)}% excellent
+                        </div>
+                     </div>
+                     
+                     <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                           <FileText size={12} className="text-amber-400" />
+                           <span className="text-[9px] text-amber-400 uppercase tracking-wider font-bold">ISA Tagged</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white">{componentStats.isaCompliant}</div>
+                        <div className="text-[9px] text-zinc-500 mt-0.5">
+                           {((componentStats.isaCompliant / componentStats.total) * 100).toFixed(0)}% compliant
+                        </div>
+                     </div>
+                  </div>
+                  
+                  {/* Component Types Distribution Bar Chart */}
+                  {typeChartData.length > 0 && (
+                     <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                           <BarChart3 size={14} className="text-cyan-400" />
+                           <h4 className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Component Types Distribution</h4>
+                        </div>
+                        <ResponsiveContainer width="100%" height={180}>
+                           <BarChart data={typeChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                              <XAxis 
+                                 dataKey="name" 
+                                 tick={{ fill: '#a1a1aa', fontSize: 9 }}
+                                 angle={-45}
+                                 textAnchor="end"
+                                 height={60}
+                              />
+                              <YAxis tick={{ fill: '#a1a1aa', fontSize: 10 }} />
+                              <Tooltip 
+                                 contentStyle={{ 
+                                    backgroundColor: '#1a1a1a', 
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    fontSize: '11px'
+                                 }}
+                                 labelStyle={{ color: '#e4e4e7', fontWeight: 'bold' }}
+                                 itemStyle={{ color: '#06b6d4' }}
+                              />
+                              <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                           </BarChart>
+                        </ResponsiveContainer>
+                     </div>
+                  )}
+                  
+                  {/* HVAC Subsystems Breakdown */}
+                  {subsystemChartData.length > 0 && (
+                     <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                           <PieChart size={14} className="text-purple-400" />
+                           <h4 className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">HVAC Subsystems</h4>
+                        </div>
+                        <div className="space-y-2">
+                           {subsystemChartData.map((item, idx) => (
+                              <div key={item.name} className="flex items-center gap-2">
+                                 <div 
+                                    className="w-3 h-3 rounded-sm shrink-0" 
+                                    style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                                 />
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                       <span className="text-[10px] text-zinc-300 truncate">{item.name}</span>
+                                       <span className="text-[10px] text-zinc-500 font-mono">{item.count}</span>
+                                    </div>
+                                    <div className="w-full bg-white/5 rounded-full h-1.5 mt-1">
+                                       <div 
+                                          className="h-1.5 rounded-full transition-all"
+                                          style={{ 
+                                             width: `${item.percentage}%`,
+                                             backgroundColor: COLORS[idx % COLORS.length]
+                                          }}
+                                       />
+                                    </div>
+                                 </div>
+                                 <span className="text-[9px] text-zinc-500 font-bold w-10 text-right">{item.percentage}%</span>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+                  )}
+               </div>
+            )}
+            
             {/* Search */}
             <div className="px-0 pb-0">
                <div className="relative">
@@ -637,7 +775,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   )}
          </div>
       </div>
-  );
+    );
+  };
 
   const renderAnalysisTab = () => {
     const hasData = detectedBoxes.length > 0;
