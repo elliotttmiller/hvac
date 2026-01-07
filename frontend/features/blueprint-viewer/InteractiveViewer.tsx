@@ -71,7 +71,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   }, [updateMetrics]);
 
   return (
-    <div className="flex-1 relative bg-[#0B1120] flex flex-col overflow-hidden">
+    <div className="flex-1 relative flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--app-bg)' }}>
       
       {/* Background Grid */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
