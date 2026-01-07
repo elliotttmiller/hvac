@@ -20,6 +20,7 @@ import {
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
+import { getParentCategory, formatCategoryName } from '@/lib/utils/component-categorization';
 
 interface InspectorPanelProps {
   analysis: string;
@@ -41,7 +42,54 @@ const CHART_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#e
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
 
-// Helper function to group components by type
+/**
+ * Hierarchical component grouping structure
+ * Groups components by parent category, then by specific type for subcategorization
+ */
+interface HierarchicalGroup {
+  name: string;
+  displayName: string;
+  totalCount: number;
+  subcategories: Record<string, DetectedComponent[]>;
+}
+
+/**
+ * Helper function to group components hierarchically
+ * Creates parent categories (instruments, valves, equipment) with subcategories
+ */
+const groupComponentsHierarchically = (components: DetectedComponent[]): Record<string, HierarchicalGroup> => {
+  const hierarchical: Record<string, HierarchicalGroup> = {};
+  
+  components.forEach(comp => {
+    const type = comp.meta?.equipment_type || comp.type || 'other';
+    const parentCategory = comp.meta?.parent_category || getParentCategory(type);
+    
+    // Initialize parent category if it doesn't exist
+    if (!hierarchical[parentCategory]) {
+      hierarchical[parentCategory] = {
+        name: parentCategory,
+        displayName: formatCategoryName(parentCategory),
+        totalCount: 0,
+        subcategories: {}
+      };
+    }
+    
+    // Initialize subcategory if it doesn't exist
+    if (!hierarchical[parentCategory].subcategories[type]) {
+      hierarchical[parentCategory].subcategories[type] = [];
+    }
+    
+    // Add component to subcategory
+    hierarchical[parentCategory].subcategories[type].push(comp);
+    hierarchical[parentCategory].totalCount++;
+  });
+  
+  return hierarchical;
+};
+
+// Helper function to group components by type (flat grouping - used for non-hierarchical views)
+// Note: This function is maintained for simple type-based filtering and legacy component views
+// The hierarchical grouping function (groupComponentsHierarchically) is preferred for the main UI
 const groupComponentsByType = (components: DetectedComponent[]): Record<string, DetectedComponent[]> => {
   const groups: Record<string, DetectedComponent[]> = {};
   components.forEach(comp => {

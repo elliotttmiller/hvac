@@ -95,19 +95,27 @@ const COMPONENT_TYPE_MAP: Record<string, string> = {
   'needle valve': 'valve_needle',
   'plug valve': 'valve_plug',
   
-  // Instrument variants
+  // Instrument variants - use specific sensor types for subcategorization
+  // Parent category "instruments" will be added via metadata
   'temperature sensor': 'sensor_temperature',
   'pressure sensor': 'sensor_pressure',
   'flow sensor': 'sensor_flow',
   'level sensor': 'sensor_level',
-  'temperature indicator': 'instrument_indicator',
-  'pressure indicator': 'instrument_indicator',
-  'temperature transmitter': 'instrument_transmitter',
-  'pressure transmitter': 'instrument_transmitter',
-  'flow transmitter': 'instrument_transmitter',
-  'controller': 'instrument_controller',
-  'pid controller': 'instrument_controller',
-  'logic controller': 'instrument_logic',
+  'temperature indicator': 'sensor_temperature',
+  'pressure indicator': 'sensor_pressure',
+  'flow indicator': 'sensor_flow',
+  'temperature transmitter': 'sensor_temperature',
+  'pressure transmitter': 'sensor_pressure',
+  'flow transmitter': 'sensor_flow',
+  'level transmitter': 'sensor_level',
+  'controller': 'sensor_controller',
+  'pid controller': 'sensor_controller',
+  'logic controller': 'sensor_logic',
+  'indicating controller': 'sensor_controller',
+  'sensor': 'sensor_generic',
+  'transmitter': 'sensor_generic',
+  'indicator': 'sensor_generic',
+  'instrument': 'sensor_generic',
   
   // Equipment variants
   'air handler': 'ahu',

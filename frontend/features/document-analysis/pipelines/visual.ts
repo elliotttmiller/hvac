@@ -28,6 +28,7 @@ import { mergeComponents, localToGlobal, calculateIoU } from '../../../lib/utils
 import { normalizeBackendBBox } from '../../../lib/geometry';
 import { generateId } from '../../../lib/utils';
 import { enhanceVisualAnalysis, optimizedTileProcessing, calculateQualityMetrics } from './visual-enhancements';
+import { getParentCategory } from '../../../lib/utils/component-categorization';
 
 type BlueprintType = 'PID' | 'HVAC';
 
@@ -544,7 +545,7 @@ function resolveTypeConflict(
   
   // --- RULE 1: "Circle Safety" Rule ---
   // IF Shape = Circle (without internal actuating line) AND Type contains "valve" (but NOT Ball/Butterfly)
-  // THEN: Auto-correct to instrument/indicator
+  // THEN: Auto-correct to appropriate sensor type
   if (shapeLower === 'circle') {
     // Check if it's a Ball or Butterfly valve (allowed circular valves)
     const isBallValve = sigLower.includes('diagonal') || typeLower.includes('ball');
@@ -553,40 +554,46 @@ function resolveTypeConflict(
     if (!isBallValve && !isButterflyValve) {
       // Simple circle - check if incorrectly classified as valve
       if (typeLower.includes('valve') && !typeLower.includes('ball') && !typeLower.includes('butterfly')) {
-        // Determine correct instrument type based on tag
-        let correctedType = 'instrument_indicator';
-        if (tagUpper.startsWith('P')) correctedType = 'sensor_pressure';
-        else if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
+        // Determine correct sensor type based on tag
+        let correctedType = 'sensor_pressure'; // default
+        if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
         else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
         else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+        else if (tagUpper.startsWith('Z')) correctedType = 'sensor_position';
         
         return {
           correctedType,
-          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments/sensors, not valves. Tag '${tag}' likely indicates an indicator or sensor.`
+          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments, not valves. Tag '${tag}' indicates an ISA-5.1 ${correctedType.replace('sensor_', '')} instrument.`
         };
       }
     }
   }
   
   // --- RULE 2: "PV Circle" Rule (HVAC Domain Specific) ---
-  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator, NOT Valve
+  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure sensor, NOT Valve
   if (tagUpper.startsWith('PV') && shapeLower === 'circle') {
     const isEmptyCircle = sigLower === 'circle_empty' || (!sigLower.includes('diagonal') && !sigLower.includes('bar'));
     if (isEmptyCircle && typeLower.includes('valve')) {
       return {
-        correctedType: 'instrument_indicator',
+        correctedType: 'sensor_pressure',
         reasoning: `Shape-based correction: Circle labeled 'PV' is a Pressure Indicator (Pressure View), not a Pressure Valve. Visual geometry (simple circle) confirms this is an instrument for displaying pressure readings, per HVAC/BAS conventions.`
       };
     }
   }
   
   // --- RULE 3: "*I" Tags (Indicators) ---
-  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Indicator
+  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always sensor type
   if (tagUpper.match(/^[A-Z]{1,2}I(-?\d+)?$/) && shapeLower === 'circle') {
     if (typeLower.includes('valve')) {
+      // Determine sensor type from first letter
+      let correctedType = 'sensor_pressure';
+      if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
+      else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
+      else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+      
       return {
-        correctedType: 'instrument_indicator',
-        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to instrument_indicator per ISA-5.1 standards.`
+        correctedType,
+        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to ${correctedType} per ISA-5.1 standards.`
       };
     }
   }
@@ -630,23 +637,32 @@ function resolveTypeConflict(
 }
 
 // ISA-5.1 prefix-based type mapping
+// Strategy: Keep specific sensor types for subcategorization, 
+// and use parent_category metadata for hierarchical grouping
 const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
   'TT': 'sensor_temperature',
   'TI': 'sensor_temperature',
   'TE': 'sensor_temperature',
-  'TIC': 'instrument_controller',
+  'TIT': 'sensor_temperature',
+  'TIC': 'sensor_temperature',
   'PT': 'sensor_pressure',
   'PI': 'sensor_pressure',
   'PE': 'sensor_pressure',
-  'PIC': 'instrument_controller',
+  'PIT': 'sensor_pressure',
+  'PIC': 'sensor_pressure',
   'FT': 'sensor_flow',
   'FI': 'sensor_flow',
   'FE': 'sensor_flow',
-  'FIC': 'instrument_controller',
+  'FIT': 'sensor_flow',
+  'FIC': 'sensor_flow',
   'LT': 'sensor_level',
   'LI': 'sensor_level',
   'LE': 'sensor_level',
-  'LIC': 'instrument_controller',
+  'LIT': 'sensor_level',
+  'LIC': 'sensor_level',
+  'PDI': 'sensor_pressure',  // Differential Pressure
+  'PDIT': 'sensor_pressure', // Differential Pressure Transmitter
+  'ZC': 'sensor_position',   // Position Controller
   'FV': 'valve_control',
   'TV': 'valve_control',
   'PV': 'valve_control',
@@ -665,6 +681,7 @@ const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
 
 /**
  * Normalize HVAC component type based on ISA-5.1 tag prefix
+ * Also extracts measured variable for instruments and stores in metadata
  */
 function normalizeHVACComponentType(comp: any): any {
   if (!comp.meta?.tag && !comp.label) return comp;
@@ -676,6 +693,28 @@ function normalizeHVACComponentType(comp: any): any {
   for (const [prefix, type] of Object.entries(ISA_PREFIX_TYPE_MAP)) {
     if (tag.startsWith(prefix)) {
       normalized.type = type;
+      
+      // Extract measured variable for instruments and store in metadata
+      if (type.startsWith('sensor_')) {
+        const firstLetter = tag.charAt(0);
+        const measuredVariableMap: Record<string, string> = {
+          'T': 'temperature',
+          'P': 'pressure',
+          'F': 'flow',
+          'L': 'level',
+          'Z': 'position'
+        };
+        
+        if (measuredVariableMap[firstLetter]) {
+          normalized.meta = {
+            ...normalized.meta,
+            measured_variable: measuredVariableMap[firstLetter],
+            instrument_type: prefix, // Store the full ISA prefix (TT, PI, FIT, etc.)
+            parent_category: 'instruments' // Add parent category for hierarchical grouping
+          };
+        }
+      }
+      
       break;
     }
   }
@@ -821,13 +860,14 @@ function enhanceHVACComponent(comp: any): any {
     }
   }
   
-  // STEP 4: Add HVAC-specific metadata
+  // STEP 4: Add HVAC-specific metadata including parent category for hierarchical grouping
   enhanced.meta = {
     ...enhanced.meta,
     hvac_subsystem: enhanced.meta?.hvac_subsystem || determineHVACSubsystem(enhanced),
     component_category: getHVACComponentCategory(enhanced),
     isa_function: extractISAFunction(enhanced.meta?.tag || enhanced.label),
-    detection_quality: assessDetectionQuality(enhanced)
+    detection_quality: assessDetectionQuality(enhanced),
+    parent_category: enhanced.meta?.parent_category || getParentCategory(enhanced.type || '')
   };
   
   return enhanced;
@@ -867,9 +907,9 @@ function generateShapeBasedReasoning(shape: string, type: string): string | null
     } else if (shapeLower === 'bowtie' || shapeLower === 'triangle') {
       reasoning += '. Valve body identified with appropriate actuator symbol.';
     }
-  } else if (typeLower.includes('sensor') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
+  } else if (typeLower === 'instrument' || typeLower.includes('sensor') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
     if (shapeLower === 'circle') {
-      reasoning += '. Circular symbols are standard for field-mounted instrumentation.';
+      reasoning += '. Circular symbols are standard for field-mounted ISA-5.1 instrumentation.';
     }
   } else if (typeLower.includes('controller')) {
     reasoning += '. Controller identified with appropriate ISA function code.';
@@ -901,8 +941,9 @@ function getHVACComponentCategory(comp: any): string {
     return 'refrigeration';
   }
   
-  // Controls (sensors, controllers, valves, dampers)
+  // Controls (instruments, sensors, controllers, valves, dampers)
   if (subsystem === 'controls' || 
+      type === 'instrument' ||
       type.includes('sensor') || 
       type.includes('controller') || 
       type.includes('valve') || 
