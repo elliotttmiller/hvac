@@ -7,7 +7,12 @@
  * 1. Using a headless browser (Puppeteer/Playwright)
  * 2. Using node-canvas library
  * 3. Using sharp library for image processing
+ * 
+ * COST OPTIMIZATION: Grid tiling requires 4x API calls (one per tile) plus final merge.
+ * Only tile images above TILING_THRESHOLD to avoid wasting costs on small PDFs.
  */
+
+import { clientConfig } from '../clientConfig';
 
 export interface TileResult {
   tiles: TileBlob[];
@@ -231,8 +236,17 @@ function loadImage(base64Data: string, mimeType: string): Promise<HTMLImageEleme
 /**
  * Helper: Check if tiling is beneficial for the given image
  * Returns true if image resolution is high enough to benefit from tiling
+ * 
+ * COST OPTIMIZATION: This threshold prevents unnecessary 4x API cost for small images.
+ * Configurable via VITE_TILING_THRESHOLD_PX environment variable.
  */
 export function shouldTileImage(width: number, height: number): boolean {
-  const TILING_THRESHOLD = 2048; // Minimum dimension to benefit from tiling
-  return width >= TILING_THRESHOLD || height >= TILING_THRESHOLD;
+  const TILING_THRESHOLD = clientConfig.TILING_THRESHOLD_PX || 2000;
+  const shouldTile = width >= TILING_THRESHOLD || height >= TILING_THRESHOLD;
+  
+  if (!shouldTile) {
+    console.log(`[Tiling] Image ${width}x${height}px is below threshold (${TILING_THRESHOLD}px), skipping tiling to save API costs`);
+  }
+  
+  return shouldTile;
 }

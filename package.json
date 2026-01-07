@@ -14,7 +14,8 @@
     "test:report-formatter": "node scripts/tests/test-report-formatter.cjs",
     "test:hvac-sections": "node scripts/tests/test-hvac-sections.cjs",
     "test:integration": "node scripts/tests/test-integration.cjs",
-    "test:all": "npm run test:minification && npm run test:token-budgets && npm run test:report-formatter && npm run test:hvac-sections && npm run test:integration"
+    "test:storage-tiling": "node scripts/tests/test-storage-tiling.cjs",
+    "test:all": "npm run test:minification && npm run test:token-budgets && npm run test:report-formatter && npm run test:hvac-sections && npm run test:integration && npm run test:storage-tiling"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
