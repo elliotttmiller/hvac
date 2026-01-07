@@ -252,6 +252,43 @@ const CONNECTION_RULES = [
     reasoning: 'Pipe to manual ball valve'
   },
   
+  // Valve-to-valve connections (common in series arrangements)
+  {
+    from: 'valve_gate',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.85,
+    reasoning: 'Series gate valves on process line'
+  },
+  {
+    from: 'valve_gate',
+    to: 'valve_check',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Gate valve upstream of check valve'
+  },
+  {
+    from: 'valve_check',
+    to: 'valve_check',
+    type: 'process_flow',
+    confidence: 0.82,
+    reasoning: 'Series check valves (redundant backflow prevention)'
+  },
+  {
+    from: 'valve_control',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.86,
+    reasoning: 'Control valve to isolation gate valve'
+  },
+  {
+    from: 'valve_gate',
+    to: 'valve_control',
+    type: 'process_flow',
+    confidence: 0.86,
+    reasoning: 'Isolation gate valve upstream of control valve'
+  },
+  
   // Pneumatic signal connections
   {
     from: 'instrument_logic',

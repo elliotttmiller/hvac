@@ -30,6 +30,7 @@ import { normalizeBackendBBox } from '../../../lib/geometry';
 import { generateId } from '../../../lib/utils';
 import { enhanceVisualAnalysis, optimizedTileProcessing, calculateQualityMetrics } from './visual-enhancements';
 import { getParentCategory } from '../../../lib/utils/component-categorization';
+import { generateIntelligentLabels, validateLabels, resolveConflicts } from '../../../lib/utils/label-generator';
 
 type BlueprintType = 'PID' | 'HVAC';
 
@@ -106,12 +107,31 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
       enableValidation: true
     });
     
+    // ENHANCEMENT: Generate intelligent labels for components with "unknown" labels
+    console.log('[Visual Pipeline] Generating intelligent labels for unlabeled components...');
+    const beforeLabelCount = result.components.filter(c => !c.label || c.label === 'unknown').length;
+    result.components = generateIntelligentLabels(result.components);
+    const afterLabelCount = result.components.filter(c => !c.label || c.label === 'unknown').length;
+    console.log(`[Visual Pipeline] Label generation: ${beforeLabelCount - afterLabelCount} components labeled`);
+    
+    // ENHANCEMENT: Validate and resolve label conflicts
+    const validation = validateLabels(result.components);
+    if (!validation.valid) {
+      console.warn(`[Visual Pipeline] Label conflicts detected: ${validation.conflicts.length} duplicates`);
+      result.components = resolveConflicts(result.components);
+      console.log('[Visual Pipeline] Label conflicts resolved');
+    }
+    
     // Calculate quality metrics
     const qualityMetrics = calculateQualityMetrics(result);
     console.log('[Visual Pipeline] Quality Score:', qualityMetrics.overall_score.toFixed(2));
     result.metadata = {
       ...result.metadata,
-      quality_metrics: qualityMetrics
+      quality_metrics: qualityMetrics,
+      label_generation: {
+        generated_count: result.components.filter(c => c.meta?.label_generated).length,
+        conflicts_resolved: validation.conflicts.length
+      }
     };
 
     // Cache the enhanced result
