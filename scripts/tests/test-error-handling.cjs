@@ -183,16 +183,20 @@ async function runTests() {
     const fs = require('fs');
     const serverCode = fs.readFileSync('./server/index.cjs', 'utf8');
     
-    // Check for auth error detection
-    if (!serverCode.includes('isAuthError')) {
-      throw new Error('Auth error detection not found');
+    // Check for helper functions
+    if (!serverCode.includes('function isAuthError(error)')) {
+      throw new Error('isAuthError helper function not found');
     }
     
-    // Check that both error types cause early exit
-    const rateLimitCheck = serverCode.includes('if (isRateLimitError)') && 
-                           serverCode.includes('throw lastErr');
-    const authCheck = serverCode.includes('if (isAuthError)') && 
-                      serverCode.includes('throw lastErr');
+    if (!serverCode.includes('function isRateLimitError(error)')) {
+      throw new Error('isRateLimitError helper function not found');
+    }
+    
+    // Check that both error types cause early exit in retry logic
+    const rateLimitCheck = serverCode.includes('if (isRateLimitError(err))') && 
+                           serverCode.includes('failing fast without retry');
+    const authCheck = serverCode.includes('if (isAuthError(err))') && 
+                      serverCode.includes('failing fast without retry');
     
     if (!rateLimitCheck) {
       throw new Error('Rate limit fail-fast logic not found');
@@ -200,6 +204,18 @@ async function runTests() {
     
     if (!authCheck) {
       throw new Error('Auth fail-fast logic not found');
+    }
+    
+    // Check that helper functions are used in error handling
+    const errorHandlingRateLimit = serverCode.includes('if (isRateLimitError(error))');
+    const errorHandlingAuth = serverCode.includes('if (isAuthError(error))');
+    
+    if (!errorHandlingRateLimit) {
+      throw new Error('Rate limit helper not used in error handling');
+    }
+    
+    if (!errorHandlingAuth) {
+      throw new Error('Auth error helper not used in error handling');
     }
   });
   

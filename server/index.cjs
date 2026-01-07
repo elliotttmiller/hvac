@@ -115,6 +115,40 @@ try {
 }
 
 // ============================================================================
+// ERROR DETECTION HELPERS
+// ============================================================================
+
+/**
+ * Checks if an error is a rate limit error (HTTP 429 or quota-related)
+ * @param {Error} error - The error object to check
+ * @returns {boolean} - True if the error is a rate limit error
+ */
+function isRateLimitError(error) {
+  return error.status === 429 || 
+         (error.message && (error.message.includes('quota') || error.message.includes('rate limit')));
+}
+
+/**
+ * Checks if an error is an authentication error (HTTP 401/403)
+ * @param {Error} error - The error object to check
+ * @returns {boolean} - True if the error is an authentication error
+ */
+function isAuthError(error) {
+  return error.status === 401 || 
+         error.status === 403 || 
+         (error.message && error.message.includes('API key'));
+}
+
+/**
+ * Checks if an error is a timeout error
+ * @param {Error} error - The error object to check
+ * @returns {boolean} - True if the error is a timeout error
+ */
+function isTimeoutError(error) {
+  return error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'));
+}
+
+// ============================================================================
 // API ENDPOINTS
 // ============================================================================
 
@@ -250,15 +284,12 @@ app.post('/api/ai/generateVision', async (req, res) => {
         console.error(`AI Vision attempt ${attempt} failed:`, err && err.message ? err.message : err);
         
         // Don't retry on rate limit errors (429) or auth errors (401/403) - fail fast
-        const isRateLimitError = err.status === 429 || (err.message && (err.message.includes('quota') || err.message.includes('rate limit')));
-        const isAuthError = err.status === 401 || err.status === 403 || (err.message && err.message.includes('API key'));
-        
-        if (isRateLimitError) {
+        if (isRateLimitError(err)) {
           console.error(`AI Vision: Rate limit error detected, failing fast without retry`);
           throw lastErr;
         }
         
-        if (isAuthError) {
+        if (isAuthError(err)) {
           console.error(`AI Vision: Authentication error detected, failing fast without retry`);
           throw lastErr;
         }
@@ -328,19 +359,17 @@ app.post('/api/ai/generateVision', async (req, res) => {
     let errorDetails = 'An error occurred while processing the AI request. Check server logs for details.';
     
     // Check for rate limiting / quota errors (429)
-    if (error.status === 429 || error.statusText === 'Too Many Requests' || 
-        errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+    if (isRateLimitError(error)) {
       statusCode = 429;
       errorDetails = 'API rate limit exceeded. Please check your API quota and billing details, or try again later. Consider enabling MOCK_MODE_ENABLED=true in your .env file for testing without consuming API quota.';
     }
     // Check for authentication errors (401/403)
-    else if (error.status === 401 || error.status === 403 || 
-             errorMessage.includes('API key') || errorMessage.includes('authentication')) {
+    else if (isAuthError(error)) {
       statusCode = 401;
       errorDetails = 'API authentication failed. Please verify your GEMINI_API_KEY in the .env file is valid.';
     }
     // Check for timeout errors
-    else if (errorMessage.includes('timeout') || errorMessage.includes('ETIMEDOUT')) {
+    else if (isTimeoutError(error)) {
       statusCode = 504;
       errorDetails = 'AI request timed out. The model took too long to respond. Try reducing image size or increasing VITE_AI_REQUEST_TIMEOUT_MS in .env.';
     }
