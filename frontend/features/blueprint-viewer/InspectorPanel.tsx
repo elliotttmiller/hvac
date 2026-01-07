@@ -17,7 +17,7 @@ import {
    PieChart,
    TrendingUp
 } from 'lucide-react';
-import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
 
@@ -415,6 +415,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, [detectedBoxes]);
 
   const renderComponentsTab = () => {
+    // Configuration constants
+    const MAX_CHART_TYPES = 8; // Maximum number of component types to display in chart
+    const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+    
     // Prepare chart data for subsystems
     const subsystemChartData = Object.entries(componentStats.bySubsystem).map(([name, count]) => ({
       name: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -422,15 +426,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       percentage: parseFloat((((count as number) / componentStats.total) * 100).toFixed(1))
     })).sort((a, b) => b.count - a.count);
     
-    // Prepare chart data for component types
+    // Prepare chart data for component types (top types only for readability)
     const typeChartData = Object.entries(componentsByType).map(([name, components]: [string, DetectedComponent[]]) => ({
       name: name.replace(/_/g, ' '),
       count: components.length,
       percentage: parseFloat(((components.length / componentStats.total) * 100).toFixed(1))
-    })).sort((a, b) => b.count - a.count).slice(0, 8); // Top 8 types
-    
-    // Color palette for charts
-    const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+    })).sort((a, b) => b.count - a.count).slice(0, MAX_CHART_TYPES);
     
     return (
       <div className="flex flex-col h-full">

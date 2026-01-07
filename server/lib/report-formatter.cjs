@@ -200,12 +200,15 @@ function formatParagraph(text) {
  * @returns {string} - Formatted table row
  */
 function formatTableRow(columns, widths) {
+  const ELLIPSIS = '...';
+  const ELLIPSIS_LENGTH = 3;
+  
   const paddedColumns = columns.map((col, idx) => {
     const width = widths[idx] || 20;
     const text = String(col || '');
     // Truncate if too long, pad if too short
     if (text.length > width) {
-      return text.substring(0, width - 3) + '...';
+      return text.substring(0, width - ELLIPSIS_LENGTH) + ELLIPSIS;
     }
     return text.padEnd(width, ' ');
   });
