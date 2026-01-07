@@ -365,9 +365,10 @@ async function refineWithFullImage(
 }
 
 async function shouldUseTiling(imageData: string): Promise<boolean> {
+  // Normalize base64 string once
+  const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
+  
   try {
-    const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
-    
     // Load image to get actual dimensions
     const img = await loadImageFromBase64(normalized, 'image/png');
     const width = img.width;
@@ -384,7 +385,7 @@ async function shouldUseTiling(imageData: string): Promise<boolean> {
   } catch (error) {
     console.warn('[Visual Pipeline] Failed to determine image dimensions, falling back to size-based check:', error);
     // Fallback to file size check if dimension detection fails
-    const normalized = imageData.includes('base64,') ? imageData.split('base64,')[1] : imageData;
+    // Using already-normalized data from above
     return normalized.length > 500000;
   }
 }

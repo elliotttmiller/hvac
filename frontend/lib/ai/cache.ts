@@ -20,6 +20,7 @@ export class SemanticCache {
   private readonly DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours
   private readonly MAX_CACHE_SIZE_BYTES: number;
   private readonly WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
+  private currentSizeBytes: number = 0; // Track size incrementally
 
   constructor() {
     this.cache = new Map();
@@ -79,14 +80,24 @@ export class SemanticCache {
   async set<T = any>(input: string, data: T, ttl?: number): Promise<void> {
     const hash = await this.generateHash(input);
     
+    // Estimate size of existing entry (if replacing)
+    const existingEntry = this.cache.get(hash);
+    const oldSize = existingEntry ? this.estimateEntrySize(existingEntry) : 0;
+    
     const entry: CacheEntry<T> = {
       hash,
       data,
       timestamp: Date.now(),
       ttl: ttl || this.DEFAULT_TTL,
     };
+    
+    // Estimate size of new entry
+    const newSize = this.estimateEntrySize(entry);
 
     this.cache.set(hash, entry);
+    
+    // Update incremental size tracking
+    this.updateSizeEstimate(newSize - oldSize);
     
     // Check if we're exceeding storage quota
     if (!this.checkStorageQuota()) {
@@ -98,6 +109,7 @@ export class SemanticCache {
       if (!this.checkStorageQuota()) {
         console.error('[Cache] Unable to free enough space, clearing cache');
         this.cache.clear();
+        this.currentSizeBytes = 0;
       }
     }
     
@@ -130,6 +142,7 @@ export class SemanticCache {
    */
   clear(): void {
     this.cache.clear();
+    this.currentSizeBytes = 0;
     this.saveToStorage();
   }
 
@@ -138,9 +151,13 @@ export class SemanticCache {
    */
   async delete(input: string): Promise<boolean> {
     const hash = await this.generateHash(input);
+    const entry = this.cache.get(hash);
     const existed = this.cache.has(hash);
-    if (existed) {
+    
+    if (existed && entry) {
+      const entrySize = this.estimateEntrySize(entry);
       this.cache.delete(hash);
+      this.updateSizeEstimate(-entrySize);
       this.saveToStorage();
     }
     return existed;
@@ -155,7 +172,9 @@ export class SemanticCache {
 
     for (const [hash, entry] of this.cache.entries()) {
       if (entry.ttl && now - entry.timestamp > entry.ttl) {
+        const entrySize = this.estimateEntrySize(entry);
         this.cache.delete(hash);
+        this.updateSizeEstimate(-entrySize);
         changed = true;
       }
     }
@@ -183,15 +202,42 @@ export class SemanticCache {
 
   /**
    * Estimate the size of cached data in bytes
+   * Uses incremental tracking for performance, with periodic full recalculation
    */
   private estimateCacheSize(): number {
+    // Return cached size if available and cache hasn't changed significantly
+    if (this.currentSizeBytes > 0 && this.cache.size > 0) {
+      return this.currentSizeBytes;
+    }
+    
+    // Full recalculation when needed
     try {
       const entries = Array.from(this.cache.entries());
       const serialized = JSON.stringify(entries);
       // Multiply by 2 to account for UTF-16 encoding in JavaScript strings
-      return serialized.length * 2;
+      this.currentSizeBytes = serialized.length * 2;
+      return this.currentSizeBytes;
     } catch (error) {
       console.warn('Failed to estimate cache size:', error);
+      return 0;
+    }
+  }
+  
+  /**
+   * Update size estimate when cache is modified
+   */
+  private updateSizeEstimate(delta: number): void {
+    this.currentSizeBytes = Math.max(0, this.currentSizeBytes + delta);
+  }
+  
+  /**
+   * Estimate size of a single entry
+   */
+  private estimateEntrySize(entry: CacheEntry): number {
+    try {
+      const serialized = JSON.stringify(entry);
+      return serialized.length * 2; // UTF-16 encoding
+    } catch (error) {
       return 0;
     }
   }
@@ -230,8 +276,10 @@ export class SemanticCache {
     for (const [hash, entry] of entries) {
       if (currentSize <= targetBytes) break;
       
+      const entrySize = this.estimateEntrySize(entry);
       this.cache.delete(hash);
-      currentSize = this.estimateCacheSize();
+      this.updateSizeEstimate(-entrySize);
+      currentSize = this.currentSizeBytes;
       evicted++;
     }
     
@@ -251,6 +299,9 @@ export class SemanticCache {
       if (stored) {
         const entries = JSON.parse(stored);
         this.cache = new Map(entries);
+        // Recalculate size after loading
+        this.currentSizeBytes = 0; // Force recalculation
+        this.estimateCacheSize();
         // Cleanup on load
         this.cleanup();
       }

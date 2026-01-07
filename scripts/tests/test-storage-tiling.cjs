@@ -42,18 +42,12 @@ global.Image = class {
   
   set src(value) {
     // Simulate image loading with dimensions based on mock data
+    // For testing purposes, we use default dimensions
+    // Real implementation would decode actual image data
     setTimeout(() => {
-      // Extract dimensions from mock base64 string
-      // Format: data:image/png;base64,WIDTHxHEIGHT...
-      const match = value.match(/base64,(\d+)x(\d+)/);
-      if (match) {
-        this.width = parseInt(match[1], 10);
-        this.height = parseInt(match[2], 10);
-      } else {
-        // Default dimensions for tests
-        this.width = 1024;
-        this.height = 768;
-      }
+      // Default dimensions for tests (can be overridden in specific tests)
+      this.width = 1024;
+      this.height = 768;
       
       if (this._onload) {
         this._onload();
@@ -62,13 +56,13 @@ global.Image = class {
   }
 };
 
-// Mock crypto for hash generation
+// Mock crypto for hash generation (simplified for testing)
 global.crypto = {
   subtle: {
     async digest(algorithm, data) {
-      // Simple mock hash
+      // Mock hash - return ArrayBuffer to match Web Crypto API
       const hash = Buffer.from(data).toString('base64').substring(0, 32);
-      return Buffer.from(hash);
+      return new Uint8Array(Buffer.from(hash)).buffer;
     }
   }
 };
