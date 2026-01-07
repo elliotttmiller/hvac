@@ -7,9 +7,7 @@
 
 const http = require('http');
 
-// Test configuration
-const SERVER_HOST = 'localhost';
-const SERVER_PORT = 4000;
+// Test tracking
 const TESTS_PASSED = [];
 const TESTS_FAILED = [];
 

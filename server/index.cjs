@@ -124,8 +124,9 @@ try {
  * @returns {boolean} - True if the error is a rate limit error
  */
 function isRateLimitError(error) {
+  if (!error) return false;
   return error.status === 429 || 
-         (error.message && (error.message.includes('quota') || error.message.includes('rate limit')));
+         (error.message && (error.message.includes('quota') || error.message.includes('rate limit') || error.message.includes('Too Many Requests')));
 }
 
 /**
@@ -134,9 +135,10 @@ function isRateLimitError(error) {
  * @returns {boolean} - True if the error is an authentication error
  */
 function isAuthError(error) {
+  if (!error) return false;
   return error.status === 401 || 
          error.status === 403 || 
-         (error.message && error.message.includes('API key'));
+         (error.message && (error.message.includes('authentication') || error.message.includes('unauthorized') || error.message.includes('API key not valid')));
 }
 
 /**
@@ -145,7 +147,8 @@ function isAuthError(error) {
  * @returns {boolean} - True if the error is a timeout error
  */
 function isTimeoutError(error) {
-  return error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT'));
+  if (!error) return false;
+  return error.message && (error.message.includes('timeout') || error.message.includes('ETIMEDOUT') || error.message.includes('timed out'));
 }
 
 // ============================================================================
@@ -376,8 +379,7 @@ app.post('/api/ai/generateVision', async (req, res) => {
     
     res.status(statusCode).json({ 
       error: errorMessage,
-      details: errorDetails,
-      statusCode: statusCode
+      details: errorDetails
     });
   }
 });
