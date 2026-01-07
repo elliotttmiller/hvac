@@ -26,9 +26,10 @@ const AI_MODEL_DEFAULT = process.env.AI_MODEL_DEFAULT || process.env.VITE_AI_MOD
 // Token Budget Configuration (Dynamic Calculation)
 // These values determine how token budgets scale with diagram complexity
 // Increased defaults to ensure complete report generation without truncation
+// Gemini 2.5 Flash supports up to 65k output tokens - we configure conservatively to allow comprehensive reports
 const TOKENS_PER_COMPONENT = parseInt(process.env.TOKENS_PER_COMPONENT || '200', 10);
 const BASE_OUTPUT_TOKENS = parseInt(process.env.BASE_OUTPUT_TOKENS || '4000', 10);
-const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '16384', 10);
+const MAX_OUTPUT_TOKENS_CAP = parseInt(process.env.MAX_OUTPUT_TOKENS_CAP || '32768', 10); // Increased from 16384 to 32768 for comprehensive reports
 const THINKING_TOKENS_PER_COMPONENT = parseInt(process.env.THINKING_TOKENS_PER_COMPONENT || '100', 10);
 const BASE_THINKING_TOKENS = parseInt(process.env.BASE_THINKING_TOKENS || '2048', 10);
 const MAX_THINKING_TOKENS_CAP = parseInt(process.env.MAX_THINKING_TOKENS_CAP || '8192', 10);
