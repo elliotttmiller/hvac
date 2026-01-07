@@ -73,6 +73,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       
       // State for expanded component details
       const [expandedComponentId, setExpandedComponentId] = useState<string | null>(null);
+      
+      // State for expanded categories (collapsed by default for cleaner view)
+      const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
       useEffect(() => {
          // initialize from prop when it changes (e.g., new analysis run)
@@ -126,6 +129,19 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
          console.warn('Copy failed', e);
       }
    };
+   
+   // Toggle category expansion
+   const toggleCategory = (categoryName: string) => {
+      setExpandedCategories(prev => {
+         const newSet = new Set(prev);
+         if (newSet.has(categoryName)) {
+            newSet.delete(categoryName);
+         } else {
+            newSet.add(categoryName);
+         }
+         return newSet;
+      });
+   };
 
   // Derived state for filtered components
   const filteredBoxes = useMemo(() => {
@@ -135,6 +151,17 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       box.meta?.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [detectedBoxes, searchQuery]);
+  
+  // Group filtered components by type for categorized display
+  const filteredComponentsByType = useMemo<Record<string, DetectedComponent[]>>(() => {
+    const groups: Record<string, DetectedComponent[]> = {};
+    filteredBoxes.forEach(comp => {
+      const type = comp.meta?.equipment_type || comp.type || 'Other';
+      if (!groups[type]) groups[type] = [];
+      groups[type].push(comp);
+    });
+    return groups;
+  }, [filteredBoxes]);
 
   // Derived state for Pricing
   const pricingData = useMemo(() => {
@@ -567,61 +594,107 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                </div>
             </div>
 
-            {/* Components List */}
-            <div className="space-y-1">
-               {filteredBoxes.length > 0 ? (
-                  filteredBoxes.map((box) => {
-                     const isSelected = selectedBoxId === box.id;
-                     const isExpanded = expandedComponentId === box.id;
-                     return (
-                        <div 
-                           key={box.id}
-                           ref={isSelected ? selectedRowRef : null}
-                           className={`rounded border transition-all ${
-                              isSelected
-                                 ? 'bg-cyan-500/10 border-cyan-500/30' 
-                                 : 'border-transparent hover:bg-white/5'
-                           }`}
-                        >
-                           {/* Component Header */}
-                           <div 
-                              onClick={() => {
-                                 onSelectBox(box.id);
-                                 setExpandedComponentId(isExpanded ? null : box.id);
-                              }}
-                              onMouseEnter={() => onSelectBox(box.id)}
-                              onMouseLeave={() => onSelectBox(null)}
-                              className="flex items-center gap-3 p-2 cursor-pointer group"
-                           >
-                              {/* Expand/Collapse Icon */}
-                              <div className="shrink-0">
-                                 {isExpanded ? (
-                                    <ChevronDown size={14} className="text-cyan-400" />
-                                 ) : (
-                                    <ChevronRight size={14} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
-                                 )}
+            {/* Components List - Organized by Category */}
+            <div className="space-y-2">
+               {Object.keys(filteredComponentsByType).length > 0 ? (
+                  Object.entries(filteredComponentsByType)
+                     .sort(([, aComps]: [string, DetectedComponent[]], [, bComps]: [string, DetectedComponent[]]) => bComps.length - aComps.length) // Sort by count descending
+                     .map(([categoryName, categoryComponents]: [string, DetectedComponent[]]) => {
+                        const isCategoryExpanded = expandedCategories.has(categoryName);
+                        const categoryCount = categoryComponents.length;
+                        
+                        return (
+                           <div key={categoryName} className="bg-[#1e1e1e] rounded-lg border border-white/5 overflow-hidden">
+                              {/* Category Header */}
+                              <div 
+                                 onClick={() => toggleCategory(categoryName)}
+                                 className="flex items-center justify-between p-3 cursor-pointer bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 transition-colors group"
+                              >
+                                 <div className="flex items-center gap-3">
+                                    {/* Category Expand/Collapse Icon */}
+                                    <div className="shrink-0">
+                                       {isCategoryExpanded ? (
+                                          <ChevronDown size={16} className="text-cyan-400" />
+                                       ) : (
+                                          <ChevronRight size={16} className="text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+                                       )}
+                                    </div>
+                                    
+                                    {/* Category Icon */}
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
+                                       <Layers size={14} className="text-cyan-400" />
+                                    </div>
+                                    
+                                    {/* Category Name and Count */}
+                                    <div>
+                                       <div className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">
+                                          {categoryName.replace(/_/g, ' ')}
+                                       </div>
+                                       <div className="text-[10px] text-zinc-500">
+                                          {categoryCount} {categoryCount === 1 ? 'component' : 'components'}
+                                       </div>
+                                    </div>
+                                 </div>
+                                 
+                                 {/* Category Count Badge */}
+                                 <div className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30">
+                                    <span className="text-xs font-bold text-cyan-400 font-mono">{categoryCount}</span>
+                                 </div>
                               </div>
-                      
-                              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                                   isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-                              }`}>
-                                   <Box size={14} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                   <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                                      {box.label}
-                                   </div>
-                                   <div className="text-[10px] text-zinc-500 truncate">
-                                      {box.meta?.description || 'No description'}
-                                   </div>
-                              </div>
-                              {isSelected && (
-                                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-                              )}
-                           </div>
+                              
+                              {/* Category Components (collapsible) */}
+                              {isCategoryExpanded && (
+                                 <div className="border-t border-white/5">
+                                    {categoryComponents.map((box) => {
+                                       const isSelected = selectedBoxId === box.id;
+                                       const isExpanded = expandedComponentId === box.id;
+                                       return (
+                                          <div 
+                                             key={box.id}
+                                             ref={isSelected ? selectedRowRef : null}
+                                             className={`border-b border-white/5 last:border-0 transition-all ${
+                                                isSelected ? 'bg-cyan-500/10' : 'hover:bg-white/5'
+                                             }`}
+                                          >
+                                             {/* Component Header */}
+                                             <div 
+                                                onClick={() => {
+                                                   onSelectBox(box.id);
+                                                   setExpandedComponentId(isExpanded ? null : box.id);
+                                                }}
+                                                onMouseEnter={() => onSelectBox(box.id)}
+                                                onMouseLeave={() => onSelectBox(null)}
+                                                className="flex items-center gap-3 p-3 pl-14 cursor-pointer group"
+                                             >
+                                                {/* Component Expand/Collapse Icon */}
+                                                <div className="shrink-0">
+                                                   {isExpanded ? (
+                                                      <ChevronDown size={12} className="text-cyan-400" />
+                                                   ) : (
+                                                      <ChevronRight size={12} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
+                                                   )}
+                                                </div>
+                                        
+                                                <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                                                     isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                                                }`}>
+                                                     <Box size={12} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                     <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
+                                                        {box.label}
+                                                     </div>
+                                                     <div className="text-[10px] text-zinc-500 truncate">
+                                                        {box.meta?.description || 'No description'}
+                                                     </div>
+                                                </div>
+                                                {isSelected && (
+                                                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                                                )}
+                                             </div>
 
-                           {/* Expanded Details */}
-                           {isExpanded && (
+                                             {/* Expanded Details */}
+                                             {isExpanded && (
                               <div className="px-2 pb-2 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                  {/* Component Specifications */}
                                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
@@ -733,6 +806,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  )}
 
                       {/* Additional Metadata removed per UI request */}
+                                             </div>
+                                          )}
+                                       </div>
+                                    );
+                                 })}
                               </div>
                            )}
                         </div>
