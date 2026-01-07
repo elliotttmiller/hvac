@@ -41,7 +41,94 @@ const CHART_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#e
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
 
-// Helper function to group components by type
+/**
+ * Hierarchical component grouping structure
+ * Groups components by parent category, then by specific type for subcategorization
+ */
+interface HierarchicalGroup {
+  name: string;
+  displayName: string;
+  totalCount: number;
+  subcategories: Record<string, DetectedComponent[]>;
+}
+
+/**
+ * Helper function to group components hierarchically
+ * Creates parent categories (instruments, valves, equipment) with subcategories
+ */
+const groupComponentsHierarchically = (components: DetectedComponent[]): Record<string, HierarchicalGroup> => {
+  const hierarchical: Record<string, HierarchicalGroup> = {};
+  
+  components.forEach(comp => {
+    const type = comp.meta?.equipment_type || comp.type || 'other';
+    const parentCategory = comp.meta?.parent_category || getParentCategoryFromType(type);
+    
+    // Initialize parent category if it doesn't exist
+    if (!hierarchical[parentCategory]) {
+      hierarchical[parentCategory] = {
+        name: parentCategory,
+        displayName: formatCategoryName(parentCategory),
+        totalCount: 0,
+        subcategories: {}
+      };
+    }
+    
+    // Initialize subcategory if it doesn't exist
+    if (!hierarchical[parentCategory].subcategories[type]) {
+      hierarchical[parentCategory].subcategories[type] = [];
+    }
+    
+    // Add component to subcategory
+    hierarchical[parentCategory].subcategories[type].push(comp);
+    hierarchical[parentCategory].totalCount++;
+  });
+  
+  return hierarchical;
+};
+
+/**
+ * Determine parent category from component type
+ */
+const getParentCategoryFromType = (type: string): string => {
+  const typeLower = type.toLowerCase();
+  
+  if (typeLower.startsWith('sensor_') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
+    return 'instruments';
+  }
+  
+  if (typeLower.includes('valve')) {
+    return 'valves';
+  }
+  
+  if (typeLower.includes('pump') || typeLower.includes('chiller') || 
+      typeLower.includes('tower') || typeLower.includes('handler') ||
+      typeLower.includes('ahu') || typeLower.includes('fan')) {
+    return 'equipment';
+  }
+  
+  if (typeLower.includes('pipe') || typeLower.includes('duct')) {
+    return 'piping';
+  }
+  
+  return 'other';
+};
+
+/**
+ * Format category name for display
+ */
+const formatCategoryName = (category: string): string => {
+  const nameMap: Record<string, string> = {
+    'instruments': 'Instruments',
+    'valves': 'Valves',
+    'equipment': 'Equipment',
+    'piping': 'Piping & Ductwork',
+    'other': 'Other Components'
+  };
+  
+  return nameMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+};
+
+// Helper function to group components by type (legacy - keep for backwards compatibility)
 const groupComponentsByType = (components: DetectedComponent[]): Record<string, DetectedComponent[]> => {
   const groups: Record<string, DetectedComponent[]> = {};
   components.forEach(comp => {

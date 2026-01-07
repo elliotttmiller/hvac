@@ -544,7 +544,7 @@ function resolveTypeConflict(
   
   // --- RULE 1: "Circle Safety" Rule ---
   // IF Shape = Circle (without internal actuating line) AND Type contains "valve" (but NOT Ball/Butterfly)
-  // THEN: Auto-correct to instrument
+  // THEN: Auto-correct to appropriate sensor type
   if (shapeLower === 'circle') {
     // Check if it's a Ball or Butterfly valve (allowed circular valves)
     const isBallValve = sigLower.includes('diagonal') || typeLower.includes('ball');
@@ -553,44 +553,46 @@ function resolveTypeConflict(
     if (!isBallValve && !isButterflyValve) {
       // Simple circle - check if incorrectly classified as valve
       if (typeLower.includes('valve') && !typeLower.includes('ball') && !typeLower.includes('butterfly')) {
-        // All circular ISA instruments should be type "instrument"
-        const correctedType = 'instrument';
+        // Determine correct sensor type based on tag
+        let correctedType = 'sensor_pressure'; // default
+        if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
+        else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
+        else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+        else if (tagUpper.startsWith('Z')) correctedType = 'sensor_position';
         
         return {
           correctedType,
-          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments, not valves. Tag '${tag}' indicates an ISA-5.1 instrument.`
-        };
-      }
-      
-      // Also correct legacy sensor_* types to consolidated "instrument" type
-      if (typeLower.startsWith('sensor_') || typeLower.includes('instrument_indicator') || typeLower.includes('instrument_transmitter')) {
-        return {
-          correctedType: 'instrument',
-          reasoning: `Consolidated from ${aiType} to "instrument" type for consistent classification. Circular ISA-5.1 instrument symbols (PI, TI, FIT, etc.) are all classified as "instrument" type.`
+          reasoning: `Visual evidence (Circle shape) overrides tag inference. Reclassified from ${aiType} to ${correctedType}. In HVAC/BAS, circular symbols without internal actuating lines are instruments, not valves. Tag '${tag}' indicates an ISA-5.1 ${correctedType.replace('sensor_', '')} instrument.`
         };
       }
     }
   }
   
   // --- RULE 2: "PV Circle" Rule (HVAC Domain Specific) ---
-  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure Indicator (type: instrument), NOT Valve
+  // IF Tag starts with "PV" AND Shape = Circle (empty) → Pressure sensor, NOT Valve
   if (tagUpper.startsWith('PV') && shapeLower === 'circle') {
     const isEmptyCircle = sigLower === 'circle_empty' || (!sigLower.includes('diagonal') && !sigLower.includes('bar'));
     if (isEmptyCircle && typeLower.includes('valve')) {
       return {
-        correctedType: 'instrument',
+        correctedType: 'sensor_pressure',
         reasoning: `Shape-based correction: Circle labeled 'PV' is a Pressure Indicator (Pressure View), not a Pressure Valve. Visual geometry (simple circle) confirms this is an instrument for displaying pressure readings, per HVAC/BAS conventions.`
       };
     }
   }
   
   // --- RULE 3: "*I" Tags (Indicators) ---
-  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always Instrument
+  // IF Tag ends with "I" (PI, TI, FI, LI, etc.) AND Shape = Circle → Always sensor type
   if (tagUpper.match(/^[A-Z]{1,2}I(-?\d+)?$/) && shapeLower === 'circle') {
     if (typeLower.includes('valve')) {
+      // Determine sensor type from first letter
+      let correctedType = 'sensor_pressure';
+      if (tagUpper.startsWith('T')) correctedType = 'sensor_temperature';
+      else if (tagUpper.startsWith('F')) correctedType = 'sensor_flow';
+      else if (tagUpper.startsWith('L')) correctedType = 'sensor_level';
+      
       return {
-        correctedType: 'instrument',
-        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to instrument per ISA-5.1 standards.`
+        correctedType,
+        reasoning: `Tag ending with 'I' (${tag}) indicates an Indicator instrument. Visual confirmation: circular shape. Reclassified from ${aiType} to ${correctedType} per ISA-5.1 standards.`
       };
     }
   }
@@ -634,33 +636,32 @@ function resolveTypeConflict(
 }
 
 // ISA-5.1 prefix-based type mapping
-// CRITICAL: All ISA-5.1 instrument symbols (sensors, transmitters, indicators, controllers)
-// should be classified as "instrument" type to ensure proper grouping and counting.
-// The specific measured variable is stored in metadata for filtering/analysis.
+// Strategy: Keep specific sensor types for subcategorization, 
+// and use parent_category metadata for hierarchical grouping
 const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
-  'TT': 'instrument',  // Temperature Transmitter
-  'TI': 'instrument',  // Temperature Indicator
-  'TE': 'instrument',  // Temperature Element
-  'TIT': 'instrument', // Temperature Indicating Transmitter
-  'TIC': 'instrument', // Temperature Indicating Controller
-  'PT': 'instrument',  // Pressure Transmitter
-  'PI': 'instrument',  // Pressure Indicator
-  'PE': 'instrument',  // Pressure Element
-  'PIT': 'instrument', // Pressure Indicating Transmitter
-  'PIC': 'instrument', // Pressure Indicating Controller
-  'FT': 'instrument',  // Flow Transmitter
-  'FI': 'instrument',  // Flow Indicator
-  'FE': 'instrument',  // Flow Element
-  'FIT': 'instrument', // Flow Indicating Transmitter
-  'FIC': 'instrument', // Flow Indicating Controller
-  'LT': 'instrument',  // Level Transmitter
-  'LI': 'instrument',  // Level Indicator
-  'LE': 'instrument',  // Level Element
-  'LIT': 'instrument', // Level Indicating Transmitter
-  'LIC': 'instrument', // Level Indicating Controller
-  'PDI': 'instrument', // Pressure Differential Indicator
-  'PDIT': 'instrument', // Pressure Differential Indicating Transmitter
-  'ZC': 'instrument',  // Position Controller
+  'TT': 'sensor_temperature',
+  'TI': 'sensor_temperature',
+  'TE': 'sensor_temperature',
+  'TIT': 'sensor_temperature',
+  'TIC': 'sensor_temperature',
+  'PT': 'sensor_pressure',
+  'PI': 'sensor_pressure',
+  'PE': 'sensor_pressure',
+  'PIT': 'sensor_pressure',
+  'PIC': 'sensor_pressure',
+  'FT': 'sensor_flow',
+  'FI': 'sensor_flow',
+  'FE': 'sensor_flow',
+  'FIT': 'sensor_flow',
+  'FIC': 'sensor_flow',
+  'LT': 'sensor_level',
+  'LI': 'sensor_level',
+  'LE': 'sensor_level',
+  'LIT': 'sensor_level',
+  'LIC': 'sensor_level',
+  'PDI': 'sensor_pressure',  // Differential Pressure
+  'PDIT': 'sensor_pressure', // Differential Pressure Transmitter
+  'ZC': 'sensor_position',   // Position Controller
   'FV': 'valve_control',
   'TV': 'valve_control',
   'PV': 'valve_control',
@@ -678,6 +679,41 @@ const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
 };
 
 /**
+ * Determine the parent category for hierarchical grouping
+ * This enables organizing components into main categories with subcategories
+ */
+function getParentCategory(type: string): string {
+  const typeLower = type.toLowerCase();
+  
+  // All sensor types belong to "instruments" parent category
+  if (typeLower.startsWith('sensor_') || 
+      typeLower.includes('transmitter') || 
+      typeLower.includes('indicator') ||
+      typeLower === 'instrument') {
+    return 'instruments';
+  }
+  
+  // All valve types belong to "valves" parent category
+  if (typeLower.includes('valve')) {
+    return 'valves';
+  }
+  
+  // Equipment categories
+  if (typeLower.includes('pump') || typeLower.includes('chiller') || 
+      typeLower.includes('tower') || typeLower.includes('handler') ||
+      typeLower.includes('ahu') || typeLower.includes('fan')) {
+    return 'equipment';
+  }
+  
+  // Piping and ductwork
+  if (typeLower.includes('pipe') || typeLower.includes('duct')) {
+    return 'piping';
+  }
+  
+  return 'other';
+}
+
+/**
  * Normalize HVAC component type based on ISA-5.1 tag prefix
  * Also extracts measured variable for instruments and stores in metadata
  */
@@ -692,8 +728,8 @@ function normalizeHVACComponentType(comp: any): any {
     if (tag.startsWith(prefix)) {
       normalized.type = type;
       
-      // If this is an instrument, extract the measured variable from the tag prefix
-      if (type === 'instrument') {
+      // Extract measured variable for instruments and store in metadata
+      if (type.startsWith('sensor_')) {
         const firstLetter = tag.charAt(0);
         const measuredVariableMap: Record<string, string> = {
           'T': 'temperature',
@@ -707,7 +743,8 @@ function normalizeHVACComponentType(comp: any): any {
           normalized.meta = {
             ...normalized.meta,
             measured_variable: measuredVariableMap[firstLetter],
-            instrument_type: prefix // Store the full ISA prefix (TT, PI, FIT, etc.)
+            instrument_type: prefix, // Store the full ISA prefix (TT, PI, FIT, etc.)
+            parent_category: 'instruments' // Add parent category for hierarchical grouping
           };
         }
       }
@@ -857,13 +894,14 @@ function enhanceHVACComponent(comp: any): any {
     }
   }
   
-  // STEP 4: Add HVAC-specific metadata
+  // STEP 4: Add HVAC-specific metadata including parent category for hierarchical grouping
   enhanced.meta = {
     ...enhanced.meta,
     hvac_subsystem: enhanced.meta?.hvac_subsystem || determineHVACSubsystem(enhanced),
     component_category: getHVACComponentCategory(enhanced),
     isa_function: extractISAFunction(enhanced.meta?.tag || enhanced.label),
-    detection_quality: assessDetectionQuality(enhanced)
+    detection_quality: assessDetectionQuality(enhanced),
+    parent_category: enhanced.meta?.parent_category || getParentCategory(enhanced.type || '')
   };
   
   return enhanced;
