@@ -20,6 +20,7 @@ import {
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ValidationIssue, DetectedComponent } from '@/features/document-analysis/types';
 import { config } from '@/app/config';
+import { getParentCategory, formatCategoryName } from '@/lib/utils/component-categorization';
 
 interface InspectorPanelProps {
   analysis: string;
@@ -61,7 +62,7 @@ const groupComponentsHierarchically = (components: DetectedComponent[]): Record<
   
   components.forEach(comp => {
     const type = comp.meta?.equipment_type || comp.type || 'other';
-    const parentCategory = comp.meta?.parent_category || getParentCategoryFromType(type);
+    const parentCategory = comp.meta?.parent_category || getParentCategory(type);
     
     // Initialize parent category if it doesn't exist
     if (!hierarchical[parentCategory]) {
@@ -84,48 +85,6 @@ const groupComponentsHierarchically = (components: DetectedComponent[]): Record<
   });
   
   return hierarchical;
-};
-
-/**
- * Determine parent category from component type
- */
-const getParentCategoryFromType = (type: string): string => {
-  const typeLower = type.toLowerCase();
-  
-  if (typeLower.startsWith('sensor_') || typeLower.includes('transmitter') || typeLower.includes('indicator')) {
-    return 'instruments';
-  }
-  
-  if (typeLower.includes('valve')) {
-    return 'valves';
-  }
-  
-  if (typeLower.includes('pump') || typeLower.includes('chiller') || 
-      typeLower.includes('tower') || typeLower.includes('handler') ||
-      typeLower.includes('ahu') || typeLower.includes('fan')) {
-    return 'equipment';
-  }
-  
-  if (typeLower.includes('pipe') || typeLower.includes('duct')) {
-    return 'piping';
-  }
-  
-  return 'other';
-};
-
-/**
- * Format category name for display
- */
-const formatCategoryName = (category: string): string => {
-  const nameMap: Record<string, string> = {
-    'instruments': 'Instruments',
-    'valves': 'Valves',
-    'equipment': 'Equipment',
-    'piping': 'Piping & Ductwork',
-    'other': 'Other Components'
-  };
-  
-  return nameMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
 // Helper function to group components by type (legacy - keep for backwards compatibility)

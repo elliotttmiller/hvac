@@ -28,6 +28,7 @@ import { mergeComponents, localToGlobal, calculateIoU } from '../../../lib/utils
 import { normalizeBackendBBox } from '../../../lib/geometry';
 import { generateId } from '../../../lib/utils';
 import { enhanceVisualAnalysis, optimizedTileProcessing, calculateQualityMetrics } from './visual-enhancements';
+import { getParentCategory } from '../../../lib/utils/component-categorization';
 
 type BlueprintType = 'PID' | 'HVAC';
 
@@ -677,41 +678,6 @@ const ISA_PREFIX_TYPE_MAP: Record<string, string> = {
   'CHILLER': 'chiller',
   'CT': 'cooling_tower'
 };
-
-/**
- * Determine the parent category for hierarchical grouping
- * This enables organizing components into main categories with subcategories
- */
-function getParentCategory(type: string): string {
-  const typeLower = type.toLowerCase();
-  
-  // All sensor types belong to "instruments" parent category
-  if (typeLower.startsWith('sensor_') || 
-      typeLower.includes('transmitter') || 
-      typeLower.includes('indicator') ||
-      typeLower === 'instrument') {
-    return 'instruments';
-  }
-  
-  // All valve types belong to "valves" parent category
-  if (typeLower.includes('valve')) {
-    return 'valves';
-  }
-  
-  // Equipment categories
-  if (typeLower.includes('pump') || typeLower.includes('chiller') || 
-      typeLower.includes('tower') || typeLower.includes('handler') ||
-      typeLower.includes('ahu') || typeLower.includes('fan')) {
-    return 'equipment';
-  }
-  
-  // Piping and ductwork
-  if (typeLower.includes('pipe') || typeLower.includes('duct')) {
-    return 'piping';
-  }
-  
-  return 'other';
-}
 
 /**
  * Normalize HVAC component type based on ISA-5.1 tag prefix
