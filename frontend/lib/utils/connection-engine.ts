@@ -470,6 +470,176 @@ const CONNECTION_RULES = [
     type: 'process_flow',
     confidence: 0.77,
     reasoning: 'Cooling tower to chiller condenser'
+  },
+  
+  // P&ID Equipment connections (vessels, tanks, pumps, strainers)
+  {
+    from: 'equipment_vessel',
+    to: 'sensor_level',
+    type: 'instrument_signal',
+    confidence: 0.92,
+    reasoning: 'Vessel to level sensor (instrument tap)'
+  },
+  {
+    from: 'equipment_vessel',
+    to: 'sensor_pressure',
+    type: 'instrument_signal',
+    confidence: 0.91,
+    reasoning: 'Vessel to pressure sensor (instrument tap)'
+  },
+  {
+    from: 'equipment_vessel',
+    to: 'sensor_temperature',
+    type: 'instrument_signal',
+    confidence: 0.90,
+    reasoning: 'Vessel to temperature sensor (instrument tap)'
+  },
+  {
+    from: 'equipment_vessel',
+    to: 'valve_*',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Vessel outlet to valve'
+  },
+  {
+    from: 'valve_*',
+    to: 'equipment_vessel',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Valve to vessel inlet'
+  },
+  {
+    from: 'equipment_tank',
+    to: 'valve_*',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Tank outlet to valve'
+  },
+  {
+    from: 'equipment_tank',
+    to: 'equipment_strainer',
+    type: 'process_flow',
+    confidence: 0.89,
+    reasoning: 'Tank to strainer (filtration)'
+  },
+  {
+    from: 'equipment_tank',
+    to: 'equipment_pump',
+    type: 'process_flow',
+    confidence: 0.90,
+    reasoning: 'Tank to pump suction'
+  },
+  {
+    from: 'equipment_tank',
+    to: 'sensor_level',
+    type: 'instrument_signal',
+    confidence: 0.92,
+    reasoning: 'Tank to level sensor (instrument tap)'
+  },
+  {
+    from: 'equipment_strainer',
+    to: 'valve_*',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Strainer to valve'
+  },
+  {
+    from: 'equipment_strainer',
+    to: 'equipment_pump',
+    type: 'process_flow',
+    confidence: 0.91,
+    reasoning: 'Strainer to pump inlet (filtered flow)'
+  },
+  {
+    from: 'valve_*',
+    to: 'equipment_strainer',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Valve to strainer'
+  },
+  {
+    from: 'valve_*',
+    to: 'equipment_pump',
+    type: 'process_flow',
+    confidence: 0.89,
+    reasoning: 'Isolation valve to pump'
+  },
+  {
+    from: 'equipment_pump',
+    to: 'valve_check',
+    type: 'process_flow',
+    confidence: 0.93,
+    reasoning: 'Pump discharge to check valve (standard configuration)'
+  },
+  {
+    from: 'equipment_pump',
+    to: 'valve_*',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Pump discharge to valve'
+  },
+  {
+    from: 'equipment_pump',
+    to: 'sensor_pressure',
+    type: 'instrument_signal',
+    confidence: 0.90,
+    reasoning: 'Pump to pressure gauge (discharge pressure)'
+  },
+  {
+    from: 'equipment_pump',
+    to: 'valve_relief',
+    type: 'process_flow',
+    confidence: 0.92,
+    reasoning: 'Pump to relief valve (overpressure protection)'
+  },
+  {
+    from: 'valve_ball',
+    to: 'valve_relief',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Isolation valve to relief valve'
+  },
+  {
+    from: 'valve_ball',
+    to: 'sensor_pressure',
+    type: 'instrument_signal',
+    confidence: 0.85,
+    reasoning: 'Valve to pressure gauge (tap connection)'
+  },
+  {
+    from: 'valve_ball',
+    to: 'valve_ball',
+    type: 'process_flow',
+    confidence: 0.86,
+    reasoning: 'Ball valve to ball valve (series isolation)'
+  },
+  {
+    from: 'valve_ball',
+    to: 'valve_check',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Isolation ball valve to check valve'
+  },
+  {
+    from: 'valve_check',
+    to: 'valve_ball',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Check valve to isolation ball valve'
+  },
+  {
+    from: 'valve_ball',
+    to: 'equipment_vessel',
+    type: 'process_flow',
+    confidence: 0.89,
+    reasoning: 'Ball valve to vessel inlet'
+  },
+  {
+    from: 'valve_relief',
+    to: 'equipment_vessel',
+    type: 'process_flow',
+    confidence: 0.80,
+    reasoning: 'Relief valve discharge to vessel (relief path)'
   }
 ];
 
@@ -824,8 +994,26 @@ export function enhanceConnections(
     
     const inference = inferConnectionType(fromComp, toComp);
     
+    // CRITICAL FIX: Update actual connection type if we have high confidence
+    // and current type is "unknown" or confidence is higher than existing
+    let finalType = connection.type;
+    let finalConfidence = connection.confidence || 0;
+    
+    if (inference.confidence >= 0.8) {
+      // Use inferred type if:
+      // 1. Current type is "unknown", OR
+      // 2. Inferred confidence is significantly higher (>0.15 difference)
+      if (connection.type === 'unknown' || 
+          inference.confidence > finalConfidence + 0.15) {
+        finalType = inference.type;
+        finalConfidence = inference.confidence;
+      }
+    }
+    
     return {
       ...connection,
+      type: finalType,
+      confidence: Math.max(connection.confidence || 0, finalConfidence),
       meta: {
         ...connection.meta,
         inferred_type: inference.type,
@@ -834,7 +1022,8 @@ export function enhanceConnections(
         from_component_type: fromComp.type,
         to_component_type: toComp.type,
         from_label: fromComp.label,
-        to_label: toComp.label
+        to_label: toComp.label,
+        type_override_applied: finalType !== connection.type
       }
     };
   });

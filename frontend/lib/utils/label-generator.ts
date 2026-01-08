@@ -16,11 +16,13 @@ const SAME_ROW_THRESHOLD = 0.05; // 5% threshold for considering components on s
 const LABEL_NUMBER_PADDING = 3; // Number of digits for zero-padding (e.g., 001, 002)
 
 /**
- * Check if a label is non-descriptive (single letter or generic text)
+ * Check if a label is non-descriptive (single letter, generic text, or UNREADABLE)
  */
 function isNonDescriptiveLabel(label: string): boolean {
   if (!label || label.trim() === '') return true;
   if (label === 'unknown' || label.toLowerCase() === 'unknown') return true;
+  // UNREADABLE labels should be replaced
+  if (label.toUpperCase().startsWith('UNREADABLE')) return true;
   // Single letter labels (A-Z) are not descriptive
   if (label.length === 1 && /^[A-Z]$/i.test(label)) return true;
   return false;
@@ -54,7 +56,11 @@ const TYPE_TO_ISA_PREFIX: Record<string, string> = {
   'controller_flow': 'FIC',
   'controller_level': 'LIC',
   
-  // Equipment
+  // Equipment (P&ID)
+  'equipment_pump': 'P',
+  'equipment_vessel': 'V',
+  'equipment_tank': 'TK',
+  'equipment_strainer': 'Y',
   'pump': 'PMP',
   'chiller': 'CH',
   'cooling_tower': 'CT',
