@@ -422,16 +422,22 @@ const BlueprintWorkspace: React.FC<{
             </div>
           )}
           
-          {/* Floating Toggle Button for Right Panel */}
-          <button 
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-            className={`absolute top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300 ${isPanelOpen ? 'right-[calc(var(--panel-width)-0.75rem)] opacity-20 hover:opacity-100' : '-right-10 opacity-80 hover:opacity-100'}`}
-            style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}
-            title={isPanelOpen ? "Collapse Inspector" : "Expand Inspector"}
-          >
-            {isPanelOpen ? <ChevronRight size={12} /> : <ChevronLeft size={14} />}
-          </button>
+          {/* Floating Toggle Button used when panel is visible is now rendered outside the panel
+              so it remains clickable even when the panel width becomes 0. */}
       </div>
+      {/* Persistent Toggle Button for Right Inspector (always visible) */}
+      <button
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+        aria-label={isPanelOpen ? 'Collapse inspector panel' : 'Expand inspector panel'}
+        title={isPanelOpen ? 'Collapse Inspector' : 'Expand Inspector'}
+        className={`absolute top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300`}
+        style={{
+          right: isPanelOpen ? `calc(${panelWidth}px - 12px)` : '0.5rem',
+          transform: 'translateY(-50%)'
+        } as React.CSSProperties}
+      >
+        {isPanelOpen ? <ChevronRight size={12} /> : <ChevronLeft size={14} />}
+      </button>
     </div>
   );
 };

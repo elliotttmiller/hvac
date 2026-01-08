@@ -108,21 +108,26 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
         )}
         
         {/* Main Content */}
-        <main className="flex-1 flex flex-col min-w-0 relative bg-[#121212] overflow-hidden">
-            
-            {/* Floating Toggle Button for Left Sidebar */}
-            {showContextSidebar && (
-              <button 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={`absolute top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300 ${isSidebarOpen ? 'left-[calc(var(--sidebar-width)-0.75rem)] opacity-20 hover:opacity-100' : 'left-3 opacity-80 hover:opacity-100'}`}
-                style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
-                title={isSidebarOpen ? "Collapse Explorer" : "Expand Explorer"}
-              >
-                  {isSidebarOpen ? <ChevronLeft size={12} /> : <PanelLeftOpen size={14} />}
-              </button>
-            )}
+        {/* Move the left-toggle button outside of <main> so it can be positioned relative to the
+            overall workspace (sibling to the sidebar), matching the right inspector approach. */}
+        {showContextSidebar && (
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label={isSidebarOpen ? 'Collapse explorer sidebar' : 'Expand explorer sidebar'}
+            title={isSidebarOpen ? 'Collapse Explorer' : 'Expand Explorer'}
+            className={`absolute top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300`}
+            style={{
+              // Include ActivityBar width (approx 56px) so the button hugs the outer edge of the sidebar
+              left: isSidebarOpen ? `calc(56px + ${sidebarWidth}px - 12px)` : '0.5rem',
+              transform: 'translateY(-50%)'
+            } as React.CSSProperties}
+          >
+            {isSidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={14} />}
+          </button>
+        )}
 
-            {children}
+        <main className="flex-1 flex flex-col min-w-0 relative bg-[#121212] overflow-hidden">
+          {children}
         </main>
       </div>
     </div>
