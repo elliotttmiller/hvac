@@ -18,19 +18,23 @@ export default function TopHeader() {
              <div className="hidden md:block w-1"></div>
         </div>
 
-        {/* Center: Branding (Architectural Pill) */}
-        <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2.5 px-5 py-1.5 bg-zinc-900/50 border border-white/5 rounded-full shadow-[0_0_20px_-12px_rgba(255,255,255,0.2)] backdrop-blur-md group cursor-default hover:border-white/10 hover:bg-zinc-900/80 transition-all">
-                <div className="relative flex items-center justify-center">
-                     <Wind size={16} className="text-cyan-500 relative z-10 transition-transform duration-700 group-hover:rotate-180" strokeWidth={2} />
-                     <div className="absolute inset-0 bg-cyan-500/20 blur-[8px] rounded-full group-hover:bg-cyan-500/30 transition-all"></div>
-                </div>
+    {/* Center: Branding (Architectural Pill) - clickable to go to homepage/dashboard */}
+    <div className="flex items-center justify-center">
+      <button
+        onClick={() => { window.location.href = '/'; }}
+        title="Go to dashboard"
+        className="flex items-center gap-2.5 px-5 py-1.5 bg-zinc-900/50 border border-white/5 rounded-full shadow-[0_0_20px_-12px_rgba(255,255,255,0.2)] backdrop-blur-md group hover:border-white/10 hover:bg-zinc-900/80 transition-all"
+      >
+        <div className="relative flex items-center justify-center">
+           <Wind size={16} className="text-cyan-500 relative z-10 transition-transform duration-700 group-hover:rotate-180" strokeWidth={2} />
+           <div className="absolute inset-0 bg-cyan-500/20 blur-[8px] rounded-full group-hover:bg-cyan-500/30 transition-all"></div>
+        </div>
         <div className="flex items-baseline gap-0.5">
           <span className="text-sm font-bold text-white tracking-normal leading-none">HVAC</span>
-                    <span className="text-sm font-light text-zinc-500 group-hover:text-zinc-400 transition-colors">AI</span>
-                </div>
-            </div>
+          <span className="text-sm font-light text-zinc-500 group-hover:text-zinc-400 transition-colors">AI</span>
         </div>
+      </button>
+    </div>
 
         {/* Right: Modern Actions */}
         <div className="flex items-center justify-end gap-3">
