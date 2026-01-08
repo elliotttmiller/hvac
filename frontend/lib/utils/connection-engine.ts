@@ -4,6 +4,10 @@
  * Addresses connection type classification and relationship detection
  */
 
+// Configuration constants for connection type inference
+const MIN_INFERENCE_CONFIDENCE = 0.8;        // Minimum confidence to apply inferred type
+const CONFIDENCE_IMPROVEMENT_THRESHOLD = 0.15; // Minimum improvement to override existing type
+
 export interface Component {
   id: string;
   type: string;
@@ -996,15 +1000,17 @@ export function enhanceConnections(
     
     // CRITICAL FIX: Update actual connection type if we have high confidence
     // and current type is "unknown" or confidence is higher than existing
-    let finalType = connection.type;
-    let finalConfidence = connection.confidence || 0;
+    const originalType = connection.type;
+    const originalConfidence = connection.confidence || 0;
+    let finalType = originalType;
+    let finalConfidence = originalConfidence;
     
-    if (inference.confidence >= 0.8) {
+    if (inference.confidence >= MIN_INFERENCE_CONFIDENCE) {
       // Use inferred type if:
       // 1. Current type is "unknown", OR
-      // 2. Inferred confidence is significantly higher (>0.15 difference)
-      if (connection.type === 'unknown' || 
-          inference.confidence > finalConfidence + 0.15) {
+      // 2. Inferred confidence is significantly higher (>CONFIDENCE_IMPROVEMENT_THRESHOLD difference)
+      if (originalType === 'unknown' || 
+          inference.confidence > originalConfidence + CONFIDENCE_IMPROVEMENT_THRESHOLD) {
         finalType = inference.type;
         finalConfidence = inference.confidence;
       }
@@ -1013,7 +1019,7 @@ export function enhanceConnections(
     return {
       ...connection,
       type: finalType,
-      confidence: Math.max(connection.confidence || 0, finalConfidence),
+      confidence: Math.max(originalConfidence, finalConfidence),
       meta: {
         ...connection.meta,
         inferred_type: inference.type,
@@ -1023,7 +1029,7 @@ export function enhanceConnections(
         to_component_type: toComp.type,
         from_label: fromComp.label,
         to_label: toComp.label,
-        type_override_applied: finalType !== connection.type
+        type_override_applied: finalType !== originalType
       }
     };
   });
