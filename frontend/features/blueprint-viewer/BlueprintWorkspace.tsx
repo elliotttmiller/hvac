@@ -27,6 +27,8 @@ const BlueprintWorkspace: React.FC<{
   // Interactivity State
   const [selectedBoxId, setSelectedBoxId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [panelWidth, setPanelWidth] = useState(320);
+  const [isResizingPanel, setIsResizingPanel] = useState(false);
   
   // Background analysis state
   const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
@@ -195,6 +197,39 @@ const BlueprintWorkspace: React.FC<{
     };
   }, [backgroundJobId, isBackgroundRunning, toast]);
 
+  // Right panel resizing effect (mouse drag)
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingPanel) return;
+      // Calculate width from the right edge: use viewport math and subtract a left-margin offset
+      const newWidth = Math.round(window.innerWidth - e.clientX - 56);
+      if (newWidth > 200 && newWidth < 720) {
+        setPanelWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingPanel(false);
+    };
+
+    if (isResizingPanel) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+  }, [isResizingPanel]);
+
   // Main analysis function - STAGE 1: Fast visual analysis
   const runAnalysisInternal = async (file: File, url: string) => {
     setIsProcessing(true);
@@ -357,10 +392,10 @@ const BlueprintWorkspace: React.FC<{
 
       {/* Resizable Right Panel */}
       <div 
-        className={`relative flex flex-col bg-[#1e1e1e] border-l border-white/5 transition-all duration-300 shrink-0 ${!isPanelOpen && 'w-0 border-l-0'}`}
-        style={{ width: isPanelOpen ? 320 : 0 }}
+        className={`relative flex flex-col bg-[#1e1e1e] border-l border-white/5 transition-all duration-300 shrink-0 ${!isPanelOpen && 'w-0 border-l-0 overflow-hidden'}`}
+        style={{ width: isPanelOpen ? panelWidth : 0 }}
       >
-          <div className="w-full h-full overflow-hidden flex flex-col">
+          <div className="w-full h-full overflow-hidden flex flex-col" style={{ width: panelWidth }}>
             <InspectorPanel 
                 analysis={analysisRaw}
                 executiveSummary={executiveSummary}
@@ -372,6 +407,16 @@ const BlueprintWorkspace: React.FC<{
                 finalAnalysisReport={finalAnalysisReport}
             />
           </div>
+
+          {/* Resize Handle for Right Panel (drag from left edge of the inspector) */}
+          {isPanelOpen && (
+            <div
+              className="absolute top-0 left-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/50 transition-colors z-20 group"
+              onMouseDown={(e) => { e.preventDefault(); setIsResizingPanel(true); }}
+            >
+              <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-cyan-400 rounded-full transition-colors"></div>
+            </div>
+          )}
       </div>
     </div>
   );
