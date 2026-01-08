@@ -588,7 +588,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             )}
             
             {/* Search */}
-            <div className="px-0 pb-0">
+            <div className="px-0 pb-0 mt-3">
                <div className="relative">
                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500" size={12} />
                      <input 
@@ -1206,18 +1206,26 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     </div>
   );
 
-  return (
-    <div className="w-full h-full flex flex-col bg-[#1e1e1e] border-l border-white/10 select-none">
+   return (
+      <div className="w-full h-full flex flex-col bg-[#1e1e1e] border-l border-white/10 select-none">
+         {/* Hide native horizontal scrollbar for tablist while preserving scroll behavior */}
+         <style>{`
+            .inspector-tablist {
+               -ms-overflow-style: none; /* IE and Edge */
+               scrollbar-width: none; /* Firefox */
+            }
+            .inspector-tablist::-webkit-scrollbar { display: none; height: 0; }
+         `}</style>
       
       {/* Header / Tabs */}
-      <div className="h-12 border-b border-white/5 flex items-center px-2" role="tablist" aria-label="Inspector panel tabs">
+   <div className="h-12 border-b border-white/5 flex items-center px-2 overflow-x-auto whitespace-nowrap inspector-tablist" role="tablist" aria-label="Inspector panel tabs">
          <button 
             onClick={() => setActiveTab('COMPONENTS')}
             role="tab"
             aria-selected={activeTab === 'COMPONENTS'}
             aria-controls="components-panel"
             id="components-tab"
-            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`inline-flex h-full items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <span className="hidden sm:inline">Components</span>
          </button>
@@ -1227,7 +1235,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'ANALYSIS'}
             aria-controls="analysis-panel"
             id="analysis-tab"
-            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`inline-flex h-full items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <span className="hidden sm:inline">Analysis</span>
          </button>
@@ -1237,7 +1245,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'PRICING'}
             aria-controls="pricing-panel"
             id="pricing-tab"
-            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`inline-flex h-full items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <span className="hidden sm:inline">Pricing</span>
          </button>
@@ -1247,7 +1255,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'QUOTE'}
             aria-controls="quote-panel"
             id="quote-tab"
-            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`inline-flex h-full items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <span className="hidden sm:inline">Quote</span>
          </button>

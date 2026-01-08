@@ -30,6 +30,45 @@ const BlueprintWorkspace: React.FC<{
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [panelWidth, setPanelWidth] = useState(320);
   const [isResizingPanel, setIsResizingPanel] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const minAllowedWidthRef = useRef<number>(200);
+
+  // Compute the minimum allowed width so the tablist does not overflow.
+  const computeMinAllowedWidth = (): number => {
+    const defaultMin = 120;
+    const panelEl = panelRef.current;
+    const tablistEl = document.querySelector('[role="tablist"]') as HTMLElement | null;
+    if (!panelEl || !tablistEl) return defaultMin;
+
+    // Save current inline width/transition to restore later
+    const prevWidth = panelEl.style.width;
+    const prevTransition = panelEl.style.transition;
+    panelEl.style.transition = 'none';
+
+    const maxWidth = Math.min(720, panelEl.getBoundingClientRect().width || 720);
+    let low = defaultMin;
+    let high = Math.max(low, Math.ceil(maxWidth));
+
+    // Binary search for the smallest width where tablist does not overflow
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      panelEl.style.width = `${mid}px`;
+      // Force layout read
+      const client = tablistEl.clientWidth;
+      const scroll = tablistEl.scrollWidth;
+      if (scroll <= client) {
+        high = mid;
+      } else {
+        low = mid + 1;
+      }
+    }
+
+    // Restore
+    panelEl.style.width = prevWidth;
+    panelEl.style.transition = prevTransition;
+
+    return Math.max(defaultMin, low);
+  };
   
   // Background analysis state
   const [backgroundJobId, setBackgroundJobId] = useState<string | null>(null);
@@ -198,29 +237,56 @@ const BlueprintWorkspace: React.FC<{
     };
   }, [backgroundJobId, isBackgroundRunning, toast]);
 
-  // Right panel resizing effect (mouse drag)
+  // Right panel resizing effect (mouse drag) — optimized for smoothness using RAF and direct DOM writes
   useEffect(() => {
+    let rafId: number | null = null;
+    let latestWidth = panelWidth;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingPanel) return;
-      // Calculate width from the right edge: use viewport math and subtract a left-margin offset
-      const newWidth = Math.round(window.innerWidth - e.clientX - 56);
-      if (newWidth > 200 && newWidth < 720) {
-        setPanelWidth(newWidth);
+      // Calculate desired width based on cursor
+      const computed = Math.round(window.innerWidth - e.clientX - 56);
+
+      const minWidth = minAllowedWidthRef.current || 200;
+      const clamped = Math.max(minWidth, Math.min(720, computed));
+      latestWidth = clamped;
+
+      // Schedule a DOM write on the next animation frame; coalesces many mousemoves
+      if (rafId == null) {
+        rafId = window.requestAnimationFrame(() => {
+          rafId = null;
+          try {
+            if (panelRef.current) panelRef.current.style.width = `${latestWidth}px`;
+          } catch (_) {}
+        });
       }
     };
 
     const handleMouseUp = () => {
+      if (rafId != null) {
+        window.cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       setIsResizingPanel(false);
+      // persist the final width into React state
+      setPanelWidth(latestWidth);
     };
 
     if (isResizingPanel) {
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
       window.addEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
+      // disable transition while dragging to avoid jank
+      if (panelRef.current) panelRef.current.style.transition = 'none';
     } else {
       document.body.style.cursor = 'default';
       document.body.style.userSelect = 'auto';
+      if (panelRef.current) {
+        panelRef.current.style.transition = '';
+        // ensure DOM width mirrors React state when not resizing
+        panelRef.current.style.width = `${panelWidth}px`;
+      }
     }
 
     return () => {
@@ -228,8 +294,9 @@ const BlueprintWorkspace: React.FC<{
       window.removeEventListener('mouseup', handleMouseUp);
       document.body.style.cursor = 'default';
       document.body.style.userSelect = 'auto';
+      if (rafId != null) window.cancelAnimationFrame(rafId);
     };
-  }, [isResizingPanel]);
+  }, [isResizingPanel, panelWidth]);
 
   // Main analysis function - STAGE 1: Fast visual analysis
   const runAnalysisInternal = async (file: File, url: string) => {
@@ -392,6 +459,7 @@ const BlueprintWorkspace: React.FC<{
 
       {/* Resizable Right Panel */}
       <div 
+        ref={panelRef}
         className={`relative flex flex-col bg-[#1e1e1e] border-l border-white/5 shrink-0 ${!isPanelOpen && 'border-l-0 overflow-hidden'}`}
         style={{ 
           width: isPanelOpen ? panelWidth : 0,
@@ -399,7 +467,7 @@ const BlueprintWorkspace: React.FC<{
           willChange: isResizingPanel ? 'width' : 'auto'
         }}
       >
-          <div className="w-full h-full overflow-hidden flex flex-col" style={{ width: panelWidth }}>
+          <div className="w-full h-full overflow-hidden flex flex-col" style={{ width: '100%' }}>
             <InspectorPanel 
                 analysis={analysisRaw}
                 executiveSummary={executiveSummary}
@@ -416,7 +484,16 @@ const BlueprintWorkspace: React.FC<{
           {isPanelOpen && (
             <div
               className="absolute top-0 left-0 bottom-0 w-1 cursor-col-resize hover:bg-[#2563eb]/50 transition-colors z-20 group"
-              onMouseDown={(e) => { e.preventDefault(); setIsResizingPanel(true); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                try {
+                  const minW = computeMinAllowedWidth();
+                  minAllowedWidthRef.current = minW;
+                } catch (_) {
+                  minAllowedWidthRef.current = 120;
+                }
+                setIsResizingPanel(true);
+              }}
             >
               <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-[#2563eb] rounded-full transition-colors"></div>
             </div>
