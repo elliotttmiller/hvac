@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
-import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Chat, GenerateContentResponse, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -692,18 +692,6 @@ const App = () => {
     };
   }, [isResizingRight, stopResizing]);
 
-  // Sync components to quote
-  useEffect(() => {
-      if (components.length > 0) {
-          setQuoteItems(components.map(c => ({
-              id: c.id,
-              description: c.name,
-              sku: c.sku,
-              cost: c.cost
-          })));
-      }
-  }, [components]);
-
   // Quote Handlers
   const handleQuoteItemChange = (id: string, field: string, value: any) => {
       setQuoteItems(prev => prev.map(item => 
@@ -722,6 +710,17 @@ const App = () => {
 
   const removeQuoteItem = (id: string) => {
       setQuoteItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Pricing Handlers
+  const handleComponentCostChange = (id: string, newCost: number) => {
+      setComponents(prev => prev.map(comp => 
+          comp.id === id ? { ...comp, cost: newCost } : comp
+      ));
+      // Also sync to quote items to keep them consistent if they exist
+      setQuoteItems(prev => prev.map(item => 
+          item.id === id ? { ...item, cost: newCost } : item
+      ));
   };
 
   // Handlers
@@ -752,37 +751,89 @@ const App = () => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
         
-        // Remove data URL prefix
-        const base64Image = uploadedImage.split(',')[1];
+        // Extract mime type and base64 data to handle varied image formats
+        const matches = uploadedImage.match(/^data:(.+);base64,(.+)$/);
+        const mimeType = matches ? matches[1] : 'image/png';
+        const base64Data = matches ? matches[2] : uploadedImage.split(',')[1];
         
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: {
                 parts: [
-                    { inlineData: { mimeType: 'image/png', data: base64Image } },
-                    { text: "Analyze this HVAC blueprint. Use clear H1/H2 headers, bullet points for lists, and bold text for key metrics or components. List components found, check for ASHRAE 62.1 compliance issues, and suggest optimizations. Format as markdown." }
+                    { inlineData: { mimeType: mimeType, data: base64Data } },
+                    { text: "Analyze this HVAC blueprint. Identify all HVAC components (VAV boxes, AHUs, Diffusers, Thermostats, Dampers, etc.). \n\n" +
+                            "For each component, provide:\n" +
+                            "- A unique ID (e.g., VAV-01)\n" +
+                            "- Name\n" +
+                            "- Type\n" +
+                            "- Confidence score (0.0-1.0)\n" +
+                            "- Status ('verified' if confidence > 0.9, else 'review')\n" +
+                            "- Estimated unit cost in USD (realistic market rates)\n" +
+                            "- A plausible manufacturer SKU\n\n" +
+                            "Also generate a detailed technical analysis report in Markdown covering ASHRAE 62.1 compliance, issues, and optimizations." 
+                    }
                 ]
+            },
+            config: {
+                thinkingConfig: { thinkingBudget: 4096 }, // Allocate 4k tokens for reasoning
+                maxOutputTokens: 20000, // Increase max output to accommodate thinking + detailed JSON
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        analysisReport: {
+                            type: Type.STRING,
+                            description: "Markdown formatted technical analysis report."
+                        },
+                        detectedComponents: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    id: { type: Type.STRING },
+                                    name: { type: Type.STRING },
+                                    type: { type: Type.STRING },
+                                    confidence: { type: Type.NUMBER },
+                                    status: { type: Type.STRING },
+                                    cost: { type: Type.NUMBER },
+                                    sku: { type: Type.STRING }
+                                },
+                                required: ["id", "name", "type", "confidence", "status", "cost", "sku"]
+                            }
+                        }
+                    },
+                    required: ["analysisReport", "detectedComponents"]
+                }
             }
         });
 
-        const text = response.text;
-        setAiAnalysis(text);
+        const result = JSON.parse(response.text || "{}");
         
-        // --- SIMULATED COMPONENT DETECTION LOGIC ---
-        // In a real app, we would parse the JSON output from the model or use a dedicated object detection model.
-        // For this UI demo, we simulate detected components based on the analysis success.
-        const simulatedComponents: DetectedComponent[] = [
-             { id: 'VAV-101', name: 'VAV Box Type A', type: 'VAV', confidence: 0.98, status: 'verified', cost: 450.00, sku: 'TRANE-VAV-A' },
-             { id: 'AHU-02', name: 'Air Handling Unit', type: 'AHU', confidence: 0.95, status: 'verified', cost: 12500.00, sku: 'YORK-AHU-2000' },
-             { id: 'D-04', name: 'Round Diffuser', type: 'Diffuser', confidence: 0.88, status: 'review', cost: 45.00, sku: 'TITUS-RD-12' },
-             { id: 'D-05', name: 'Round Diffuser', type: 'Diffuser', confidence: 0.89, status: 'review', cost: 45.00, sku: 'TITUS-RD-12' },
-             { id: 'T-202', name: 'Smart Thermostat', type: 'Sensor', confidence: 0.99, status: 'verified', cost: 120.00, sku: 'HONEYWELL-T6' },
-             { id: 'DMP-12', name: 'Fire Damper', type: 'Damper', confidence: 0.92, status: 'verified', cost: 85.50, sku: 'RUSKIN-FD-20' },
-        ];
-        setComponents(simulatedComponents);
+        if (result.analysisReport) {
+             setAiAnalysis(result.analysisReport);
+        }
+        
+        if (result.detectedComponents) {
+            // Map the API status string to our specific union type 'verified' | 'review'
+            const components: DetectedComponent[] = result.detectedComponents.map((c: any) => ({
+                ...c,
+                status: (c.status === 'verified' || c.status === 'review') ? c.status : 'review'
+            }));
+            
+            setComponents(components);
+            
+            // Initialize Quote Items based on actual components detected
+            setQuoteItems(components.map(c => ({
+                  id: c.id,
+                  description: c.name,
+                  sku: c.sku,
+                  cost: c.cost
+            })));
+        }
 
     } catch (err) {
-        console.error(err);
+        console.error("Analysis failed", err);
+        setAiAnalysis("Analysis failed. Please try again.");
     } finally {
         setIsProcessing(false);
     }
@@ -933,7 +984,7 @@ const App = () => {
                         </div>
                     )}
 
-                    {/* PRICING TAB */}
+                    {/* PRICING TAB - EDITABLE UNIT COSTS */}
                     {activeRightTab === 'pricing' && (
                         <div className="absolute inset-0 flex flex-col animate-fade-in">
                              <div className="p-6 border-b border-[#27272a] bg-[#121214]">
@@ -961,7 +1012,17 @@ const App = () => {
                                                      <div className="text-gray-200">{comp.name}</div>
                                                      <div className="text-[10px] text-gray-600">{comp.sku}</div>
                                                  </td>
-                                                 <td className="py-3 text-right text-gray-500 font-mono">${comp.cost.toFixed(2)}</td>
+                                                 <td className="py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <span className="text-gray-500 font-mono">$</span>
+                                                        <input 
+                                                            type="number"
+                                                            value={comp.cost}
+                                                            onChange={(e) => handleComponentCostChange(comp.id, parseFloat(e.target.value) || 0)}
+                                                            className="w-20 bg-transparent text-right text-gray-200 focus:outline-none font-mono border-b border-transparent focus:border-blue-500 transition-colors"
+                                                        />
+                                                    </div>
+                                                 </td>
                                                  <td className="py-3 text-right text-gray-300 font-mono">${comp.cost.toFixed(2)}</td>
                                              </tr>
                                          ))}
