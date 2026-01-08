@@ -847,10 +847,71 @@ function extractISAFunction(tag?: string): string | null {
 /**
  * Enhance component with HVAC-specific metadata
  */
+/**
+ * Extract shape from reasoning text if not explicitly provided
+ * 
+ * This is a critical fallback mechanism for cases where the AI doesn't populate
+ * the shape field despite schema requirements. Extracts geometric shape information
+ * from the reasoning text using pattern matching.
+ * 
+ * @param reasoning - The reasoning text from component metadata
+ * @returns The extracted shape string or null if no shape pattern found
+ * 
+ * @example
+ * extractShapeFromReasoning("Identified a bowtie shape with actuator") 
+ * // Returns: "bowtie"
+ * 
+ * @example
+ * extractShapeFromReasoning("Detected circular shape indicating sensor")
+ * // Returns: "circle"
+ */
+function extractShapeFromReasoning(reasoning: string): string | null {
+  if (!reasoning) return null;
+  
+  const reasoningLower = reasoning.toLowerCase();
+  
+  // Shape extraction patterns
+  const shapePatterns: [RegExp, string][] = [
+    [/\bbowtie\b/i, 'bowtie'],
+    [/\bcircle\b/i, 'circle'],
+    [/\bcircular\b/i, 'circle'],
+    [/\bdiamond\b/i, 'diamond'],
+    [/\btriangle\b/i, 'triangle'],
+    [/\btriangular\b/i, 'triangle'],
+    [/\bsquare\b/i, 'square'],
+    [/\brectangle\b/i, 'rectangle'],
+    [/\brectangular\b/i, 'rectangle'],
+    [/\bhexagon\b/i, 'hexagon'],
+    [/\bhexagonal\b/i, 'hexagon']
+  ];
+  
+  for (const [pattern, shape] of shapePatterns) {
+    if (pattern.test(reasoningLower)) {
+      // Shape successfully extracted from reasoning text
+      // This only triggers when AI fails to provide explicit shape field
+      return shape;
+    }
+  }
+  
+  return null;
+}
+
 function enhanceHVACComponent(comp: any): any {
   // STEP 1: Apply conflict resolution BEFORE normalization
   const tag = comp.meta?.tag || comp.label || '';
-  const shape = comp.shape || comp.meta?.shape || '';
+  
+  // Extract shape - with fallback to reasoning text
+  let shape = comp.shape || comp.meta?.shape || '';
+  if (!shape && comp.meta?.reasoning) {
+    const extractedShape = extractShapeFromReasoning(comp.meta.reasoning);
+    if (extractedShape) {
+      shape = extractedShape;
+      // Store extracted shape in meta for validation
+      comp.meta.shape = shape;
+      comp.meta.shape_extracted_from_reasoning = true;
+    }
+  }
+  
   const visualSignature = comp.visual_signature || comp.meta?.visual_signature;
   const aiType = comp.type || 'unknown';
   

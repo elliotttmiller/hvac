@@ -269,6 +269,13 @@ const CONNECTION_RULES = [
   },
   {
     from: 'valve_check',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.88,
+    reasoning: 'Check valve to gate valve'
+  },
+  {
+    from: 'valve_check',
     to: 'valve_check',
     type: 'process_flow',
     confidence: 0.82,
@@ -287,6 +294,97 @@ const CONNECTION_RULES = [
     type: 'process_flow',
     confidence: 0.86,
     reasoning: 'Isolation gate valve upstream of control valve'
+  },
+  {
+    from: 'valve_gate',
+    to: 'sensor_pressure',
+    type: 'process_flow',
+    confidence: 0.80,
+    reasoning: 'Gate valve to pressure sensor tap'
+  },
+  {
+    from: 'sensor_pressure',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.80,
+    reasoning: 'Pressure sensor tap to gate valve'
+  },
+  {
+    from: 'valve_gate',
+    to: 'flow_restriction_orifice',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Gate valve to orifice plate'
+  },
+  {
+    from: 'flow_restriction_orifice',
+    to: 'valve_check',
+    type: 'process_flow',
+    confidence: 0.87,
+    reasoning: 'Orifice plate to check valve'
+  },
+  {
+    from: 'valve_solenoid',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.85,
+    reasoning: 'Solenoid valve to gate valve'
+  },
+  {
+    from: 'valve_gate',
+    to: 'valve_solenoid',
+    type: 'process_flow',
+    confidence: 0.85,
+    reasoning: 'Gate valve to solenoid valve'
+  },
+  {
+    from: 'logic_function',
+    to: 'valve_gate',
+    type: 'signal',
+    confidence: 0.80,
+    reasoning: 'Logic function to valve indication'
+  },
+  {
+    from: 'valve_gate',
+    to: 'logic_function',
+    type: 'signal',
+    confidence: 0.80,
+    reasoning: 'Valve position to logic function'
+  },
+  {
+    from: 'logic_function',
+    to: 'logic_function',
+    type: 'signal',
+    confidence: 0.85,
+    reasoning: 'Logic signal between functions'
+  },
+  {
+    from: 'logic_function',
+    to: 'valve_solenoid',
+    type: 'signal',
+    confidence: 0.88,
+    reasoning: 'Logic output to solenoid valve control'
+  },
+  {
+    from: 'valve_control',
+    to: 'instrument_indicator',
+    type: 'signal',
+    confidence: 0.82,
+    reasoning: 'Control valve position to indicator'
+  },
+  {
+    from: 'valve_gate',
+    to: 'line_number_box',
+    type: 'process_flow',
+    confidence: 0.90,
+    reasoning: 'Gate valve on numbered line'
+  },
+  {
+    from: 'line_number_box',
+    to: 'valve_gate',
+    type: 'process_flow',
+    confidence: 0.90,
+    reasoning: 'Line number continuation to gate valve'
   },
   
   // Pneumatic signal connections

@@ -144,14 +144,21 @@ When text tag conflicts with visual shape, **SHAPE WINS**:
 ### KNOWLEDGE BASE
 ${generateISAContext()}
 
-### OUTPUT REQUIREMENTS
-- **Shape Field**: General geometric shape ('circle', 'bowtie', 'diamond', etc.)
-- **Visual Signature Field**: MANDATORY. Specific pattern ('bowtie_with_actuator', 'circle_empty', etc.)
+### OUTPUT REQUIREMENTS (CRITICAL - READ CAREFULLY)
+- **Shape Field**: MANDATORY for ALL components. General geometric shape ('circle', 'bowtie', 'diamond', etc.). This field MUST NOT be omitted.
+- **Visual Signature Field**: MANDATORY for ALL components. Specific pattern ('bowtie_with_actuator', 'circle_empty', etc.). This field MUST NOT be omitted.
 - **Type Field**: Functional classification based on shape-first logic
+- **ENFORCEMENT**: Every component in your JSON output MUST include both "shape" and "visual_signature" fields. Omitting these fields will cause validation failures.
 - **Reasoning**: Explain classification based on SHAPE FIRST, then tag
   - Good: "Detected bowtie shape with actuator symbol, classified as control valve. Tag 'TV-101' confirms temperature control function."
   - Bad: "Tag is 'TV' so this is a temperature valve." (ignores shape)
 - **Confidence**: Be conservative. If shape is unclear, mark confidence 0.5-0.7
+
+### CRITICAL: SHAPE FIELD IS MANDATORY
+**YOU MUST ALWAYS INCLUDE THE "shape" AND "visual_signature" FIELDS IN EVERY COMPONENT.**
+- These fields are REQUIRED for validation and cannot be omitted.
+- Even if you're uncertain, provide your best estimate.
+- If truly unable to determine, use "complex_assembly" for shape and "other" for visual_signature.
 - **Completeness**: Detect all components, including small ones
 
 ### CRITICAL REMINDERS
@@ -245,13 +252,14 @@ export const PID_ANALYSIS_SCHEMA = {
             description: "Precise component classification." 
           },
           // VISUAL VERIFICATION FIELDS - Critical for preventing shape hallucinations
+          // **MANDATORY**: These fields MUST be included in every component
           shape: {
             type: Type.STRING,
-            description: "The actual detected geometric shape. Enum: ['circle', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']"
+            description: "REQUIRED: The actual detected geometric shape. You MUST provide this field. Enum: ['circle', 'square', 'diamond', 'bowtie', 'triangle', 'rectangle', 'hexagon', 'cloud', 'line', 'complex_assembly']"
           },
           visual_signature: {
             type: Type.STRING,
-            description: "Detailed visual pattern for precise classification. STRONGLY RECOMMENDED - provides critical context for shape-based reasoning. Enum: ['bowtie_empty', 'bowtie_solid_center', 'bowtie_with_actuator', 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', 'circle_in_square', 'diamond', 'triangle_arrow', 'rectangle', 'hexagon', 'other']"
+            description: "REQUIRED: Detailed visual pattern for precise classification. You MUST provide this field. Enum: ['bowtie_empty', 'bowtie_solid_center', 'bowtie_with_actuator', 'circle_empty', 'circle_with_diagonal', 'circle_with_bar', 'circle_in_square', 'diamond', 'triangle_arrow', 'rectangle', 'hexagon', 'other']"
           },
           bbox: {
             type: Type.ARRAY,
