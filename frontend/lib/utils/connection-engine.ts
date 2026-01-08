@@ -1029,6 +1029,8 @@ export function enhanceConnections(
         to_component_type: toComp.type,
         from_label: fromComp.label,
         to_label: toComp.label,
+        // Track if we changed the connection type from original
+        // finalType will differ from originalType only if conditions on lines 1012-1013 were met
         type_override_applied: finalType !== originalType
       }
     };
