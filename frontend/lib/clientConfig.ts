@@ -48,6 +48,16 @@ export const clientConfig = {
 
   // Thresholds - Calibrated for High Recall (Zero-HITL)
   HIGH_CONFIDENCE_THRESHOLD: parseFloatOr(import.meta.env.VITE_HIGH_CONFIDENCE_THRESHOLD, 0.90),
+  
+  // Minimum confidence thresholds for outputting detections
+  // Components below this threshold will be filtered out to ensure precision and truthfulness
+  MIN_COMPONENT_CONFIDENCE: parseFloatOr(import.meta.env.VITE_MIN_COMPONENT_CONFIDENCE, 0.75),
+  MIN_CONNECTION_CONFIDENCE: parseFloatOr(import.meta.env.VITE_MIN_CONNECTION_CONFIDENCE, 0.70),
+  
+  // Label generation confidence threshold
+  // Only generate fallback labels for components above this confidence
+  // This prevents "guessing" labels for uncertain detections
+  MIN_LABEL_GENERATION_CONFIDENCE: parseFloatOr(import.meta.env.VITE_MIN_LABEL_GENERATION_CONFIDENCE, 0.80),
 
   // Visual Processing - Selective Tiling Configuration
   // Only tile images larger than this dimension to avoid wasting API calls on small PDFs

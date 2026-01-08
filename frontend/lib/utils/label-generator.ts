@@ -83,16 +83,43 @@ const TYPE_TO_ISA_PREFIX: Record<string, string> = {
 
 /**
  * Generate intelligent labels for components with "unknown" or missing labels
+ * 
+ * @param components - Array of components to process
+ * @param minConfidence - Minimum confidence threshold to generate labels (default: 0.80)
+ *                        Only components above this confidence will receive generated labels
+ *                        This ensures we don't "guess" labels for uncertain detections
  */
-export function generateIntelligentLabels(components: any[]): any[] {
-  // First pass: identify components that need labels
-  const needsLabel = components.filter(c => isNonDescriptiveLabel(c.label));
+export function generateIntelligentLabels(
+  components: any[],
+  minConfidence: number = 0.80
+): any[] {
+  // First pass: identify components that need labels AND meet confidence threshold
+  const needsLabel = components.filter(c => {
+    // Must need a label
+    if (!isNonDescriptiveLabel(c.label)) {
+      return false;
+    }
+    
+    // Must meet minimum confidence threshold
+    if (!c.confidence || c.confidence < minConfidence) {
+      console.log(
+        `[Label Generator] Skipping label generation for low-confidence component: ${c.id} ` +
+        `(confidence: ${c.confidence?.toFixed(2) || 'N/A'}, threshold: ${minConfidence})`
+      );
+      return false;
+    }
+    
+    return true;
+  });
   
   if (needsLabel.length === 0) {
     return components; // No changes needed
   }
   
-  console.log(`[Label Generator] Generating labels for ${needsLabel.length} components`);
+  console.log(
+    `[Label Generator] Generating labels for ${needsLabel.length} high-confidence components ` +
+    `(confidence >= ${minConfidence})`
+  );
   
   // Sort components by position (top-to-bottom, left-to-right)
   // This ensures sequential numbering follows natural reading order
