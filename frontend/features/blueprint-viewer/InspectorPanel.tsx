@@ -1210,16 +1210,16 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     <div className="w-full h-full flex flex-col bg-[#1e1e1e] border-l border-white/10 select-none">
       
       {/* Header / Tabs */}
-      <div className="h-12 border-b border-white/5 flex items-center px-1" role="tablist" aria-label="Inspector panel tabs">
+      <div className="h-12 border-b border-white/5 flex items-center px-2" role="tablist" aria-label="Inspector panel tabs">
          <button 
             onClick={() => setActiveTab('COMPONENTS')}
             role="tab"
             aria-selected={activeTab === 'COMPONENTS'}
             aria-controls="components-panel"
             id="components-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <Layers size={11} /> <span className="hidden sm:inline">Components</span>
+            <span className="hidden sm:inline">Components</span>
          </button>
          <button 
             onClick={() => setActiveTab('ANALYSIS')}
@@ -1227,9 +1227,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'ANALYSIS'}
             aria-controls="analysis-panel"
             id="analysis-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'ANALYSIS' ? 'border-purple-500 text-purple-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <ClipboardList size={11} /> <span className="hidden sm:inline">Analysis</span>
+            <span className="hidden sm:inline">Analysis</span>
          </button>
          <button 
             onClick={() => setActiveTab('PRICING')}
@@ -1237,9 +1237,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'PRICING'}
             aria-controls="pricing-panel"
             id="pricing-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'PRICING' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <DollarSign size={11} /> <span className="hidden sm:inline">Pricing</span>
+            <span className="hidden sm:inline">Pricing</span>
          </button>
          <button 
             onClick={() => setActiveTab('QUOTE')}
@@ -1247,9 +1247,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'QUOTE'}
             aria-controls="quote-panel"
             id="quote-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center px-3 text-[11px] font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
-            <FileText size={11} /> <span className="hidden sm:inline">Quote</span>
+            <span className="hidden sm:inline">Quote</span>
          </button>
       </div>
 

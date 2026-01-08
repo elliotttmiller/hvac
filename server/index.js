@@ -16,6 +16,28 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
+const PROJECTS_FILE = path.join(__dirname, 'data', 'projects.json');
+
+async function readProjectsFile() {
+  try {
+    const txt = await fs.readFile(PROJECTS_FILE, 'utf8');
+    const parsed = JSON.parse(txt || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch (e) {
+    return [];
+  }
+}
+
+async function writeProjectsFile(arr) {
+  try {
+    await fs.writeFile(PROJECTS_FILE, JSON.stringify(arr, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to write projects file', e);
+    throw e;
+  }
+}
+
 function inferFileType(name) {
   const ext = path.extname(name || '').toLowerCase().replace('.', '');
   if (!ext) return undefined;
@@ -61,8 +83,74 @@ async function readTree(dir) {
 }
 
 app.get('/api/projects', async (req, res) => {
-  // single project representing the repo root
-  res.json({ projects: [ { id: 'local', name: path.basename(ROOT), root: '.' } ] });
+  try {
+    const projects = await readProjectsFile();
+    if (!projects || projects.length === 0) {
+      return res.json({ projects: [ { id: 'local', name: path.basename(ROOT), root: '.' } ] });
+    }
+    return res.json({ projects });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Create a new project and persist
+app.post('/api/projects', async (req, res) => {
+  try {
+    const { name, location, notes } = req.body || {};
+    if (!name) return res.status(400).json({ error: 'Missing name' });
+    const projects = await readProjectsFile();
+    const id = Date.now().toString();
+    const project = {
+      id,
+      name,
+      location: location ?? null,
+      notes: notes ?? null,
+      createdAt: new Date().toISOString(),
+      status: 'not_started'
+    };
+    projects.push(project);
+    await writeProjectsFile(projects);
+    res.status(201).json({ project });
+  } catch (e) {
+    console.error('POST /api/projects error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Patch/update a project
+app.patch('/api/projects/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updates = req.body || {};
+    const projects = await readProjectsFile();
+    const idx = projects.findIndex(p => p.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Not found' });
+    const existing = projects[idx];
+    const updated = { ...existing, ...updates };
+    projects[idx] = updated;
+    await writeProjectsFile(projects);
+    res.json({ project: updated });
+  } catch (e) {
+    console.error('PATCH /api/projects/:id error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Delete a project
+app.delete('/api/projects/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const projects = await readProjectsFile();
+    const idx = projects.findIndex(p => p.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'Not found' });
+    projects.splice(idx, 1);
+    await writeProjectsFile(projects);
+    res.status(204).send();
+  } catch (e) {
+    console.error('DELETE /api/projects/:id error', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/projects/:projectId/tree', async (req, res) => {

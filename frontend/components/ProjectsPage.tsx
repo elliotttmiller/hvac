@@ -7,7 +7,7 @@ import {
   Briefcase 
 } from 'lucide-react';
 
-interface Project { id: string; name: string; root: string }
+// Project interface declared below with richer fields
 
 interface Props {
   projects: Project[];
@@ -17,23 +17,46 @@ interface Props {
   onOpenProject?: (id: string) => void;
 }
 
+import type { ProjectStatus } from '../lib/types/project';
+interface Project { id: string; name: string; root?: string; location?: string; notes?: string; createdAt?: string; status?: ProjectStatus }
+
 import ProjectDetailModal from './ProjectDetailModal.tsx';
 import { DashboardCard, StatusBadge } from './primitives';
 
 const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProject, onProjectsChange, onOpenProject }) => {
   const [creating, setCreating] = React.useState(false);
   const [name, setName] = React.useState('');
-  const [root, setRoot] = React.useState('.');
+  const [location, setLocation] = React.useState('');
+  const [notes, setNotes] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [detailProject, setDetailProject] = React.useState<Project | null>(null);
 
+  // Listen for external project updates (e.g. modal saves) and refresh list
+  React.useEffect(() => {
+    const handler = async (e: Event) => {
+      try {
+        // prefer canonical list from server
+        const res = await fetch('/api/projects');
+        if (!res.ok) return;
+        const data = await res.json();
+        const newList = data.projects || [];
+        if (onProjectsChange) onProjectsChange(newList);
+      } catch (err) {
+        // ignore silently
+      }
+    };
+
+    window.addEventListener('projects-updated', handler as EventListener);
+    return () => window.removeEventListener('projects-updated', handler as EventListener);
+  }, [onProjectsChange]);
+
   const createProject = async () => {
-    if (!name || !root) return;
+    if (!name) return;
     setLoading(true);
     try {
       const res = await fetch('/api/projects', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, root })
+        body: JSON.stringify({ name, location, notes })
       });
       if (!res.ok) throw new Error('Failed to create');
       const { project } = await res.json();
@@ -44,16 +67,18 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
       // select new project
       if (onSelectProject) onSelectProject(project.id);
       setName('');
-      setRoot('.');
+      setLocation('');
+      setNotes('');
       setCreating(false);
     } catch (e) {
       console.error('Create project failed, falling back to local:', e);
       // Fallback: create locally and notify parent so UI remains functional in dev
-      const project = { id: Date.now().toString(), name, root };
+      const project = { id: Date.now().toString(), name, location, notes, createdAt: new Date().toISOString(), status: 'not_started' };
       if (onProjectsChange) onProjectsChange([...projects, project]);
       if (onSelectProject) onSelectProject(project.id);
       setName('');
-      setRoot('.');
+      setLocation('');
+      setNotes('');
       setCreating(false);
     } finally {
       setLoading(false);
@@ -102,16 +127,18 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-2">Location (Optional)</label>
                 <input 
-                  value={root} 
-                  onChange={e => setRoot(e.target.value)} 
-                  placeholder="Specify location (e.g., ./projects)" 
+                  value={location} 
+                  onChange={e => setLocation(e.target.value)} 
+                  placeholder="City, Site or path (e.g., Shakopee, MN or ./projects)" 
                   className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[#2563eb] transition-colors"
                 />
+                <label className="block text-xs font-medium text-zinc-400 mt-3 mb-2">Notes (Optional)</label>
+                <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add brief notes about this project" className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[#2563eb] transition-colors" />
               </div>
             </div>
             <div className="mt-4 flex gap-3">
               <button 
-                disabled={loading || !name || !root} 
+                disabled={loading || !name} 
                 onClick={createProject} 
                 className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#2563eb] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
@@ -172,14 +199,15 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
                   <div style={{ padding: 0 }}>
                     {/* Project Icon & Header */}
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-zinc-100 mb-1">
-                        {p.name}
-                      </h3>
+                      <div className="flex items-start justify-between">
+                        <h3 className="text-lg font-semibold text-zinc-100 mb-1">{p.name}</h3>
+                        <div className="text-xs text-zinc-500 ml-4 pl-4">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
+                      </div>
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <MapPin size={12} />
-                        <span className="break-words">{p.root}</span>
+                        <span className="break-words">{p.location ?? '—'}</span>
                       </div>
-                      {/* If you have a richer description field in the future, render it here */}
+                      {p.notes && <div className="text-sm text-zinc-400 mt-2 line-clamp-2">{p.notes}</div>}
                     </div>
 
                     {/* Project Stats - TODO: Make dynamic based on actual project data */}

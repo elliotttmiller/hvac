@@ -10,10 +10,10 @@ interface UnifiedLayoutProps {
   onChangeView: (view: ViewState) => void;
   children: React.ReactNode;
   // Project explorer wiring (optional - passed from App)
-  projects?: { id: string; name: string; root: string }[];
+  projects?: { id: string; name: string; location?: string; root?: string }[];
   activeProject?: string | null;
   onSelectProject?: (id: string) => void;
-  onProjectsChange?: (list: { id: string; name: string; root: string }[]) => void;
+  onProjectsChange?: (list: { id: string; name: string; location?: string; root?: string }[]) => void;
   onOpenProject?: (id: string) => void;
   // File analysis callback
   onAnalyzeFile?: (filePath: string) => void;

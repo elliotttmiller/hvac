@@ -427,6 +427,39 @@ projectsStore.set('default', {
   lastUpdated: Date.now()
 });
 
+// File-backed persistence for projects so changes survive restarts
+const PROJECTS_FILE = path.join(__dirname, 'data', 'projects.json');
+
+async function loadProjectsFile() {
+  try {
+    const txt = await fs.readFile(PROJECTS_FILE, 'utf8');
+    const arr = JSON.parse(txt || '[]');
+    if (Array.isArray(arr)) {
+      // clear existing store and populate from file
+      projectsStore.clear();
+      for (const p of arr) {
+        projectsStore.set(p.id, p);
+      }
+    }
+  } catch (err) {
+    // ignore if file missing or malformed; keep in-memory defaults
+    // ensure directory exists
+    try { await fs.mkdir(path.dirname(PROJECTS_FILE), { recursive: true }); } catch(e) {}
+  }
+}
+
+async function persistProjectsFile() {
+  try {
+    const arr = Array.from(projectsStore.values());
+    await fs.writeFile(PROJECTS_FILE, JSON.stringify(arr, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist projects file', err);
+  }
+}
+
+// load on startup (fire-and-forget)
+loadProjectsFile().catch(() => {});
+
 /**
  * PHASE 2: Data Minification Layer
  * Aggressively strips visual metadata and filters invalid connections
@@ -670,7 +703,9 @@ app.post('/api/analysis/queue', async (req, res) => {
     const project = projectsStore.get(projectId) || { id: projectId, name: projectId, status: 'idle', finalReport: null };
     project.status = 'processing';
     project.lastUpdated = Date.now();
-    projectsStore.set(projectId, project);
+  projectsStore.set(projectId, project);
+  // persist asynchronously
+  persistProjectsFile().catch(e => console.error('Failed to persist projects after queue update', e));
 
     console.log(`[Stage 2] Job ${jobId} queued for document ${payload.document_id}`);
 
@@ -747,6 +782,8 @@ app.post('/api/analysis/queue', async (req, res) => {
             }
             project.lastUpdated = Date.now();
             projectsStore.set(job.projectId, project);
+            // persist final report
+            persistProjectsFile().catch(e => console.error('Failed to persist projects (mock)', e));
             console.log(`[Stage 2] Project ${job.projectId} - Final report saved (MOCK MODE)`);
           }
           
@@ -998,6 +1035,7 @@ Generate a professional engineering analysis that explains this system in narrat
           }
           project.lastUpdated = Date.now();
           projectsStore.set(job.projectId, project);
+          persistProjectsFile().catch(e => console.error('Failed to persist projects (final report)', e));
           console.log(`[Stage 2] Project ${job.projectId} - Final report saved`);
         }
         
@@ -1025,6 +1063,7 @@ Generate a professional engineering analysis that explains this system in narrat
           project.error = errorMessage;
           project.lastUpdated = Date.now();
           projectsStore.set(job.projectId, project);
+          persistProjectsFile().catch(e => console.error('Failed to persist projects (failed status)', e));
         }
         
         // Emit failure to frontend so UI stops polling and shows error
@@ -1057,8 +1096,9 @@ app.get('/api/projects/:id', (req, res) => {
       finalReport: null,
       lastUpdated: Date.now()
     };
-    projectsStore.set(id, newProject);
-    return res.json(newProject);
+  projectsStore.set(id, newProject);
+  persistProjectsFile().catch(e => console.error('Failed to persist projects (new project)', e));
+  return res.json(newProject);
   }
   
   res.json(project);
@@ -1089,6 +1129,24 @@ app.get('/api/projects', async (req, res) => {
     res.json({ projects });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Patch/update a project's metadata (notes, location, status, name)
+app.patch('/api/projects/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const updates = req.body || {};
+    const existing = projectsStore.get(id) || { id, name: id, status: 'idle', lastUpdated: Date.now() };
+    const updated = Object.assign({}, existing, updates, { lastUpdated: Date.now() });
+    projectsStore.set(id, updated);
+    try { io.emit('projects-updated', updated); } catch (e) {}
+    // persist to disk
+    await persistProjectsFile();
+    res.json({ project: updated });
+  } catch (err) {
+    console.error('PATCH /api/projects/:id error', err);
+    res.status(500).json({ error: String(err) });
   }
 });
 

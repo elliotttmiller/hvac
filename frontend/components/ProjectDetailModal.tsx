@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FileText, Settings as SettingsIcon, Trash2, FolderOpen } from 'lucide-react';
 import { StatusBadge } from './primitives';
 
-interface Project { id: string; name: string; root: string }
+interface Project { id: string; name: string; root?: string; location?: string; notes?: string; createdAt?: string; status?: string }
 
 interface Props {
   project: Project;
@@ -14,6 +14,17 @@ interface Props {
 const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelete }) => {
   const [confirming, setConfirming] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'settings'>('overview');
+  // Local editable state for optimistic updates
+  const [nameState, setNameState] = useState(project.name);
+  const [locationState, setLocationState] = useState(project.location ?? '');
+  const [notesState, setNotesState] = useState(project.notes ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setNameState(project.name);
+    setLocationState(project.location ?? '');
+    setNotesState(project.notes ?? '');
+  }, [project]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -21,15 +32,18 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-zinc-800">
           <div>
-            <div className="text-lg font-semibold text-zinc-100">{project.name}</div>
-            <div className="text-xs text-zinc-500 mt-1">{project.root}</div>
+            <div className="text-lg font-semibold text-zinc-100">{nameState}</div>
+            <div className="text-xs text-zinc-500 mt-1">{locationState}</div>
           </div>
-          <button 
-            onClick={onClose} 
-            className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-zinc-500">{project.createdAt ? new Date(project.createdAt).toLocaleDateString() : ''}</div>
+            <button 
+              onClick={onClose} 
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -81,11 +95,21 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                     <span className="font-mono text-xs text-zinc-300">{project.id}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-zinc-800">
+                    <span className="text-xs text-zinc-500">Location</span>
+                    <span className="text-xs text-zinc-300">{locationState || '—'}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-zinc-800">
                     <span className="text-xs text-zinc-500">Status</span>
                     <div>
                       <StatusBadge status={(project as any).status} />
                     </div>
                   </div>
+                  {notesState && (
+                    <div className="py-2">
+                      <span className="text-xs text-zinc-500 block mb-1">Notes</span>
+                      <div className="text-sm text-zinc-300">{notesState}</div>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -162,20 +186,79 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs text-zinc-400 mb-2 block">Project Name</label>
-            <input 
-                      type="text" 
-                      defaultValue={project.name}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors"
+                    <input
+                      type="text"
+                      value={nameState}
+                      onChange={(e) => setNameState(e.target.value)}
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="text-xs text-zinc-400 mb-2 block">Description</label>
-                    <textarea 
+                    <label className="text-xs text-zinc-400 mb-2 block">Location</label>
+                    <input
+                      type="text"
+                      value={locationState}
+                      onChange={(e) => setLocationState(e.target.value)}
+                      placeholder="City, site or path"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-zinc-400 mb-2 block">Notes</label>
+                    <textarea
                       rows={3}
-                      placeholder="Add a description..."
+                      value={notesState}
+                      onChange={(e) => setNotesState(e.target.value)}
+                      placeholder="Add brief notes about this project..."
                       className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors resize-none"
                     />
+                  </div>
+
+                  <div className="flex gap-3 mt-2">
+                    <button
+                      onClick={async () => {
+                        const original = { name: project.name, location: project.location, notes: project.notes };
+                        setSaving(true);
+                        try {
+                          const res = await fetch('/api/projects/' + encodeURIComponent(project.id), {
+                            method: 'PATCH',
+                            headers: { 'content-type': 'application/json' },
+                            body: JSON.stringify({ name: nameState, location: locationState || null, notes: notesState || null })
+                          });
+                          if (!res.ok) throw new Error('Save failed');
+                          const data = await res.json();
+                          const updated = data.project || data;
+                          setNameState(updated.name);
+                          setLocationState(updated.location ?? '');
+                          setNotesState(updated.notes ?? '');
+                          try { window.dispatchEvent(new CustomEvent('projects-updated', { detail: updated })); } catch (e) {}
+                        } catch (e) {
+                          setNameState(original.name);
+                          setLocationState(original.location ?? '');
+                          setNotesState(original.notes ?? '');
+                          alert('Failed to save project: ' + (e.message || e));
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                      disabled={saving}
+                      className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#2563eb]/90 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setNameState(project.name);
+                        setLocationState(project.location ?? '');
+                        setNotesState(project.notes ?? '');
+                      }}
+                      className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm transition-colors"
+                    >
+                      Reset
+                    </button>
                   </div>
                 </div>
               </div>

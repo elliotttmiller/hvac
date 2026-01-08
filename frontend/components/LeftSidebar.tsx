@@ -25,7 +25,13 @@ interface FileNode {
 interface Project {
   id: string;
   name: string;
-  root: string;
+  // kept for backward compatibility; prefer `location`
+  root?: string;
+  // new fields added by project model update
+  location?: string;
+  notes?: string;
+  createdAt?: string;
+  status?: string;
 }
 
 const FileIcon = ({ type }: { type?: string }) => {
@@ -219,7 +225,7 @@ const LeftSidebar: React.FC<{
         </div>
                 <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-zinc-200 truncate">{currentProject ? currentProject.name : ''}</div>
-          <div className="text-[10px] text-zinc-500 truncate">{currentProject ? currentProject.root : ''}</div>
+          <div className="text-[10px] text-zinc-500 truncate">{currentProject ? (currentProject.location ?? '') : ''}</div>
                 </div>
                 <ChevronDown size={12} className={`text-zinc-500 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
