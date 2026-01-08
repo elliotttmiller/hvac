@@ -83,13 +83,13 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
       {/* Toolbar (Top Left) */}
       {imageUrl && (
         <div className="absolute top-4 left-4 z-20 flex gap-2 pointer-events-auto">
-           <button onClick={onRunAnalysis} disabled={isProcessing} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all flex items-center gap-2 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20'}`}>
-              <Play size={14} /> Run
-           </button>
+        <button onClick={onRunAnalysis} disabled={isProcessing} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all flex items-center gap-2 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'bg-[#2563eb]/10 border-[#2563eb]/30 text-[#2563eb] hover:bg-[#2563eb]/20'}`}>
+          <Play size={14} /> Run
+        </button>
            <div className="w-px h-6 bg-slate-700/50 self-center"></div>
-           <button onClick={() => setShowOBB(!showOBB)} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all ${showOBB ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-900/80 border-slate-700 text-slate-500'}`}>
-              <Scan size={14} /> Detect
-           </button>
+        <button onClick={() => setShowOBB(!showOBB)} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all ${showOBB ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#2563eb]' : 'bg-slate-900/80 border-slate-700 text-slate-500'}`}>
+          <Scan size={14} /> Detect
+        </button>
            <button onClick={() => setShowOCR(!showOCR)} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all ${showOCR ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-slate-900/80 border-slate-700 text-slate-500'}`}>
               <Type size={14} /> Text
            </button>
@@ -102,11 +102,11 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
       {/* Main Canvas Area */}
       <div ref={containerRef} className="flex-1 flex items-center justify-center p-8 overflow-hidden relative">
         {!imageUrl ? (
-            <div className="border border-dashed border-zinc-800 bg-[#1e1e1e] rounded-xl p-12 text-center max-w-sm hover:border-cyan-500/30 transition-all group">
-              <Upload className="mx-auto text-zinc-500 mb-4 group-hover:text-cyan-400" size={32} />
+            <div className="border border-dashed border-zinc-800 bg-[#1e1e1e] rounded-xl p-12 text-center max-w-sm hover:border-[#2563eb]/30 transition-all group">
+              <Upload className="mx-auto text-zinc-500 mb-4 group-hover:text-[#2563eb]" size={32} />
               <h3 className="text-sm font-medium text-zinc-200 mb-1">Import Schematic</h3>
               <p className="text-zinc-500 mb-6 text-xs">Supports PDF, DWG, PNG.</p>
-              <label className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-2 rounded-md cursor-pointer inline-flex items-center gap-2 text-xs font-medium">
+              <label className="bg-[#2563eb] hover:bg-[#2563eb]/90 text-white px-5 py-2 rounded-md cursor-pointer inline-flex items-center gap-2 text-xs font-medium">
                 <FileSearch size={14} />
                 <span>Browse Files</span>
                 <input type="file" className="hidden" accept="image/*,.pdf" onChange={onFileUpload} />
@@ -165,8 +165,8 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                   <div
                     key={box.id}
                     className={`absolute border-2 flex items-start justify-start group cursor-pointer transition-all duration-200 pointer-events-auto
-                      ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-cyan-500/60 bg-cyan-500/10'}
-                      ${isSelected ? 'border-opacity-100 bg-opacity-30 ring-2 ring-cyan-400/50' : 'hover:border-opacity-100 hover:bg-opacity-20'}
+                      ${isText ? 'border-purple-500/60 bg-purple-500/10' : 'border-[#2563eb]/60 bg-[#2563eb]/10'}
+                      ${isSelected ? 'border-opacity-100 bg-opacity-30 ring-2 ring-[#2563eb]/50' : 'hover:border-opacity-100 hover:bg-opacity-20'}
                     `}
                     style={style}
                     onMouseEnter={() => onSelectBox?.(box.id)}
@@ -183,11 +183,11 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
                     {/* Hover Card */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 pointer-events-none origin-top scale-95 group-hover:scale-100">
                       <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
-                        <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-cyan-600'}`} />
+                        <div className={`h-1 w-full bg-gradient-to-r ${isText ? 'from-purple-600' : 'from-[#2563eb]'}`} />
                         <div className="p-3 text-left space-y-1">
                           <h4 className="text-xs font-bold text-slate-100 uppercase truncate">{box.label || box.id}</h4>
                           {box.meta?.description && (
-                            <div className="text-[11px] text-cyan-300 font-medium">{box.meta.description}</div>
+                            <div className="text-[11px] text-[#2563eb] font-medium">{box.meta.description}</div>
                           )}
                           <div className="text-[10px] text-slate-400 capitalize">{box.type}</div>
                           {box.confidence && (

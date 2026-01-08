@@ -25,14 +25,14 @@ const Dashboard: React.FC = () => {
   ];
 
   const stats = [
-    { label: 'System Health', value: '99.9%', sub: 'All nodes operational', icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
-    { label: 'Processed Docs', value: '2,405', sub: '+28% vs last week', icon: Cpu, color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
-    { label: 'Active Alerts', value: '3', sub: 'Requires Review', icon: AlertCircle, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
-    { label: 'Efficiency', value: '142ms', sub: 'Avg Inference Time', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
+  { label: 'System Health', value: '99.9%', sub: 'All nodes operational', icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
+  { label: 'Processed Docs', value: '2,405', sub: '+28% vs last week', icon: Cpu, color: 'text-[#2563eb]', bg: 'bg-[#2563eb]/10', border: 'border-[#2563eb]/20' },
+  { label: 'Active Alerts', value: '3', sub: 'Requires Review', icon: AlertCircle, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
+  { label: 'Efficiency', value: '142ms', sub: 'Avg Inference Time', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
   ];
 
   const quickActions = [
-    { label: 'Upload Document', icon: Upload, color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', description: 'Analyze new P&ID' },
+  { label: 'Upload Document', icon: Upload, color: 'text-[#2563eb]', bg: 'bg-[#2563eb]/10', border: 'border-[#2563eb]/20', description: 'Analyze new P&ID' },
     { label: 'New Project', icon: FolderPlus, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', description: 'Create workspace' },
     { label: 'Search Files', icon: FileSearch, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', description: 'Find documents' },
     { label: 'Settings', icon: Settings, color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', description: 'Configure system' },
@@ -99,7 +99,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                     <span className="px-2 py-1 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono">1H</span>
-                    <span className="px-2 py-1 rounded bg-cyan-500/10 text-[10px] text-cyan-400 font-mono border border-cyan-500/20">24H</span>
+                    <span className="px-2 py-1 rounded bg-[#2563eb]/10 text-[10px] text-[#2563eb] font-mono border border-[#2563eb]/20">24H</span>
                     <span className="px-2 py-1 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono">7D</span>
                 </div>
              </div>
@@ -111,18 +111,18 @@ const Dashboard: React.FC = () => {
                   <AreaChart data={processingData}>
                     <defs>
                       <linearGradient id="colorThroughput" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                     <XAxis dataKey="name" stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} tickLine={false} axisLine={false} dy={10} />
                     <YAxis stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} tickLine={false} axisLine={false} />
-                    <Tooltip 
+                      <Tooltip 
                       contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', color: '#f4f4f5', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
-                      itemStyle={{ color: '#06b6d4' }}
+                      itemStyle={{ color: '#2563eb' }}
                     />
-                    <Area type="monotone" dataKey="throughput" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorThroughput)" />
+                    <Area type="monotone" dataKey="throughput" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#colorThroughput)" />
                   </AreaChart>
                 </ResponsiveContainer>
              </div>
@@ -133,7 +133,7 @@ const Dashboard: React.FC = () => {
              <div className="flex-1 space-y-4">
                 {[1, 2, 3, 4].map((_, i) => (
                     <div key={i} className="flex gap-3 items-start group">
-                        <div className="mt-1 w-2 h-2 rounded-full bg-zinc-700 group-hover:bg-cyan-400 transition-colors"></div>
+                        <div className="mt-1 w-2 h-2 rounded-full bg-zinc-700 group-hover:bg-[#2563eb] transition-colors"></div>
                         <div className="flex-1">
                             <p className="text-xs text-zinc-300 group-hover:text-white transition-colors">
                                 {i === 0 ? "ASHRAE 62.1 Violation Detected" : "Blueprint analysis completed"}

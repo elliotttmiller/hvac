@@ -179,7 +179,7 @@ const BlueprintAnalyzer: React.FC = () => {
                 <div className="flex gap-2">
                     <button 
                         onClick={() => setShowOBB(!showOBB)} 
-                        className={`p-2 rounded border transition-colors flex items-center gap-2 text-xs font-mono ${showOBB ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
+                        className={`p-2 rounded border transition-colors flex items-center gap-2 text-xs font-mono ${showOBB ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#2563eb]' : 'bg-slate-800 border-slate-700 text-slate-500'}`}
                     >
                         <Scan size={14} /> Detect
                     </button>
@@ -199,7 +199,7 @@ const BlueprintAnalyzer: React.FC = () => {
              <div className="bg-slate-950/90 backdrop-blur border border-slate-700 rounded p-1 flex items-center gap-1">
                  <button 
                     onClick={() => setBackendType('RAY')}
-                    className={`px-3 py-1 rounded text-[10px] font-bold transition-colors ${backendType === 'RAY' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                    className={`px-3 py-1 rounded text-[10px] font-bold transition-colors ${backendType === 'RAY' ? 'bg-[#2563eb] text-white' : 'text-slate-400 hover:text-slate-200'}`}
                  >
                     RAY SERVE
                  </button>
@@ -218,7 +218,7 @@ const BlueprintAnalyzer: React.FC = () => {
               <Upload className="mx-auto text-slate-500 mb-4" size={48} />
               <h3 className="text-xl font-medium text-slate-200 mb-2">Multi-Modal Ingestion</h3>
               <p className="text-slate-500 mb-6">Upload PDF, DWG, or Raster for analysis.</p>
-              <label className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-2">
+              <label className="bg-[#2563eb] hover:bg-[#2563eb]/90 text-white px-6 py-3 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-2">
                 <FileSearch size={18} />
                 <span>Select Blueprint</span>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
@@ -246,7 +246,7 @@ const BlueprintAnalyzer: React.FC = () => {
                         return (
                             <div 
                                 key={box.id}
-                                className={`absolute border-2 flex items-start justify-start group cursor-pointer ${isText ? 'border-purple-400 bg-purple-400/10' : 'border-cyan-400 bg-cyan-400/10'}`}
+                                className={`absolute border-2 flex items-start justify-start group cursor-pointer ${isText ? 'border-purple-400 bg-purple-400/10' : 'border-[#2563eb] bg-[#2563eb]/10'}`}
                                 style={{
                                     left: `${x}%`,
                                     top: `${y}%`,
@@ -257,7 +257,7 @@ const BlueprintAnalyzer: React.FC = () => {
                                 }}
                             >
                                 {/* Tooltip / Label */}
-                                <div className={`absolute -top-6 left-0 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-20 ${isText ? 'bg-purple-500' : 'bg-cyan-500'}`}>
+                                <div className={`absolute -top-6 left-0 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-20 ${isText ? 'bg-purple-500' : 'bg-[#2563eb]'}`}>
                                     {box.label}
                                     {box.meta?.tag && <span className="block font-normal opacity-90">{box.meta.tag}</span>}
                                     {box.meta?.description && <span className="block font-light italic opacity-80 text-[9px]">{box.meta.description}</span>}
@@ -269,10 +269,10 @@ const BlueprintAnalyzer: React.FC = () => {
                     {isProcessing && (
                          <div className="absolute inset-0 bg-slate-950/50 flex items-center justify-center backdrop-blur-sm z-50">
                             <div className="flex flex-col items-center">
-                                <div className="w-16 h-1 border-2 border-cyan-500 rounded animate-scan mb-4 relative overflow-hidden">
-                                     <div className="absolute top-0 left-0 h-full bg-cyan-400 w-full animate-progress"></div>
+                                <div className="w-16 h-1 border-2 border-[#2563eb] rounded animate-scan mb-4 relative overflow-hidden">
+                                     <div className="absolute top-0 left-0 h-full bg-[#2563eb] w-full animate-progress"></div>
                                 </div>
-                                <span className="text-cyan-400 font-mono animate-pulse">Running {backendType} Inference...</span>
+                                <span className="text-[#2563eb] font-mono animate-pulse">Running {backendType} Inference...</span>
                             </div>
                          </div>
                     )}
@@ -290,7 +290,7 @@ const BlueprintAnalyzer: React.FC = () => {
                  </div>
                  <button 
                     onClick={runAnalysis}
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
+                    className="bg-[#2563eb] hover:bg-[#2563eb]/90 text-white px-6 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
                  >
                     <Eye size={18} />
                     {backendType === 'RAY' ? 'Run Inference Graph' : 'Run Gemini VLM'}
@@ -338,7 +338,7 @@ const BlueprintAnalyzer: React.FC = () => {
                             {inventory.length > 0 ? inventory.map((item, idx) => (
                                 <div key={idx} className="p-3 border-b border-slate-800 last:border-0 flex justify-between items-center hover:bg-slate-800/50">
                                     <span className="text-sm text-slate-300 truncate max-w-[180px]" title={item.name}>{item.name || item.label}</span>
-                                    <span className="text-xs font-mono text-cyan-500 bg-cyan-950/30 px-2 py-1 rounded">x{item.count || 1}</span>
+                                    <span className="text-xs font-mono text-[#2563eb] bg-[#2563eb]/10 px-2 py-1 rounded">x{item.count || 1}</span>
                                 </div>
                             )) : (
                                 <div className="p-3 text-xs text-slate-500 italic">No assets detected.</div>

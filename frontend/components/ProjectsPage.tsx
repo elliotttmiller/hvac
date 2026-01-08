@@ -4,8 +4,6 @@ import {
   Plus, 
   Layers, 
   MapPin, 
-  MoreVertical,
-  ArrowRight,
   Briefcase 
 } from 'lucide-react';
 
@@ -20,6 +18,7 @@ interface Props {
 }
 
 import ProjectDetailModal from './ProjectDetailModal.tsx';
+import { DashboardCard, StatusBadge } from './primitives';
 
 const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProject, onProjectsChange, onOpenProject }) => {
   const [creating, setCreating] = React.useState(false);
@@ -68,8 +67,8 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20 flex items-center justify-center">
-                <Briefcase className="h-7 w-7 text-cyan-400" />
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#2563eb]/20 to-[#2563eb]/10 border border-[#2563eb]/20 flex items-center justify-center">
+                <Briefcase className="h-7 w-7 text-[#2563eb]" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-zinc-100 tracking-tight">Projects</h1>
@@ -78,7 +77,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
             </div>
             <button 
               onClick={() => setCreating(!creating)} 
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-medium transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2563eb] hover:bg-[#2563eb] text-white font-medium transition-all shadow-lg shadow-[#2563eb]/20 hover:shadow-[#2563eb]/30"
             >
               <Plus size={18} />
               {creating ? 'Cancel' : 'New Project'}
@@ -97,7 +96,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
                   value={name} 
                   onChange={e => setName(e.target.value)} 
                   placeholder="e.g., Commercial HVAC Installation" 
-                  className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[#2563eb] transition-colors"
                 />
               </div>
               <div>
@@ -106,7 +105,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
                   value={root} 
                   onChange={e => setRoot(e.target.value)} 
                   placeholder="Specify location (e.g., ./projects)" 
-                  className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full p-3 bg-[#0f0f10] border border-zinc-800 rounded-lg text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-[#2563eb] transition-colors"
                 />
               </div>
             </div>
@@ -114,7 +113,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
               <button 
                 disabled={loading || !name || !root} 
                 onClick={createProject} 
-                className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#2563eb] text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading ? 'Creating...' : 'Create Project'}
               </button>
@@ -140,7 +139,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
             </p>
             <button 
               onClick={() => setCreating(true)} 
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-medium transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#2563eb] hover:bg-[#2563eb] text-white font-medium transition-all"
             >
               <Plus size={18} />
               Create Your First Project
@@ -152,46 +151,35 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
               const isActive = activeProject === p.id;
               
               return (
-                <div
+                <DashboardCard
                   key={p.id}
-                  className={`group relative rounded-xl border transition-all duration-300 overflow-hidden ${
-                    isActive 
-                      ? 'border-cyan-500 bg-gradient-to-br from-cyan-500/10 to-blue-500/5 shadow-lg shadow-cyan-500/20' 
-                      : 'border-zinc-800 bg-[#18181b] hover:border-zinc-700 hover:shadow-xl'
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setDetailProject(p)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDetailProject(p); }}
+                  size="lg"
+                  className={`group relative overflow-hidden transform will-change-transform ${
+                    isActive
+                      ? 'border-zinc-700 ring-1 ring-white/6 shadow-[0_0_26px_rgba(255,255,255,0.03)] scale-[1.003]'
+                      : 'border-zinc-800 hover:border-zinc-700 hover:shadow-[0_0_18px_rgba(255,255,255,0.02)] hover:scale-[1.01]'
                   }`}
                 >
-                  {/* Active Project Indicator */}
+                  {/* Active Project Indicator - subtle soft glow */}
                   {isActive && (
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500"></div>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,0.04)' }} />
                   )}
-                  
-                  <div className="p-6">
+
+                  <div style={{ padding: 0 }}>
                     {/* Project Icon & Header */}
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className={`h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all group-hover:scale-105 ${
-                        isActive 
-                          ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border-cyan-500/30' 
-                          : 'bg-gradient-to-br from-zinc-800 to-zinc-900 border-zinc-700'
-                      }`}>
-                        <FolderOpen className={`h-7 w-7 ${isActive ? 'text-cyan-400' : 'text-zinc-400'}`} />
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-zinc-100 mb-1">
+                        {p.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-zinc-500">
+                        <MapPin size={12} />
+                        <span className="break-words">{p.root}</span>
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-zinc-100 truncate mb-1 group-hover:text-cyan-400 transition-colors">
-                          {p.name}
-                        </h3>
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                          <MapPin size={12} />
-                          <span className="truncate">{p.root}</span>
-                        </div>
-                      </div>
-                      
-                      <button 
-                        onClick={() => setDetailProject(p)}
-                        className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors"
-                      >
-                        <MoreVertical size={16} />
-                      </button>
+                      {/* If you have a richer description field in the future, render it here */}
                     </div>
 
                     {/* Project Stats - TODO: Make dynamic based on actual project data */}
@@ -204,31 +192,30 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
+                      {/*
+                        Reuse the bottom action button as the project status indicator.
+                        Map overall project lifecycle statuses to the requested colors:
+                          - Not Yet Started -> light grey
+                          - Work in Progress -> bright blue (#2563eb)
+                          - Delayed -> yellow (#f59e0b)
+                          - Completed -> green (#10b981)
+                        If the project has no explicit status, fall back to Active/Select behavior.
+                      */}
                       <button
-                        onClick={() => onSelectProject && onSelectProject(p.id)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all ${
-                          isActive
-                            ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-transparent'
-                        }`}
+                        onClick={(e) => { e.stopPropagation(); onSelectProject && onSelectProject(p.id); }}
+                        aria-label={`Project ${p.name} status`}
+                        className="flex-1"
                       >
-                        {isActive ? 'Active' : 'Select'}
+                        <div className="w-full flex items-center justify-center">
+                          <StatusBadge status={(p as any).status} className="w-full flex justify-center" />
+                        </div>
                       </button>
-                      
-                      {onOpenProject && (
-                        <button
-                          onClick={() => onOpenProject(p.id)}
-                          className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-medium text-sm transition-all"
-                        >
-                          Open
-                          <ArrowRight size={14} />
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
+                </DashboardCard>
               );
             })}
+
           </div>
         )}
 

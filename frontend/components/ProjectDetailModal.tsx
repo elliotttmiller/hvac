@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, FileText, Settings as SettingsIcon, Trash2, FolderOpen } from 'lucide-react';
+import { StatusBadge } from './primitives';
 
 interface Project { id: string; name: string; root: string }
 
@@ -37,7 +38,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
             onClick={() => setActiveTab('overview')}
             className={`px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === 'overview' 
-                ? 'text-cyan-400 border-b-2 border-cyan-400' 
+                ? 'text-[#2563eb] border-b-2 border-[#2563eb]' 
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -48,7 +49,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
             onClick={() => setActiveTab('documents')}
             className={`px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === 'documents' 
-                ? 'text-cyan-400 border-b-2 border-cyan-400' 
+                ? 'text-[#2563eb] border-b-2 border-[#2563eb]' 
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -59,7 +60,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
             onClick={() => setActiveTab('settings')}
             className={`px-6 py-3 text-sm font-medium transition-colors relative ${
               activeTab === 'settings' 
-                ? 'text-cyan-400 border-b-2 border-cyan-400' 
+                ? 'text-[#2563eb] border-b-2 border-[#2563eb]' 
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
@@ -81,9 +82,9 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                   </div>
                   <div className="flex justify-between py-2 border-b border-zinc-800">
                     <span className="text-xs text-zinc-500">Status</span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
-                      Active
-                    </span>
+                    <div>
+                      <StatusBadge status={(project as any).status} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -91,7 +92,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
               <div className="flex items-center gap-2 pt-4">
                 <button 
                   onClick={() => { if (onOpen) onOpen(project.id); onClose(); }} 
-                  className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#2563eb]/90 text-white text-sm font-medium transition-colors"
                 >
                   Open in Explorer
                 </button>
@@ -123,7 +124,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                           <div className="text-xs text-zinc-500">1.2 MB • Analyzed 2h ago</div>
                         </div>
                       </div>
-                      <button className="text-zinc-500 hover:text-cyan-400 transition-colors">
+                      <button className="text-zinc-500 hover:text-[#2563eb] transition-colors">
                         <FileText size={14} />
                       </button>
                     </div>
@@ -161,10 +162,10 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs text-zinc-400 mb-2 block">Project Name</label>
-                    <input 
+            <input 
                       type="text" 
                       defaultValue={project.name}
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors"
                     />
                   </div>
                   
@@ -173,7 +174,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                     <textarea 
                       rows={3}
                       placeholder="Add a description..."
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-cyan-500 transition-colors resize-none"
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-[#2563eb] transition-colors resize-none"
                     />
                   </div>
                 </div>

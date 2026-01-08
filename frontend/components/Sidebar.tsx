@@ -23,11 +23,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
 
   return (
     <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 bg-cyan-500 rounded-sm flex items-center justify-center">
+        <div className="p-6 flex items-center gap-3">
+        <div className="w-8 h-8 bg-[#2563eb] rounded-sm flex items-center justify-center">
             <span className="font-bold text-slate-950">H</span>
         </div>
-        <span className="font-bold text-lg tracking-wider text-slate-100">HVAC<span className="text-cyan-400">.AI</span></span>
+        <span className="font-bold text-lg tracking-wider text-slate-100">HVAC<span className="text-[#2563eb]">.AI</span></span>
       </div>
 
       <div className="px-4 mb-6">
@@ -39,11 +39,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView }) => {
               onClick={() => onChangeView(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group ${
                 currentView === item.id 
-                  ? 'bg-cyan-500/10 text-cyan-400 border-r-2 border-cyan-400' 
+                  ? 'bg-[#2563eb]/10 text-[#2563eb] border-r-2 border-[#2563eb]' 
                   : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
-              <item.icon size={20} className={currentView === item.id ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-300'} />
+              <item.icon size={20} className={currentView === item.id ? 'text-[#2563eb]' : 'text-slate-500 group-hover:text-slate-300'} />
               <span className="text-sm font-medium">{item.label}</span>
             </button>
           ))}

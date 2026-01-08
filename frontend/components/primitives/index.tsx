@@ -21,31 +21,29 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   ...props
 }) => {
-  const variants = {
-    primary: { backgroundColor: '#2196F3', color: '#fff' },
-    secondary: { backgroundColor: '#f5f5f5', color: '#333' },
-    danger: { backgroundColor: '#F44336', color: '#fff' },
+  // Prefer Tailwind classes for consistent theming. Use the requested accent
+  // color (#2563eb) for the primary variant as an arbitrary class.
+  const variantClasses: Record<string, string> = {
+    primary: 'bg-[#2563eb] text-white hover:bg-[#2563eb]/90',
+    secondary: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
   };
-  
-  const sizes = {
-    small: { padding: '6px 12px', fontSize: '12px' },
-    medium: { padding: '8px 16px', fontSize: '14px' },
-    large: { padding: '12px 24px', fontSize: '16px' },
+
+  const sizeClasses: Record<string, string> = {
+    small: 'px-3 py-1 text-sm',
+    medium: 'px-4 py-2 text-sm',
+    large: 'px-6 py-3 text-base',
   };
-  
+
+  const disabled = Boolean((props as any).disabled);
+  const disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
+  const className = `${variantClasses[variant] || variantClasses.primary} ${sizeClasses[size] || sizeClasses.medium} rounded-md font-semibold inline-flex items-center justify-center transition-all ${disabledClass} ${(props as any).className || ''}`.trim();
+
+  // Keep inline style support for callers that pass explicit styles.
   return (
     <button
-      style={{
-        ...variants[variant],
-        ...sizes[size],
-        border: 'none',
-        borderRadius: '4px',
-        cursor: props.disabled ? 'not-allowed' : 'pointer',
-        opacity: props.disabled ? 0.5 : 1,
-        fontWeight: '600',
-        transition: 'all 0.2s',
-        ...style,
-      }}
+      className={className}
+      style={style}
       {...props}
     >
       {children}
@@ -57,36 +55,27 @@ export const Button: React.FC<ButtonProps> = ({
 // Card
 // ============================================================================
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   title?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, title, style, onClick }) => {
+export const Card: React.FC<CardProps> = ({ children, title, style, onClick, ...props }) => {
   return (
     <div
       onClick={onClick}
       style={{
         backgroundColor: '#fff',
         borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        /* remove inline boxShadow so consumers can control hover shadow via CSS/Tailwind */
         padding: '16px',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'box-shadow 0.2s',
+        transition: 'box-shadow 0.2s, transform 0.15s',
         ...style,
       }}
-      onMouseEnter={e => {
-        if (onClick) {
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-        }
-      }}
-      onMouseLeave={e => {
-        if (onClick) {
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-        }
-      }}
+      {...props}
     >
       {title && (
         <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600' }}>
@@ -95,6 +84,72 @@ export const Card: React.FC<CardProps> = ({ children, title, style, onClick }) =
       )}
       {children}
     </div>
+  );
+};
+
+// ============================================================================
+// DashboardCard - visual card that matches the Dashboard's glow/hover styling
+// ============================================================================
+export interface DashboardCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const DashboardCard: React.FC<DashboardCardProps> = ({ children, size = 'md', className = '', onClick, ...props }) => {
+  // Mirror the Dashboard card visuals: subtle translucent bg, backdrop blur,
+  // border, rounded corners, gentle hover background, and group hover transitions.
+  const padding = size === 'sm' ? 'p-4' : size === 'lg' ? 'p-6' : 'p-4';
+  const base = `bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-xl ${padding} transition-all duration-200 group hover:bg-zinc-900/80 cursor-pointer`;
+
+  return (
+    <div onClick={onClick} className={`${base} ${className}`} {...props}>
+      {children}
+    </div>
+  );
+};
+
+// ============================================================================
+// StatusBadge
+// ============================================================================
+import { normalizeStatus } from '../../lib/types/project';
+
+export interface StatusBadgeProps {
+  status?: string | null;
+  className?: string;
+}
+
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = '' }) => {
+  const s = normalizeStatus(status || undefined);
+
+  let classes = 'text-sm font-medium px-2 py-0.5 rounded';
+  let label = status || '';
+
+  if (!s) {
+    classes += ' text-zinc-300 bg-zinc-800/40 border border-zinc-700';
+    label = 'Not Started';
+  } else if (['not yet started', 'not_started', 'notstarted', 'pending', 'idle', 'queued'].includes(s)) {
+    classes += ' text-zinc-400 bg-zinc-800/40 border border-zinc-700';
+    label = 'Not Yet Started';
+  } else if (['in progress', 'in_progress', 'work in progress', 'work_in_progress', 'active', 'running'].includes(s)) {
+    classes += ' text-[#2563eb] bg-[#2563eb]/10 border border-[#2563eb]/20';
+    label = 'In Progress';
+  } else if (['delayed', 'warning', 'stalled'].includes(s)) {
+    classes += ' text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20';
+    label = 'Delayed';
+  } else if (['complete', 'completed', 'done', 'finished'].includes(s)) {
+    classes += ' text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20';
+    label = 'Completed';
+  } else if (s === 'closed') {
+    classes += ' text-[#ef4444] bg-[#ef4444]/10 border border-[#ef4444]/20';
+    label = 'Closed';
+  } else {
+    // Fallback
+    classes += ' text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-transparent';
+    label = status || label;
+  }
+
+  return (
+    <span className={`${classes} ${className}`}>{label}</span>
   );
 };
 

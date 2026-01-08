@@ -29,9 +29,9 @@ const TYPE_CONFIG = {
   },
   info: {
     icon: Info,
-    color: '#06b6d4', // cyan-500
-    bgColor: 'rgba(6, 182, 212, 0.1)',
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    color: '#2563eb', // custom accent
+    bgColor: 'rgba(37, 99, 235, 0.1)',
+    borderColor: 'rgba(37, 99, 235, 0.3)',
   },
   warning: {
     icon: AlertCircle,

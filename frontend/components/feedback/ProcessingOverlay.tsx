@@ -86,11 +86,11 @@ const SHARED_ANIMATIONS = `
   @keyframes glow {
     0%, 100% { 
       opacity: 1;
-      box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
     }
     50% { 
       opacity: 0.8;
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.8);
     }
   }
 `;
@@ -159,7 +159,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             <div style={{
               position: 'absolute',
               inset: '0',
-              border: '2px solid rgba(6, 182, 212, 0.2)',
+              border: '2px solid rgba(37, 99, 235, 0.2)',
               borderRadius: '50%',
               animation: 'pulse 2s ease-in-out infinite'
             }} />
@@ -168,8 +168,8 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
               position: 'absolute',
               inset: '6px',
               border: '2px solid transparent',
-              borderTopColor: '#06b6d4',
-              borderRightColor: '#06b6d4',
+              borderTopColor: '#2563eb',
+              borderRightColor: '#2563eb',
               borderRadius: '50%',
               animation: 'spin 1.2s linear infinite'
             }} />
@@ -186,7 +186,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             <div style={{
               position: 'absolute',
               inset: '20px',
-              backgroundColor: '#06b6d4',
+              backgroundColor: '#2563eb',
               borderRadius: '50%',
               animation: 'glow 1.5s ease-in-out infinite'
             }} />
@@ -210,7 +210,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             {progress > 0 && (
               <div style={{
                 fontSize: '12px',
-                color: '#06b6d4',
+                color: '#2563eb',
                 fontFamily: 'monospace',
                 fontWeight: '500'
               }}>
@@ -250,8 +250,8 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
         <div style={{
           width: '16px',
           height: '16px',
-          border: '2px solid rgba(6, 182, 212, 0.3)',
-          borderTopColor: '#06b6d4',
+          border: '2px solid rgba(37, 99, 235, 0.3)',
+          borderTopColor: '#2563eb',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }} />

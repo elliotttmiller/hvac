@@ -37,7 +37,7 @@ type Tab = 'COMPONENTS' | 'ANALYSIS' | 'PRICING' | 'QUOTE';
 
 // Configuration constants for component visualization
 const MAX_CHART_TYPES = 8; // Maximum number of component types to display in chart
-const CHART_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
+const CHART_COLORS = ['#2563eb', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
 // Constant for underscore replacement to avoid regex recompilation
 const UNDERSCORE_REGEX = /_/g;
@@ -251,7 +251,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   // Log line parser for syntax highlighting
   const parseLogLine = (line: string): { className: string; prefix: string } => {
     if (line.includes('Step')) {
-      return { className: 'text-cyan-400 font-semibold', prefix: '▶ ' };
+   return { className: 'text-[#2563eb] font-semibold', prefix: '▶ ' };
     } else if (line.includes('Error') || line.includes('error')) {
       return { className: 'text-red-400', prefix: '✖ ' };
     } else if (line.includes('complete') || line.includes('Complete')) {
@@ -519,8 +519,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   {typeChartData.length > 0 && (
                      <div className="bg-[#1a1a1a] rounded-lg border border-white/5 p-3">
                         <div className="flex items-center gap-2 mb-3">
-                           <BarChart3 size={14} className="text-cyan-400" />
-                           <h4 className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Component Types Distribution</h4>
+                           <BarChart3 size={14} className="text-[#2563eb]" />
+                           <h4 className="text-[10px] font-bold text-[#2563eb] uppercase tracking-wider">Component Types Distribution</h4>
                         </div>
                         <ResponsiveContainer width="100%" height={180}>
                            <BarChart data={typeChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
@@ -541,9 +541,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     fontSize: '11px'
                                  }}
                                  labelStyle={{ color: '#e4e4e7', fontWeight: 'bold' }}
-                                 itemStyle={{ color: '#06b6d4' }}
+                                 itemStyle={{ color: '#2563eb' }}
                               />
-                              <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                              <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} />
                            </BarChart>
                         </ResponsiveContainer>
                      </div>
@@ -596,7 +596,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            value={searchQuery}
                            onChange={(e) => setSearchQuery(e.target.value)}
                            placeholder="Filter detected assets..." 
-                           className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/50 transition-colors placeholder:text-zinc-600"
+                           className="w-full bg-[#252526] border border-white/5 rounded h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-[#2563eb]/50 transition-colors placeholder:text-zinc-600"
                      />
                </div>
             </div>
@@ -621,15 +621,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     {/* Category Expand/Collapse Icon */}
                                     <div className="shrink-0">
                                        {isCategoryExpanded ? (
-                                          <ChevronDown size={16} className="text-cyan-400" />
+                                          <ChevronDown size={16} className="text-[#2563eb]" />
                                        ) : (
-                                          <ChevronRight size={16} className="text-zinc-400 group-hover:text-cyan-400 transition-colors" />
+                                          <ChevronRight size={16} className="text-zinc-400 group-hover:text-[#2563eb] transition-colors" />
                                        )}
                                     </div>
                                     
                                     {/* Category Icon */}
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center">
-                                       <Layers size={14} className="text-cyan-400" />
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2563eb]/20 to-blue-500/20 border border-[#2563eb]/30 flex items-center justify-center">
+                                       <Layers size={14} className="text-[#2563eb]" />
                                     </div>
                                     
                                     {/* Category Name and Count */}
@@ -644,8 +644,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                  </div>
                                  
                                  {/* Category Count Badge */}
-                                 <div className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-                                    <span className="text-xs font-bold text-cyan-400 font-mono">{categoryCount}</span>
+                                 <div className="px-2.5 py-1 rounded-full bg-[#2563eb]/10 border border-[#2563eb]/30">
+                                    <span className="text-xs font-bold text-[#2563eb] font-mono">{categoryCount}</span>
                                  </div>
                               </div>
                               
@@ -660,7 +660,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                              key={box.id}
                                              ref={isSelected ? selectedRowRef : null}
                                              className={`border-b border-white/5 last:border-0 transition-all ${
-                                                isSelected ? 'bg-cyan-500/10' : 'hover:bg-white/5'
+                                                isSelected ? 'bg-[#2563eb]/10' : 'hover:bg-white/5'
                                              }`}
                                           >
                                              {/* Component Header */}
@@ -676,28 +676,28 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                                 {/* Component Expand/Collapse Icon */}
                                                 <div className="shrink-0">
                                                    {isExpanded ? (
-                                                      <ChevronDown size={12} className="text-cyan-400" />
+                                                      <ChevronDown size={12} className="text-[#2563eb]" />
                                                    ) : (
-                                                      <ChevronRight size={12} className={isSelected ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-300'} />
+                                                      <ChevronRight size={12} className={isSelected ? 'text-[#2563eb]' : 'text-zinc-500 group-hover:text-zinc-300'} />
                                                    )}
                                                 </div>
                                         
-                                                <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
-                                                     isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
-                                                }`}>
-                                                     <Box size={12} />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                     <div className={`text-xs font-semibold truncate ${isSelected ? 'text-cyan-100' : 'text-zinc-300'}`}>
-                                                        {box.label}
-                                                     </div>
+                              <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                                 isSelected ? 'bg-[#2563eb]/20 text-[#2563eb]' : 'bg-[#252526] text-zinc-500 group-hover:text-zinc-300'
+                              }`}>
+                                 <Box size={12} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <div className={`text-xs font-semibold truncate ${isSelected ? 'text-[#2563eb]' : 'text-zinc-300'}`}>
+                                  {box.label}
+                                 </div>
                                                      <div className="text-[10px] text-zinc-500 truncate">
                                                         {box.meta?.description || 'No description'}
                                                      </div>
                                                 </div>
-                                                {isSelected && (
-                                                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
-                                                )}
+                              {isSelected && (
+                                 <div className="w-1.5 h-1.5 rounded-full bg-[#2563eb]"></div>
+                              )}
                                              </div>
 
                                              {/* Expanded Details */}
@@ -705,8 +705,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               <div className="px-2 pb-2 pt-0 space-y-3 animate-in slide-in-from-top-2 duration-200">
                                  {/* Component Specifications */}
                                  <div className="bg-[#1a1a1a] rounded-lg p-3 border border-white/5">
-                                    <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                       <div className="w-1 h-3 bg-cyan-500 rounded-full"></div>
+                                    <div className="text-[10px] font-bold text-[#2563eb] uppercase tracking-wider mb-3 flex items-center gap-2">
+                                       <div className="w-1 h-3 bg-[#2563eb] rounded-full"></div>
                                        Component Specifications
                                     </div>
                                     <div className="space-y-2.5 text-xs">
@@ -744,7 +744,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                                 <span className="text-zinc-500 text-[10px] uppercase tracking-wide">Detection Quality</span>
                                                 <div className={`mt-0.5 capitalize font-medium ${
                                                    box.meta.detection_quality === 'excellent' ? 'text-emerald-400' :
-                                                   box.meta.detection_quality === 'good' ? 'text-cyan-400' :
+                                                   box.meta.detection_quality === 'good' ? 'text-[#2563eb]' :
                                                    'text-yellow-400'
                                                 }`}>
                                                    {box.meta.detection_quality}
@@ -891,9 +891,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                      <div className="space-y-4">
                         {/* Report Title */}
-                        {finalAnalysisReport.report_title && (
-                           <div className="bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 rounded-xl p-4">
-                              <h2 className="text-lg font-bold text-cyan-300">{finalAnalysisReport.report_title}</h2>
+                           {finalAnalysisReport.report_title && (
+                           <div className="bg-gradient-to-br from-[#2563eb]/15 to-blue-500/15 border border-[#2563eb]/30 rounded-xl p-4">
+                              <h2 className="text-lg font-bold text-[#2563eb]">{finalAnalysisReport.report_title}</h2>
                            </div>
                         )}
 
@@ -902,8 +902,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            {finalAnalysisReport.executive_summary && (
                               <div>
                                  <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
-                                    <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Executive Summary</h3>
+                                    <div className="w-1 h-6 bg-[#2563eb] rounded-full"></div>
+                                    <h3 className="text-sm font-bold text-[#2563eb] uppercase tracking-wide">Executive Summary</h3>
                                  </div>
                                  <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
                                     <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
@@ -1112,10 +1112,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           ) : (
             // LOADING STATE - Show placeholder while background analysis is running
             <div className="p-4 space-y-4">
-              <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>
-                  <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wide">Analysis In Progress</h3>
+                  <div className="bg-gradient-to-br from-[#2563eb]/10 to-blue-500/10 border border-[#2563eb]/20 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                           <div className="w-1 h-6 bg-[#2563eb] rounded-full"></div>
+                           <h3 className="text-sm font-bold text-[#2563eb] uppercase tracking-wide">Analysis In Progress</h3>
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
                   Visual analysis complete. Comprehensive engineering narrative is being generated in the background...
@@ -1124,7 +1124,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
               <div className="bg-[#1a1a1a] rounded-lg p-4 border border-white/5">
                 <div className="flex items-center gap-3 text-zinc-400 text-xs">
-                  <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                           <div className="w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin"></div>
                   <span>Analyzing system topology and generating narrative report...</span>
                 </div>
               </div>
@@ -1176,7 +1176,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
        <div className="space-y-4">
           <div>
               <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1.5">Client Reference</label>
-              <input type="text" placeholder="Acme Corp - Tower A" className="w-full bg-[#252526] border border-white/5 rounded px-3 py-2 text-xs text-zinc-200 focus:border-cyan-500/50 focus:outline-none" />
+              <input type="text" placeholder="Acme Corp - Tower A" className="w-full bg-[#252526] border border-white/5 rounded px-3 py-2 text-xs text-zinc-200 focus:border-[#2563eb]/50 focus:outline-none" />
           </div>
           <div>
               <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1.5">Project ID</label>
@@ -1184,22 +1184,22 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </div>
        </div>
 
-   <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4 space-y-3">
-          <div className="flex justify-between items-center pb-3 border-b border-cyan-500/10">
+   <div className="bg-[#2563eb]/5 border border-[#2563eb]/20 rounded-xl p-4 space-y-3">
+        <div className="flex justify-between items-center pb-3 border-b border-[#2563eb]/10">
               <span className="text-xs text-zinc-300">Material Cost</span>
               <span className="text-xs font-mono text-zinc-200">${totalProjectCost.toLocaleString()}</span>
           </div>
-        <div className="flex justify-between items-center pb-3 border-b border-cyan-500/10">
+      <div className="flex justify-between items-center pb-3 border-b border-[#2563eb]/10">
               <span className="text-xs text-zinc-300">Labor Estimate (25%)</span>
               <span className="text-xs font-mono text-zinc-200">${(totalProjectCost * 0.25).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center pt-1">
-              <span className="text-sm font-bold text-cyan-400">Total Quote</span>
+           <span className="text-sm font-bold text-[#2563eb]">Total Quote</span>
               <span className="text-sm font-bold font-mono text-white">${(totalProjectCost * 1.25).toLocaleString()}</span>
           </div>
        </div>
 
-   <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2.5 rounded-lg text-xs font-bold shadow-lg shadow-cyan-900/20 flex items-center justify-center gap-2 transition-all">
+   <button className="w-full bg-[#2563eb] hover:bg-[#2563eb]/90 text-white py-2.5 rounded-lg text-xs font-bold shadow-lg shadow-[#2563eb]/20 flex items-center justify-center gap-2 transition-all">
           <Send size={14} />
           Generate Official PDF
        </button>
@@ -1217,7 +1217,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'COMPONENTS'}
             aria-controls="components-panel"
             id="components-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'COMPONENTS' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <Layers size={11} /> <span className="hidden sm:inline">Components</span>
          </button>
@@ -1247,7 +1247,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             aria-selected={activeTab === 'QUOTE'}
             aria-controls="quote-panel"
             id="quote-tab"
-            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+            className={`flex-1 h-full flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'QUOTE' ? 'border-[#2563eb] text-[#2563eb]' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
          >
             <FileText size={11} /> <span className="hidden sm:inline">Quote</span>
          </button>

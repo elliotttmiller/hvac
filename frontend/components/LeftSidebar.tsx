@@ -55,7 +55,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, activeId, onSelect, on
     <div>
       <div 
     className={`flex items-center gap-1.5 py-1 pr-2 rounded cursor-pointer transition-colors group ${
-      activeId === node.id ? 'bg-cyan-500/10 text-cyan-100' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+      activeId === node.id ? 'bg-[#2563eb]/10 text-[#2563eb]' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
     }`}
         style={{ paddingLeft: `${level * 12 + 12}px` }}
         onClick={async (e) => {
@@ -205,8 +205,8 @@ const LeftSidebar: React.FC<{
 
       {/* Project Selector (Dropdown style) */}
       <div className="p-3 border-b border-white/5 bg-[#18181b]">
-         <div className="flex items-center gap-2 mb-2 px-1">
-             <Briefcase size={12} className="text-cyan-500" />
+     <div className="flex items-center gap-2 mb-2 px-1">
+       <Briefcase size={12} className="text-[#2563eb]" />
              <span className="text-xs font-semibold text-zinc-400">Active Workspace</span>
          </div>
          <div className="relative">
@@ -241,10 +241,10 @@ const LeftSidebar: React.FC<{
                   if (onSelectProject) onSelectProject(p.id);
                   setIsProjectDropdownOpen(false);
                 }} 
-                className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-cyan-400' : 'text-zinc-300'}`}
+                className={`px-3 py-2 text-xs hover:bg-zinc-700 cursor-pointer flex justify-between ${activeProject === p.id ? 'text-[#2563eb]' : 'text-zinc-300'}`}
               >
                 <span>{p.name}</span>
-                {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 my-auto"></div>}
+                {activeProject === p.id && <div className="w-1.5 h-1.5 rounded-full bg-[#2563eb] my-auto"></div>}
               </div>
             ))}
           </div>
@@ -262,7 +262,7 @@ const LeftSidebar: React.FC<{
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search files..." 
-        className="w-full bg-[#18181b] border border-white/5 rounded-md h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-cyan-500/30 transition-all placeholder:text-zinc-600"
+  className="w-full bg-[#18181b] border border-white/5 rounded-md h-8 pl-8 pr-2 text-xs text-zinc-300 focus:outline-none focus:border-[#2563eb]/30 transition-all placeholder:text-zinc-600"
             />
         </div>
       </div>

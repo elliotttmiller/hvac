@@ -193,7 +193,7 @@ const Copilot: React.FC = () => {
           {/* Input Area */}
           <div className="p-6">
             <div className="max-w-3xl mx-auto relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2563eb]/20 to-purple-500/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur"></div>
               <div className="relative bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
                 <textarea 
                   value={input}

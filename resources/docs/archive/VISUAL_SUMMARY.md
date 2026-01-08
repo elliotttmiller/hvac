@@ -90,7 +90,7 @@ Missing: Description, Confidence
 <div className="p-3 text-left space-y-1">
   <h4>{box.label || box.id}</h4>
   {box.meta?.description && (
-    <div className="text-cyan-300">{box.meta.description}</div>
+    <div className="text-[#2563eb]">{box.meta.description}</div>
   )}
   <div>{box.type}</div>
   {box.confidence && (
@@ -219,8 +219,8 @@ Unselected:               Selected:
 ┌─────────┐              ┌─────────┐
 │ SOV-301 │              │ SOV-301 │ ← Cyan ring
 └─────────┘              └═════════┘   highlight
- border-cyan-500/60       ring-2 ring-cyan-400/50
- bg-cyan-500/10           bg-cyan-500/30
+ border-[#2563eb]/60       ring-2 ring-[#2563eb]/50
+ bg-[#2563eb]/10           bg-[#2563eb]/30
 ```
 
 **Inspector Panel:**
@@ -228,9 +228,9 @@ Unselected:               Selected:
 Unselected:               Selected:
 □ SOV-301202             ✓ SOV-301202 ●
   Solenoid Valve           Solenoid Valve
-  text-zinc-300            text-cyan-100
-  bg-transparent           bg-cyan-500/10
-                           border-cyan-500/30
+  text-zinc-300            text-[#2563eb]/90
+  bg-transparent           bg-[#2563eb]/10
+                           border-[#2563eb]/30
 ```
 
 ## Code Changes Summary
@@ -258,7 +258,7 @@ Unselected:               Selected:
 4. **Updated** styling (line 162):
 ```tsx
 - hover:border-opacity-100 hover:bg-opacity-20
-+ ${isSelected ? 'border-opacity-100 bg-opacity-30 ring-2 ring-cyan-400/50' : 'hover:border-opacity-100 hover:bg-opacity-20'}
+${isSelected ? 'border-opacity-100 bg-opacity-30 ring-2 ring-[#2563eb]/50' : 'hover:border-opacity-100 hover:bg-opacity-20'}
 ```
 
 5. **Wired** event handlers (lines 166-168):
@@ -273,9 +273,9 @@ Unselected:               Selected:
 6. **Enhanced** hover card (lines 181-190):
 ```tsx
 + {box.meta?.description && (
-+   <div className="text-[11px] text-cyan-300 font-medium">
-+     {box.meta.description}
-+   </div>
+  <div className="text-[11px] text-[#2563eb] font-medium">
+    {box.meta.description}
+  </div>
 + )}
 + {box.confidence && (
 +   <div className="text-[10px] text-emerald-400 font-mono">

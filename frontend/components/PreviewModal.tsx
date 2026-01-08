@@ -37,7 +37,7 @@ const PreviewModal: React.FC<Props> = ({ path, open, onClose, onAnalyze }) => {
                 onAnalyze(path);
                 onClose();
               }} 
-              className="px-3 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 flex items-center gap-2 text-zinc-100 text-sm font-medium transition-colors"
+              className="px-3 py-1.5 rounded-md bg-[#2563eb] hover:bg-[#2563eb]/90 flex items-center gap-2 text-zinc-100 text-sm font-medium transition-colors"
             >
               <Scan size={14} />
               Analyze

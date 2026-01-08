@@ -67,7 +67,7 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
   }, [isResizing]);
 
   return (
-  <div className="flex flex-col h-screen bg-[#09090b] text-zinc-100 font-sans overflow-hidden selection:bg-cyan-500/30">
+  <div className="flex flex-col h-screen bg-[#09090b] text-zinc-100 font-sans overflow-hidden selection:bg-[#2563eb]/30">
       <TopHeader />
       <div className="flex-1 flex min-h-0 relative">
         <ActivityBar currentView={currentView} onChangeView={onChangeView} />
@@ -97,11 +97,11 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
 
               {/* Resize Handle */}
               {isSidebarOpen && (
-                <div 
-                    className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-cyan-500/50 transition-colors z-20 group"
+        <div 
+          className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-[#2563eb]/50 transition-colors z-20 group"
                     onMouseDown={startResizing}
                 >
-                    <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-cyan-400 rounded-full transition-colors"></div>
+                    <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-[#2563eb] rounded-full transition-colors"></div>
                 </div>
               )}
            </div>
