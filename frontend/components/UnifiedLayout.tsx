@@ -118,7 +118,8 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
             className={`absolute top-1/2 -translate-y-1/2 z-40 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300`}
             style={{
               // Include ActivityBar width (approx 56px) so the button hugs the outer edge of the sidebar
-              left: isSidebarOpen ? `calc(56px + ${sidebarWidth}px - 12px)` : '0.5rem',
+              // When closed, place the toggle just to the right of the ActivityBar (not the page edge)
+              left: isSidebarOpen ? `calc(56px + ${sidebarWidth}px - 12px)` : 'calc(56px + 0.5rem)',
               transform: 'translateY(-50%)'
             } as React.CSSProperties}
           >
