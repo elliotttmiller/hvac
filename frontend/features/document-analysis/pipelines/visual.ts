@@ -1108,52 +1108,83 @@ function filterByConfidence(
   const originalComponentCount = result.components.length;
   const originalConnectionCount = result.connections.length;
   
+  // Track filtered items for batched logging
+  const filteredComponentIds: string[] = [];
+  
   // Filter components by confidence threshold
   const filteredComponents = result.components.filter(comp => {
     if (!comp.confidence || comp.confidence < minComponentConfidence) {
-      console.log(
-        `[Confidence Filter] Removing low-confidence component: ${comp.id} ` +
-        `(confidence: ${comp.confidence?.toFixed(2) || 'N/A'}, threshold: ${minComponentConfidence})`
+      filteredComponentIds.push(
+        `${comp.id} (${comp.confidence?.toFixed(2) || 'N/A'})`
       );
       return false;
     }
     return true;
   });
   
+  // Log filtered components (batched for performance)
+  if (filteredComponentIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${filteredComponentIds.length} low-confidence components ` +
+      `(threshold: ${minComponentConfidence}): ${filteredComponentIds.slice(0, 5).join(', ')}` +
+      (filteredComponentIds.length > 5 ? ` and ${filteredComponentIds.length - 5} more` : '')
+    );
+  }
+  
   // Create a set of valid component IDs for connection filtering
   const validComponentIds = new Set(filteredComponents.map(c => c.id));
+  
+  // Track filtered connections for batched logging
+  const filteredConnectionIds: string[] = [];
+  const orphanedConnectionIds: string[] = [];
   
   // Filter connections by:
   // 1. Confidence threshold
   // 2. Both endpoints must exist in filtered components
   const filteredConnections = result.connections.filter(conn => {
     if (!conn.confidence || conn.confidence < minConnectionConfidence) {
-      console.log(
-        `[Confidence Filter] Removing low-confidence connection: ${conn.from_id} -> ${conn.to_id} ` +
-        `(confidence: ${conn.confidence?.toFixed(2) || 'N/A'}, threshold: ${minConnectionConfidence})`
+      filteredConnectionIds.push(
+        `${conn.from_id}->${conn.to_id} (${conn.confidence?.toFixed(2) || 'N/A'})`
       );
       return false;
     }
     
     // Ensure both endpoints exist
     if (!validComponentIds.has(conn.from_id) || !validComponentIds.has(conn.to_id)) {
-      console.log(
-        `[Confidence Filter] Removing connection with filtered component: ${conn.from_id} -> ${conn.to_id}`
-      );
+      orphanedConnectionIds.push(`${conn.from_id}->${conn.to_id}`);
       return false;
     }
     
     return true;
   });
   
+  // Log filtered connections (batched for performance)
+  if (filteredConnectionIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${filteredConnectionIds.length} low-confidence connections ` +
+      `(threshold: ${minConnectionConfidence}): ${filteredConnectionIds.slice(0, 3).join(', ')}` +
+      (filteredConnectionIds.length > 3 ? ` and ${filteredConnectionIds.length - 3} more` : '')
+    );
+  }
+  if (orphanedConnectionIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${orphanedConnectionIds.length} orphaned connections ` +
+      `(endpoint filtered): ${orphanedConnectionIds.slice(0, 3).join(', ')}` +
+      (orphanedConnectionIds.length > 3 ? ` and ${orphanedConnectionIds.length - 3} more` : '')
+    );
+  }
+  
   const componentsRemoved = originalComponentCount - filteredComponents.length;
   const connectionsRemoved = originalConnectionCount - filteredConnections.length;
   
   if (componentsRemoved > 0 || connectionsRemoved > 0) {
     console.log(
-      `[Confidence Filter] Quality control applied: ` +
-      `${componentsRemoved} components removed, ${connectionsRemoved} connections removed`
+      `[Confidence Filter] Quality control summary: ` +
+      `${componentsRemoved} components removed, ${connectionsRemoved} connections removed, ` +
+      `${filteredComponents.length} components retained, ${filteredConnections.length} connections retained`
     );
+  } else {
+    console.log('[Confidence Filter] All detections meet quality thresholds');
   }
   
   return {

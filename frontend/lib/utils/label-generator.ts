@@ -93,6 +93,9 @@ export function generateIntelligentLabels(
   components: any[],
   minConfidence: number = 0.80
 ): any[] {
+  // Track skipped components for batched logging
+  const skippedComponents: string[] = [];
+  
   // First pass: identify components that need labels AND meet confidence threshold
   const needsLabel = components.filter(c => {
     // Must need a label
@@ -102,15 +105,23 @@ export function generateIntelligentLabels(
     
     // Must meet minimum confidence threshold
     if (!c.confidence || c.confidence < minConfidence) {
-      console.log(
-        `[Label Generator] Skipping label generation for low-confidence component: ${c.id} ` +
-        `(confidence: ${c.confidence?.toFixed(2) || 'N/A'}, threshold: ${minConfidence})`
+      skippedComponents.push(
+        `${c.id} (${c.confidence?.toFixed(2) || 'N/A'})`
       );
       return false;
     }
     
     return true;
   });
+  
+  // Log skipped components (batched for performance)
+  if (skippedComponents.length > 0) {
+    console.log(
+      `[Label Generator] Skipped ${skippedComponents.length} low-confidence components ` +
+      `(threshold: ${minConfidence}): ${skippedComponents.slice(0, 3).join(', ')}` +
+      (skippedComponents.length > 3 ? ` and ${skippedComponents.length - 3} more` : '')
+    );
+  }
   
   if (needsLabel.length === 0) {
     return components; // No changes needed
