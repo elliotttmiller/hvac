@@ -849,7 +849,21 @@ function extractISAFunction(tag?: string): string | null {
  */
 /**
  * Extract shape from reasoning text if not explicitly provided
- * This is a fallback for cases where AI doesn't populate the shape field
+ * 
+ * This is a critical fallback mechanism for cases where the AI doesn't populate
+ * the shape field despite schema requirements. Extracts geometric shape information
+ * from the reasoning text using pattern matching.
+ * 
+ * @param reasoning - The reasoning text from component metadata
+ * @returns The extracted shape string or null if no shape pattern found
+ * 
+ * @example
+ * extractShapeFromReasoning("Identified a bowtie shape with actuator") 
+ * // Returns: "bowtie"
+ * 
+ * @example
+ * extractShapeFromReasoning("Detected circular shape indicating sensor")
+ * // Returns: "circle"
  */
 function extractShapeFromReasoning(reasoning: string): string | null {
   if (!reasoning) return null;
@@ -873,7 +887,8 @@ function extractShapeFromReasoning(reasoning: string): string | null {
   
   for (const [pattern, shape] of shapePatterns) {
     if (pattern.test(reasoningLower)) {
-      console.log(`[Shape Extraction] Extracted shape "${shape}" from reasoning`);
+      // Shape successfully extracted from reasoning text
+      // This only triggers when AI fails to provide explicit shape field
       return shape;
     }
   }
