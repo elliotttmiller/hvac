@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Button } from '@/components/primitives';
 import { convertNormalizedToDisplay, NormBBox } from '../../lib/geometry';
-import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
+import { Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
 import { DetectedComponent } from '@/features/document-analysis/types';
 import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
 
@@ -30,8 +31,9 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   debugMode = false,
 }) => {
   // --- UI State ---
+  // Always show detections and OCR overlays by default
   const [showOBB, setShowOBB] = useState(true);
-  const [showOCR, setShowOCR] = useState(false);
+  const [showOCR, setShowOCR] = useState(true);
   const [showGeo, setShowGeo] = useState(false);
   const [zoom, setZoom] = useState(1);
 
@@ -80,22 +82,30 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-      {/* Toolbar (Top Left) */}
+      {/* Vertical Edge Toolbar (left center) */}
       {imageUrl && (
-        <div className="absolute top-4 left-4 z-20 flex gap-2 pointer-events-auto">
-        <button onClick={onRunAnalysis} disabled={isProcessing} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all flex items-center gap-2 ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'bg-[#2563eb]/10 border-[#2563eb]/30 text-[#2563eb] hover:bg-[#2563eb]/20'}`}>
-          <Play size={14} /> Run
-        </button>
-           <div className="w-px h-6 bg-slate-700/50 self-center"></div>
-        <button onClick={() => setShowOBB(!showOBB)} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all ${showOBB ? 'bg-[#2563eb]/20 border-[#2563eb] text-[#2563eb]' : 'bg-slate-900/80 border-slate-700 text-slate-500'}`}>
-          <Scan size={14} /> Detect
-        </button>
-           <button onClick={() => setShowOCR(!showOCR)} className={`px-3 py-1.5 rounded-md border text-xs font-semibold shadow-lg backdrop-blur-sm transition-all ${showOCR ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-slate-900/80 border-slate-700 text-slate-500'}`}>
-              <Type size={14} /> Text
-           </button>
-           <button onClick={onClearImage} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 p-1.5 rounded-md">
+        <div className="absolute right-4 top-4 z-30 flex flex-col items-end gap-3 pointer-events-auto">
+          {/* Run (icon-only) with hover label to the left */}
+          <div className="relative group">
+            <Button onClick={onRunAnalysis} disabled={isProcessing} size="sm" className="w-12 h-12 flex items-center justify-center rounded-full shadow-md transition-transform transform hover:-translate-y-0.5 hover:scale-105 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563eb]/40" style={isProcessing ? { background: 'linear-gradient(180deg,#154e4a,#2aa68a)' } : undefined}>
+              <Play size={18} className="text-[#2aa68a]" />
+            </Button>
+            <div className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-150 bg-black/80 text-white text-[12px] px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap">
+              Run analysis
+            </div>
+          </div>
+
+          {/* Detections and OCR overlays are always enabled; toggles removed */}
+
+          {/* Clear */}
+          <div className="relative group">
+            <Button onClick={onClearImage} variant="secondary" size="sm" className="w-10 h-10 flex items-center justify-center text-red-400 border-red-600/20 transition-transform transform hover:-translate-y-0.5 hover:scale-105 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-400/40">
               <X size={16} />
-           </button>
+            </Button>
+            <div className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-150 bg-black/80 text-white text-[12px] px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap">
+              Clear image
+            </div>
+          </div>
         </div>
       )}
 

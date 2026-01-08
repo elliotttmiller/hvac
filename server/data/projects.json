@@ -6,5 +6,12 @@
     "lastUpdated": 1767855642124,
     "location": "Shakopee, MN ",
     "notes": null
+  },
+  {
+    "id": "default",
+    "name": "default",
+    "status": "idle",
+    "finalReport": null,
+    "lastUpdated": 1767856786234
   }
 ]

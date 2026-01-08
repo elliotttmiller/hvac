@@ -1,5 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
+const multer = require('multer');
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -90,6 +92,58 @@ app.get('/api/projects', async (req, res) => {
     }
     return res.json({ projects });
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// File upload for a specific project - saves file to project folder under ROOT and appends metadata
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const projDir = path.join(ROOT, req.params.id || 'default');
+    try {
+      fsSync.mkdirSync(projDir, { recursive: true });
+      cb(null, projDir);
+    } catch (e) {
+      cb(e);
+    }
+  },
+  filename: function (req, file, cb) {
+    const name = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
+    cb(null, name);
+  }
+});
+const upload = multer({ storage });
+
+app.post('/api/projects/:id/files', upload.single('file'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    if (!req.file) return res.status(400).json({ error: 'Missing file' });
+
+    const projects = await readProjectsFile();
+    const idx = projects.findIndex(p => p.id === projectId);
+    if (idx === -1) return res.status(404).json({ error: 'Project not found' });
+
+    const file = req.file;
+    const relPath = path.relative(ROOT, file.path).replace(/\\/g, '/');
+    const meta = {
+      id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8),
+      name: file.originalname,
+      filename: file.filename,
+      size: file.size,
+      path: relPath,
+      uploadedAt: new Date().toISOString(),
+      analyzedAt: null,
+    };
+
+    const existing = projects[idx];
+    const nextFiles = Array.isArray(existing.files) ? [...existing.files, meta] : [meta];
+    const updated = { ...existing, files: nextFiles };
+    projects[idx] = updated;
+    await writeProjectsFile(projects);
+
+    res.json({ project: updated });
+  } catch (e) {
+    console.error('POST /api/projects/:id/files error', e);
     res.status(500).json({ error: e.message });
   }
 });

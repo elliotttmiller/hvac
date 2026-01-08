@@ -32,8 +32,8 @@ const ActivityBar: React.FC<ActivityBarProps> = ({ currentView, onChangeView }) 
               onClick={() => onChangeView(item.id)}
               className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group ${
                 isActive 
-                  ? 'bg-zinc-800/50 text-white' 
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  ? 'bg-[#2563eb]/10 text-[#2563eb]' 
+                  : 'text-zinc-500 hover:text-[#2563eb] hover:bg-[#2563eb]/6'
               }`}
               title={item.label}
             >
@@ -46,7 +46,7 @@ const ActivityBar: React.FC<ActivityBarProps> = ({ currentView, onChangeView }) 
                
                {/* Active Indicator (Dot) */}
                {isActive && (
-                   <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-3 bg-white rounded-r-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
+                   <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-3 bg-[#2563eb] rounded-r-full shadow-[0_0_10px_rgba(37,99,235,0.4)]"></div>
                )}
             </button>
           );

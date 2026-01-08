@@ -11,7 +11,7 @@ import React from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
-  size?: 'small' | 'medium' | 'large';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -23,21 +23,23 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   // Prefer Tailwind classes for consistent theming. Use the requested accent
   // color (#2563eb) for the primary variant as an arbitrary class.
+  // Modern, subtle button styles (inspired by shadcn/ui):
   const variantClasses: Record<string, string> = {
-    primary: 'bg-[#2563eb] text-white hover:bg-[#2563eb]/90',
-    secondary: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
+    primary: 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-sm hover:from-emerald-400 hover:to-emerald-500 border border-transparent',
+    secondary: 'bg-zinc-900/70 text-zinc-200 border border-white/6 hover:bg-zinc-900',
     danger: 'bg-red-600 text-white hover:bg-red-700',
   };
 
   const sizeClasses: Record<string, string> = {
-    small: 'px-3 py-1 text-sm',
-    medium: 'px-4 py-2 text-sm',
-    large: 'px-6 py-3 text-base',
+    xs: 'px-2 py-1 text-[11px] rounded-md',
+    sm: 'px-2.5 py-1.5 text-sm rounded-md',
+    md: 'px-3 py-2 text-sm rounded-lg',
+    lg: 'px-4 py-2.5 text-base rounded-lg',
   };
 
   const disabled = Boolean((props as any).disabled);
-  const disabledClass = disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer';
-  const className = `${variantClasses[variant] || variantClasses.primary} ${sizeClasses[size] || sizeClasses.medium} rounded-md font-semibold inline-flex items-center justify-center transition-all ${disabledClass} ${(props as any).className || ''}`.trim();
+  const disabledClass = disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer';
+  const className = `${variantClasses[variant] || variantClasses.primary} ${sizeClasses[size] || sizeClasses.md} inline-flex items-center justify-center font-semibold transition transform-gpu ${disabledClass} ${(props as any).className || ''}`.trim();
 
   // Keep inline style support for callers that pass explicit styles.
   return (

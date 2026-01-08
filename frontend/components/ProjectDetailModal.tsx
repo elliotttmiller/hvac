@@ -18,13 +18,50 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
   const [nameState, setNameState] = useState(project.name);
   const [locationState, setLocationState] = useState(project.location ?? '');
   const [notesState, setNotesState] = useState(project.notes ?? '');
+  const [filesState, setFilesState] = useState<any[]>((project as any).files || []);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setNameState(project.name);
     setLocationState(project.location ?? '');
     setNotesState(project.notes ?? '');
+    setFilesState((project as any).files || []);
   }, [project]);
+
+  // Wire file-upload events to persist file metadata to the project via PATCH
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || !project || !project.id) return;
+      const file: File = detail as File;
+
+      // Optimistic UI: add a temporary placeholder until upload completes
+      const tempId = 'tmp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+      const tempMeta = { id: tempId, name: file.name, filename: file.name, size: file.size, uploadedAt: new Date().toISOString(), analyzedAt: null };
+      setFilesState(prev => [...prev, tempMeta]);
+
+      try {
+        const form = new FormData();
+        form.append('file', file, file.name);
+        const res = await fetch(`/api/projects/${encodeURIComponent(project.id)}/files`, {
+          method: 'POST',
+          body: form,
+        });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        const updated = data.project || data;
+        setFilesState((updated as any).files || []);
+        try { window.dispatchEvent(new CustomEvent('projects-updated', { detail: updated })); } catch (err) {}
+      } catch (err) {
+        // remove optimistic placeholder
+        setFilesState(prev => prev.filter(f => f.id !== tempId));
+        alert('Failed to upload file: ' + (err.message || err));
+      }
+    };
+
+    window.addEventListener('file-upload', handler as EventListener);
+    return () => window.removeEventListener('file-upload', handler as EventListener);
+  }, [project, filesState]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -135,27 +172,38 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
               <div>
                 <h3 className="text-sm font-medium text-zinc-300 mb-3">Project Documents</h3>
                 <p className="text-xs text-zinc-500 mb-4">Manage files and analysis results for this project.</p>
-                
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-zinc-700 flex items-center justify-center">
-                          <FileText size={14} className="text-zinc-400" />
-                        </div>
-                        <div>
-                          <div className="text-sm text-zinc-300">Document_{i}.pdf</div>
-                          <div className="text-xs text-zinc-500">1.2 MB • Analyzed 2h ago</div>
-                        </div>
-                      </div>
-                      <button className="text-zinc-500 hover:text-[#2563eb] transition-colors">
-                        <FileText size={14} />
-                      </button>
+
+                {/* Use actual project files if available, otherwise show a clean empty state */}
+                {filesState.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 border border-dashed border-zinc-800 rounded-lg bg-zinc-900/30">
+                    <div className="w-16 h-16 rounded-md bg-zinc-800 flex items-center justify-center mb-4">
+                      <FileText size={20} className="text-zinc-500" />
                     </div>
-                  ))}
-                </div>
+                    <div className="text-sm text-zinc-300 mb-1">No documents uploaded</div>
+                    <div className="text-xs text-zinc-500 mb-4">Upload files to analyze schematics, specs, and more.</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filesState.map((f: any, idx: number) => (
+                      <div key={f.id || idx} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded bg-zinc-700 flex items-center justify-center">
+                            <FileText size={14} className="text-zinc-400" />
+                          </div>
+                          <div>
+                            <div className="text-sm text-zinc-300">{f.name || f.filename || `Document_${idx + 1}`}</div>
+                            <div className="text-xs text-zinc-500">{f.size ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : ''} {f.analyzedAt ? `• Analyzed ${f.analyzedAt}` : ''}</div>
+                          </div>
+                        </div>
+                        <button className="text-zinc-500 hover:text-[#2563eb] transition-colors">
+                          <FileText size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              
+
               <button 
                 className="w-full py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 hover:text-white text-sm transition-colors"
                 onClick={() => {

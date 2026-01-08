@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateThinkingResponse } from '@/lib/geminiService';
 import { ChatMessage } from '@/features/document-analysis/types';
-import { Send, Bot, User, Sparkles, Loader2, StopCircle } from 'lucide-react';
+import { Bot, User, Sparkles, Loader2, StopCircle } from 'lucide-react';
 
 const Copilot: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -18,12 +18,24 @@ const Copilot: React.FC = () => {
   // Updated to restrict movement to predefined positions only
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isThinking]);
+
+  // Auto-resize textarea to match content height (responsive input)
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    // reset height to allow shrink
+    ta.style.height = 'auto';
+    const max = 240; // px max height for textarea
+    const newHeight = Math.min(ta.scrollHeight, max);
+    ta.style.height = `${newHeight}px`;
+  }, [input]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -99,21 +111,21 @@ const Copilot: React.FC = () => {
           right: `calc(24px + ${pos.x}px)`,
           bottom: `calc(24px + ${pos.y}px)`,
           zIndex: 60,
-          width: '48px',
-          height: '48px',
+          width: '52px',
+          height: '52px',
           borderRadius: '50%',
-          backgroundColor: '#6b46c1',
+          backgroundColor: '#2563eb',
           color: '#fff',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 6px 12px rgba(37,99,235,0.12)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          transition: 'transform 0.18s ease, box-shadow 0.18s ease'
         }}
-        className="hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-300 hover:shadow-xl hover:scale-105"
+        className="hover:bg-[#1f4fd8] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30 hover:shadow-2xl hover:scale-105"
       >
-        <Sparkles size={20} />
+        <Sparkles size={20} className="text-white" />
       </button>
 
       {/* Position Selector */}
@@ -141,8 +153,7 @@ const Copilot: React.FC = () => {
           {/* Header */}
           <div className="h-14 border-b border-border bg-zinc-900/20 flex items-center justify-between px-6">
             <div className="flex items-center gap-2">
-              <Sparkles className="text-purple-400" size={16} />
-              <span className="font-semibold text-sm">Reasoning Engine</span>
+              <span className="font-semibold text-sm">HVAC Copilot</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -159,14 +170,14 @@ const Copilot: React.FC = () => {
                 <div className={`w-8 h-8 rounded border flex items-center justify-center shrink-0 ${
                   msg.role === 'user' 
                     ? 'bg-zinc-800 border-zinc-700 text-zinc-300' 
-                    : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+                    : 'bg-[#2563eb]/10 border-[#2563eb]/20 text-[#2563eb]'
                 }`}>
-                  {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
+                    {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
                 </div>
                 
                 <div className="flex-1 space-y-2 pt-1">
                   <div className="text-sm font-medium text-zinc-400">
-                    {msg.role === 'user' ? 'You' : 'AI Architect'}
+                    {msg.role === 'user' ? 'You' : 'Copilot'}
                   </div>
                   <div className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap font-light">
                     {msg.text}
@@ -177,12 +188,12 @@ const Copilot: React.FC = () => {
 
             {isThinking && (
               <div className="max-w-3xl mx-auto flex gap-6">
-                <div className="w-8 h-8 rounded border bg-purple-500/10 border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                  <Bot size={14} />
+                <div className="w-8 h-8 rounded border bg-[#2563eb]/10 border-[#2563eb]/20 text-[#2563eb] flex items-center justify-center shrink-0">
+              <Sparkles size={14} />
                 </div>
                 <div className="flex-1 pt-2">
-                  <div className="flex items-center gap-2 text-sm text-purple-400 animate-pulse">
-                    <Loader2 size={14} className="animate-spin" />
+                  <div className="flex items-center gap-2 text-sm text-[#2563eb] animate-pulse">
+                    <Loader2 size={14} className="animate-spin text-[#2563eb]" />
                     <span>Analyzing constraints and physics...</span>
                   </div>
                 </div>
@@ -192,28 +203,33 @@ const Copilot: React.FC = () => {
 
           {/* Input Area */}
           <div className="p-6">
-            <div className="max-w-3xl mx-auto relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2563eb]/20 to-purple-500/20 rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity blur"></div>
-              <div className="relative bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
+            <div className="max-w-3xl mx-auto relative">
+                <div className="relative bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
                 <textarea 
+                  ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about compliance or efficiency..."
-                  className="w-full bg-transparent p-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none resize-none h-14 max-h-48"
+                  className="w-full bg-transparent p-4 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none resize-none min-h-[44px] max-h-60 overflow-hidden transition-[height] duration-150"
                   rows={1}
                 />
-                <div className="flex justify-between items-center px-4 pb-3 pt-1">
-                  <div className="text-[10px] text-zinc-600 font-medium">
-                    <span className="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-zinc-500 mr-2">PRO</span>
-                    32k Token Context Window
-                  </div>
-                  <button 
+                <div className="flex justify-end items-center px-4 pb-3 pt-1">
+                  <button
                     onClick={handleSend}
                     disabled={isThinking || !input.trim()}
-                    className="p-1.5 bg-zinc-100 hover:bg-white text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Send message"
+                    title="Send"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-[#2563eb] text-white shadow-sm hover:shadow-md transform transition duration-150 ease-out hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isThinking ? <StopCircle size={16}/> : <Send size={16} />}
+                    {isThinking ? (
+                      <StopCircle size={14} className="text-white" />
+                    ) : (
+                      // Clean, minimal triangle "send" icon
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <path d="M2 21L23 12 2 3v7l15 2-15 2v7z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
