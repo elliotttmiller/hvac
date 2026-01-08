@@ -136,6 +136,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
             
             {/* The Image */}
             <img 
+              key={imageUrl || 'no-image'}
               ref={imageRef}
               src={imageUrl} 
               alt="Blueprint" 

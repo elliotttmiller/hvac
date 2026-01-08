@@ -53,9 +53,11 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
       return;
     }
     
-    // Dispatch a global file-upload event early so other components (viewer/sidebar) can react immediately
+    // Dispatch a global "start" event early so other components (viewer/sidebar)
+    // can react immediately (optimistic UI), but only dispatch the final
+    // 'file-upload' once the upload/processing is complete to avoid duplicates.
     try {
-      const earlyEvent = new CustomEvent('file-upload', { detail: file });
+      const earlyEvent = new CustomEvent('file-upload-start', { detail: file });
       window.dispatchEvent(earlyEvent);
     } catch (e) {
       // non-fatal
@@ -122,9 +124,9 @@ export const UniversalUploader: React.FC<UniversalUploaderProps> = ({
         onAnalysisComplete?.(result);
       }
 
-      // Dispatch file-upload event for synchronization
-      const fileUploadEvent = new CustomEvent('file-upload', { detail: file });
-      window.dispatchEvent(fileUploadEvent);
+  // Dispatch file-upload event for synchronization (final)
+  const fileUploadEvent = new CustomEvent('file-upload', { detail: file });
+  window.dispatchEvent(fileUploadEvent);
     } catch (error) {
       setUploading(false);
       setAnalyzing(false);

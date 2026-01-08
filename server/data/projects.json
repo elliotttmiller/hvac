@@ -1,17 +1,13 @@
 [
   {
-    "id": "Rachel Corp – HVAC System Upgrade – Shakopee, MN – Jan 5, 2026",
-    "name": "Rachel Corp – HVAC System Upgrade",
-    "status": "idle",
-    "lastUpdated": 1767855642124,
-    "location": "Shakopee, MN ",
-    "notes": null
-  },
-  {
-    "id": "default",
-    "name": "default",
-    "status": "idle",
+    "id": "1767862726296",
+    "name": "Project 1",
+    "location": "",
+    "notes": "",
+    "createdAt": "2026-01-08T08:58:46.296Z",
+    "status": "not_started",
     "finalReport": null,
-    "lastUpdated": 1767856786234
+    "lastUpdated": 1767862736006,
+    "files": []
   }
 ]

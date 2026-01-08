@@ -137,6 +137,7 @@ export async function generateBackgroundAnalysis(
     onProgress?: (msg: string) => void;
     onComplete?: (report: any) => void;
     onError?: (error: Error) => void;
+    projectId?: string | null;
   }
 ): Promise<string> {
   // Only generate for visual documents with components
@@ -163,7 +164,8 @@ export async function generateBackgroundAnalysis(
       documentResult,
       options?.onProgress,
       options?.onComplete,
-      options?.onError
+      options?.onError,
+      options?.projectId ?? null
     );
     
     console.log(`[Stage 2] Background analysis queued with job ID: ${jobId}`);

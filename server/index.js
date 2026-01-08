@@ -87,10 +87,10 @@ async function readTree(dir) {
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await readProjectsFile();
-    if (!projects || projects.length === 0) {
-      return res.json({ projects: [ { id: 'local', name: path.basename(ROOT), root: '.' } ] });
-    }
-    return res.json({ projects });
+    // Return an explicit empty array when there are no projects on disk.
+    // Previously we returned a synthetic 'local' project which caused the UI
+    // to always show a default project even when none existed.
+    return res.json({ projects: projects || [] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -99,7 +99,9 @@ app.get('/api/projects', async (req, res) => {
 // File upload for a specific project - saves file to project folder under ROOT and appends metadata
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const projDir = path.join(ROOT, req.params.id || 'default');
+    const id = req.params && req.params.id;
+    if (!id) return cb(new Error('Missing project id'));
+    const projDir = path.join(ROOT, id);
     try {
       fsSync.mkdirSync(projDir, { recursive: true });
       cb(null, projDir);
@@ -148,6 +150,56 @@ app.post('/api/projects/:id/files', upload.single('file'), async (req, res) => {
   }
 });
 
+// Delete a file from a project (remove file binary and metadata)
+app.delete('/api/projects/:id/files/:fileId', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const fileId = req.params.fileId;
+    const projects = await readProjectsFile();
+    const idx = projects.findIndex(p => p.id === projectId);
+    if (idx === -1) return res.status(404).json({ error: 'Project not found' });
+    const project = projects[idx];
+    if (!Array.isArray(project.files)) return res.status(404).json({ error: 'File not found' });
+    let fidx = project.files.findIndex(f => f.id === fileId);
+    // If not found by metadata id, try matching by filename or path for robustness
+    if (fidx === -1) {
+      fidx = project.files.findIndex(f => {
+        const filename = f.filename || f.name || '';
+        const p = f.path || '';
+        if (!fileId) return false;
+        return filename === fileId || f.name === fileId || p === fileId || p.endsWith('/' + fileId) || filename.endsWith(fileId) || p.includes(fileId);
+      });
+    }
+
+    if (fidx === -1) return res.status(404).json({ error: 'File not found' });
+
+    const fileMeta = project.files[fidx];
+    // remove file from disk if exists
+    try {
+      const abs = path.join(ROOT, fileMeta.path || '');
+      if (abs.startsWith(ROOT) && fsSync.existsSync(abs)) {
+        fsSync.unlinkSync(abs);
+      }
+    } catch (e) {
+      console.warn('Failed to remove file binary', e);
+    }
+
+    // remove metadata and persist
+    project.files.splice(fidx, 1);
+    projects[idx] = project;
+    await writeProjectsFile(projects);
+
+    // broadcast update
+  try { io.emit('projects-updated', project); } catch (e) {}
+  try { io.emit('file-removed', { path: fileMeta.path }); } catch (e) {}
+
+    res.json({ project });
+  } catch (e) {
+    console.error('DELETE /api/projects/:id/files/:fileId error', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Create a new project and persist
 app.post('/api/projects', async (req, res) => {
   try {
@@ -163,9 +215,23 @@ app.post('/api/projects', async (req, res) => {
       createdAt: new Date().toISOString(),
       status: 'not_started'
     };
+    // ensure a folder exists for this project under the workspace ROOT
+    try {
+      const projDir = path.join(ROOT, id);
+      fsSync.mkdirSync(projDir, { recursive: true });
+    } catch (mkdirErr) {
+      console.warn('Failed to create project directory', mkdirErr);
+      // don't fail the request on mkdir errors; still persist the project metadata
+    }
+
     projects.push(project);
     await writeProjectsFile(projects);
-    res.status(201).json({ project });
+    // ensure the project folder path is available to the client so it can link to it
+    const projDir = path.join(ROOT, id);
+    const relProjPath = path.relative(ROOT, projDir).replace(/\\/g, '/');
+    // read back the canonical list and return it to the client so callers have a single source
+    const canonical = await readProjectsFile();
+    res.status(201).json({ project, projects: canonical, folderPath: relProjPath });
   } catch (e) {
     console.error('POST /api/projects error', e);
     res.status(500).json({ error: e.message });
@@ -200,6 +266,16 @@ app.delete('/api/projects/:id', async (req, res) => {
     if (idx === -1) return res.status(404).json({ error: 'Not found' });
     projects.splice(idx, 1);
     await writeProjectsFile(projects);
+    // remove project folder from disk if present
+    try {
+      const projDir = path.join(ROOT, id);
+      if (fsSync.existsSync(projDir)) {
+        fsSync.rmSync(projDir, { recursive: true, force: true });
+      }
+    } catch (e) {
+      console.warn('Failed to remove project directory', e);
+    }
+
     res.status(204).send();
   } catch (e) {
     console.error('DELETE /api/projects/:id error', e);

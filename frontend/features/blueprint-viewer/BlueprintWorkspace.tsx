@@ -12,8 +12,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const BlueprintWorkspace: React.FC<{
   fileToAnalyze?: string | null;
   onAnalyzed?: () => void;
-}> = ({ fileToAnalyze, onAnalyzed }) => {
+  activeProject?: string | null;
+}> = ({ fileToAnalyze, onAnalyzed, activeProject }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const prevUrlRef = React.useRef<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingPhase, setProcessingPhase] = useState<ProcessingPhase>('uploading');
   
@@ -125,12 +127,28 @@ const BlueprintWorkspace: React.FC<{
 
     const loadAndMaybeAnalyze = async () => {
       try {
-        const response = await fetch(`/api/files/content?path=${encodeURIComponent(fileToAnalyze)}`);
+        // fileToAnalyze may be in the form "<projectId>::<relPath>" (see LeftSidebar)
+        let projectId: string | null = null;
+        let relPath = fileToAnalyze;
+        if (fileToAnalyze.includes('::')) {
+          const parts = fileToAnalyze.split('::');
+          projectId = parts.shift() || null;
+          relPath = parts.join('::');
+        }
+
+        const query = projectId ? `?path=${encodeURIComponent(relPath)}&projectId=${encodeURIComponent(projectId)}` : `?path=${encodeURIComponent(relPath)}`;
+        const response = await fetch(`/api/files/content${query}`);
         if (!response.ok) throw new Error('Failed to load file');
 
         const blob = await response.blob();
         const file = new File([blob], fileToAnalyze.split('/').pop() || 'file');
         const url = URL.createObjectURL(file);
+
+        // Revoke previous object URL to avoid stale blobs and memory leaks.
+        try {
+          if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
+        } catch (_) {}
+        prevUrlRef.current = url;
 
         setImageUrl(url);
         setDetectedBoxes([]);
@@ -155,6 +173,13 @@ const BlueprintWorkspace: React.FC<{
     loadAndMaybeAnalyze();
   }, [fileToAnalyze, onAnalyzed]);
 
+  // Cleanup any leftover object URL on unmount
+  useEffect(() => {
+    return () => {
+      try { if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current); } catch (_) {}
+    };
+  }, []);
+
   // Persistent polling for background job completion
   // Polls the server every 2 seconds to check if Stage 2 analysis is complete
   useEffect(() => {
@@ -169,10 +194,11 @@ const BlueprintWorkspace: React.FC<{
       try {
         // Poll the project endpoint instead of the ephemeral job endpoint
         // This ensures persistence across page refreshes
-        const projectId = 'default'; // TODO: Make this configurable per project
+        const projectId = activeProject ?? null; // prefer the active project if available
+        if (!projectId) return; // nothing to poll for when no project is active
         console.log('[Polling] Checking project status:', projectId);
         const response = await fetch(`/api/projects/${projectId}`);
-        
+
         if (!response.ok) {
           console.warn('[Polling] Failed to fetch project status:', response.status);
           return;
@@ -356,7 +382,7 @@ const BlueprintWorkspace: React.FC<{
       
       setIsBackgroundRunning(true);
       
-      // Trigger background analysis
+      // Trigger background analysis and associate it with the active project (if any)
       generateBackgroundAnalysis(result, {
         onProgress: (msg) => {
           console.log('[Stage 2]', msg);
@@ -377,7 +403,8 @@ const BlueprintWorkspace: React.FC<{
         onError: (error) => {
           console.error('[Stage 2] Socket event: Final analysis failed:', error);
           setIsBackgroundRunning(false);
-        }
+        },
+        projectId: activeProject ?? null
       }).then(jobId => {
         setBackgroundJobId(jobId);
         console.log('[Stage 2] Background job queued:', jobId);

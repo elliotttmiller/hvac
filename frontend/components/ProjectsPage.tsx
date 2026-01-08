@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  FolderOpen, 
   Plus, 
   Layers, 
   MapPin, 
@@ -22,6 +21,7 @@ interface Project { id: string; name: string; root?: string; location?: string; 
 
 import ProjectDetailModal from './ProjectDetailModal.tsx';
 import { DashboardCard, StatusBadge } from './primitives';
+import { useToastHelpers } from '@/lib/hooks/useToast';
 
 const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProject, onProjectsChange, onOpenProject }) => {
   const [creating, setCreating] = React.useState(false);
@@ -30,6 +30,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
   const [notes, setNotes] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [detailProject, setDetailProject] = React.useState<Project | null>(null);
+  const toast = useToastHelpers();
 
   // Listen for external project updates (e.g. modal saves) and refresh list
   React.useEffect(() => {
@@ -50,6 +51,14 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
     return () => window.removeEventListener('projects-updated', handler as EventListener);
   }, [onProjectsChange]);
 
+  // Listen for requests to open the Create Project modal (e.g. global upload when
+  // no active project exists).
+  React.useEffect(() => {
+    const openCreate = () => setCreating(true);
+    window.addEventListener('open-create-project', openCreate as EventListener);
+    return () => window.removeEventListener('open-create-project', openCreate as EventListener);
+  }, []);
+
   const createProject = async () => {
     if (!name) return;
     setLoading(true);
@@ -59,11 +68,29 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
         body: JSON.stringify({ name, location, notes })
       });
       if (!res.ok) throw new Error('Failed to create');
-      const { project } = await res.json();
-      // refresh projects list from server and notify parent
-      const listRes = await fetch('/api/projects');
-      const { projects: newList } = await listRes.json();
-      if (onProjectsChange) onProjectsChange(newList);
+      // Prefer the server-returned canonical list to avoid races/fallbacks
+      const body = await res.json();
+  const { project, projects: newList, folderPath } = body;
+      if (onProjectsChange && Array.isArray(newList)) onProjectsChange(newList);
+      // Show a quick action toast to open the project folder if the server returned a path
+      if (folderPath) {
+        try {
+          toast.success(
+            'Project created',
+            'Open folder',
+            {
+              duration: 8000,
+              clickable: true,
+              onClick: () => {
+                // Open the project tree endpoint in a new tab
+                window.open(`/api/projects/${encodeURIComponent(project.id)}/tree`, '_blank');
+              }
+            }
+          );
+        } catch (e) {
+          // ignore toast failures
+        }
+      }
       // select new project
       if (onSelectProject) onSelectProject(project.id);
       setName('');
@@ -72,10 +99,10 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
       setCreating(false);
     } catch (e) {
       console.error('Create project failed, falling back to local:', e);
-      // Fallback: create locally and notify parent so UI remains functional in dev
-      const project = { id: Date.now().toString(), name, location, notes, createdAt: new Date().toISOString(), status: 'not_started' };
-      if (onProjectsChange) onProjectsChange([...projects, project]);
-      if (onSelectProject) onSelectProject(project.id);
+  // fallback: create locally and notify parent so UI remains functional in dev
+  const project = { id: Date.now().toString(), name, location, notes, createdAt: new Date().toISOString(), status: 'not_started' };
+  if (onProjectsChange) onProjectsChange([...projects, project]);
+  if (onSelectProject) onSelectProject(project.id);
       setName('');
       setLocation('');
       setNotes('');
@@ -157,9 +184,7 @@ const ProjectsPage: React.FC<Props> = ({ projects, activeProject, onSelectProjec
         {/* Projects Grid */}
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-6 rounded-xl border-2 border-dashed border-zinc-800 bg-[#18181b]/50">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mb-4">
-              <FolderOpen className="h-10 w-10 text-zinc-600" />
-            </div>
+          
             <h3 className="text-lg font-semibold text-zinc-300 mb-2">No Projects Found</h3>
             <p className="text-sm text-zinc-500 text-center max-w-sm mb-6">
               Get started by creating your first HVAC project workspace.

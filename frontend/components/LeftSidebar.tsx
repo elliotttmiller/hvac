@@ -115,7 +115,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, activeId, onSelect, on
 };
 
 import { io } from 'socket.io-client';
-import PreviewModal from './PreviewModal';
+// PreviewModal removed: clicking files now loads them into the main analyzer/viewer via onAnalyzeFile
 
 const LeftSidebar: React.FC<{
   projects?: Project[];
@@ -180,8 +180,7 @@ const LeftSidebar: React.FC<{
     };
   }, [activeProject]);
 
-  // preview state
-  const [previewPath, setPreviewPath] = useState<string | null>(null);
+  // preview state handled by main viewer via onAnalyzeFile
   
   // Project dropdown state (click-based instead of hover)
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
@@ -286,19 +285,15 @@ const LeftSidebar: React.FC<{
                   setActiveFile(id);
                   const clicked = treeFindById(tree, id);
                   if (clicked && clicked.type === 'file') {
-                    // show inline preview modal
-                    setPreviewPath(clicked.id);
+                    // Load the file into the main analyzer/viewer. Include project id
+                    // in the payload so the viewer can ask the server for the file
+                    // from the correct project directory.
+                    if (onAnalyzeFile && activeProject) onAnalyzeFile(`${activeProject}::${clicked.id}`);
                   }
                 }} 
             />
         ))}
-
-        <PreviewModal 
-          open={!!previewPath} 
-          path={previewPath} 
-          onClose={()=>setPreviewPath(null)}
-          onAnalyze={onAnalyzeFile}
-        />
+        
         
         {/* Empty State / Drop Zone */}
         <div 
@@ -310,9 +305,10 @@ const LeftSidebar: React.FC<{
             input.onchange = (e) => {
               const file = (e.target as HTMLInputElement).files?.[0];
               if (file) {
-                const event = new CustomEvent('file-upload', { detail: file });
-                window.dispatchEvent(event);
-              }
+                  // dispatch start then final so optimistic UI and canonical upload occur
+                  try { window.dispatchEvent(new CustomEvent('file-upload-start', { detail: file })); } catch {}
+                  try { window.dispatchEvent(new CustomEvent('file-upload', { detail: file })); } catch {}
+                }
             };
             input.click();
           }}

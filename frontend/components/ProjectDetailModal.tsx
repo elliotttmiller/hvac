@@ -28,9 +28,29 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
     setFilesState((project as any).files || []);
   }, [project]);
 
+  // Ensure we have the latest files from the server when the modal opens
+  useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const res = await fetch('/api/projects/' + encodeURIComponent(project.id));
+        if (!res.ok) return;
+        const data = await res.json();
+        const proj = data.project || data;
+        setFilesState((proj as any).files || []);
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    // fetch immediately when modal mounts
+    if (project && project.id) fetchFiles();
+  }, [project]);
+
   // Wire file-upload events to persist file metadata to the project via PATCH
   useEffect(() => {
-    const handler = async (e: Event) => {
+    // Listen for the "start" event so we can show optimistic placeholder while
+    // the canonical upload is handled by the global handler.
+    const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!detail || !project || !project.id) return;
       const file: File = detail as File;
@@ -39,29 +59,28 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
       const tempId = 'tmp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
       const tempMeta = { id: tempId, name: file.name, filename: file.name, size: file.size, uploadedAt: new Date().toISOString(), analyzedAt: null };
       setFilesState(prev => [...prev, tempMeta]);
+    };
 
-      try {
-        const form = new FormData();
-        form.append('file', file, file.name);
-        const res = await fetch(`/api/projects/${encodeURIComponent(project.id)}/files`, {
-          method: 'POST',
-          body: form,
-        });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        const updated = data.project || data;
-        setFilesState((updated as any).files || []);
-        try { window.dispatchEvent(new CustomEvent('projects-updated', { detail: updated })); } catch (err) {}
-      } catch (err) {
-        // remove optimistic placeholder
-        setFilesState(prev => prev.filter(f => f.id !== tempId));
-        alert('Failed to upload file: ' + (err.message || err));
+    window.addEventListener('file-upload-start', handler as EventListener);
+    return () => window.removeEventListener('file-upload-start', handler as EventListener);
+  }, [project, filesState]);
+
+  // Update files list when the server broadcasts a projects-updated event
+  useEffect(() => {
+    const onProjectsUpdated = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      // detail may be the updated project object
+      if (detail.id && detail.id === project.id) {
+        setFilesState((detail as any).files || []);
+      } else if (detail.project && detail.project.id === project.id) {
+        setFilesState((detail.project as any).files || []);
       }
     };
 
-    window.addEventListener('file-upload', handler as EventListener);
-    return () => window.removeEventListener('file-upload', handler as EventListener);
-  }, [project, filesState]);
+    window.addEventListener('projects-updated', onProjectsUpdated as EventListener);
+    return () => window.removeEventListener('projects-updated', onProjectsUpdated as EventListener);
+  }, [project]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -185,7 +204,7 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                 ) : (
                   <div className="space-y-2">
                     {filesState.map((f: any, idx: number) => (
-                      <div key={f.id || idx} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                      <div key={f.id || idx} className="flex items-center justify-between p-2 bg-zinc-800/50 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded bg-zinc-700 flex items-center justify-center">
                             <FileText size={14} className="text-zinc-400" />
@@ -195,9 +214,41 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                             <div className="text-xs text-zinc-500">{f.size ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : ''} {f.analyzedAt ? `• Analyzed ${f.analyzedAt}` : ''}</div>
                           </div>
                         </div>
-                        <button className="text-zinc-500 hover:text-[#2563eb] transition-colors">
-                          <FileText size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            title="Open"
+                            onClick={() => {
+                              // Open file in main analyzer/viewer - include project context
+                              try {
+                                const detail = `${project.id}::${f.path || f.filename || f.name}`;
+                                window.dispatchEvent(new CustomEvent('open-file-in-analyzer', { detail }));
+                              } catch (e) {}
+                            }}
+                            className="text-zinc-400 hover:text-zinc-200 transition-colors p-1"
+                          >
+                            <FileText size={14} />
+                          </button>
+                          <button
+                            title="Delete"
+                            onClick={async () => {
+                              const ok = window.confirm('Delete "' + (f.name || f.filename || 'this file') + '"? This will remove it from disk and the project.');
+                              if (!ok) return;
+                              try {
+                                const res = await fetch('/api/projects/' + encodeURIComponent(project.id) + '/files/' + encodeURIComponent(f.id), { method: 'DELETE' });
+                                if (!res.ok) throw new Error('Delete failed');
+                                const data = await res.json();
+                                const updated = data.project || data;
+                                setFilesState((updated as any).files || []);
+                                try { window.dispatchEvent(new CustomEvent('projects-updated', { detail: updated })); } catch (e) {}
+                              } catch (e) {
+                                alert('Failed to delete file: ' + (e.message || e));
+                              }
+                            }}
+                            className="text-red-400 hover:text-red-300 transition-colors p-1"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -213,8 +264,9 @@ const ProjectDetailModal: React.FC<Props> = ({ project, onClose, onOpen, onDelet
                   input.onchange = (e) => {
                     const file = (e.target as HTMLInputElement).files?.[0];
                     if (file) {
-                      const event = new CustomEvent('file-upload', { detail: file });
-                      window.dispatchEvent(event);
+                      // Dispatch start for optimistic UI, then final upload event
+                      try { window.dispatchEvent(new CustomEvent('file-upload-start', { detail: file })); } catch (err) {}
+                      try { window.dispatchEvent(new CustomEvent('file-upload', { detail: file })); } catch (err) {}
                     }
                   };
                   input.click();

@@ -32,7 +32,8 @@ export const queueFinalAnalysis = async (
   documentResult: UniversalDocumentResult,
   onProgress?: (status: string) => void,
   onComplete?: (report: any) => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  projectId?: string | null
 ): Promise<string> => {
   const jobId = generateJobId();
   
@@ -54,13 +55,13 @@ export const queueFinalAnalysis = async (
     try {
       onProgress?.('Queuing background analysis on server...');
 
+      const body: any = { documentResult };
+      if (projectId) body.projectId = projectId;
+
       const resp = await fetch('/api/analysis/queue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          documentResult,
-          projectId: 'default' // TODO: Make this configurable per project
-        })
+        body: JSON.stringify(body)
       });
 
     if (!resp.ok) {

@@ -3,6 +3,8 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env'
 
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
+const multer = require('multer');
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -418,14 +420,12 @@ function genAnalysisJobId() { return `analysis-job-${++analysisJobCounter}-${Dat
 // Maps projectId -> { id, name, status, finalReport, lastUpdated }
 const projectsStore = new Map();
 
-// Initialize default project
-projectsStore.set('default', {
-  id: 'default',
-  name: 'Default Project',
-  status: 'idle', // idle | processing | completed | failed
-  finalReport: null,
-  lastUpdated: Date.now()
-});
+// Note: Do not initialize a synthetic 'default' project here. Projects are
+// the canonical source-of-truth and should only be created explicitly by
+// the client via POST /api/projects or when a specific project id is
+// referenced and intentionally created. Keeping an in-memory 'default'
+// project causes the UI to show a phantom project and leads to surprising
+// persistence behavior.
 
 // File-backed persistence for projects so changes survive restarts
 const PROJECTS_FILE = path.join(__dirname, 'data', 'projects.json');
@@ -694,23 +694,27 @@ app.post('/api/analysis/queue', async (req, res) => {
     if (!payload || !payload.document_id) return res.status(400).json({ error: 'Missing documentResult' });
 
     const jobId = genAnalysisJobId();
-    // Get projectId from request or default to 'default'
-    const projectId = req.body.projectId || 'default';
+    // Get projectId from request; do NOT implicitly create a 'default' project.
+    // If no projectId is supplied, background analysis will run but we won't
+    // update the projects store or persist a synthetic project entry.
+    const projectId = req.body.projectId || null;
     const job = { jobId, documentId: payload.document_id, projectId, status: 'pending', startTime: Date.now() };
     analysisJobs.set(jobId, job);
 
     // Update project status to processing
-    const project = projectsStore.get(projectId) || { id: projectId, name: projectId, status: 'idle', finalReport: null };
-    project.status = 'processing';
-    project.lastUpdated = Date.now();
-  projectsStore.set(projectId, project);
-  // persist asynchronously
-  persistProjectsFile().catch(e => console.error('Failed to persist projects after queue update', e));
+    if (projectId) {
+      const project = projectsStore.get(projectId) || { id: projectId, name: projectId, status: 'idle', finalReport: null };
+      project.status = 'processing';
+      project.lastUpdated = Date.now();
+      projectsStore.set(projectId, project);
+      // persist asynchronously
+      persistProjectsFile().catch(e => console.error('Failed to persist projects after queue update', e));
+    }
 
     console.log(`[Stage 2] Job ${jobId} queued for document ${payload.document_id}`);
 
-    // Respond immediately with jobId
-    res.json({ jobId, projectId });
+  // Respond immediately with jobId (projectId may be null)
+  res.json({ jobId, projectId });
 
     // Run analysis async with comprehensive error handling
     (async () => {
@@ -1088,20 +1092,52 @@ app.get('/api/projects/:id', (req, res) => {
   const project = projectsStore.get(id);
   
   if (!project) {
-    // Create a new project if it doesn't exist
-    const newProject = {
-      id,
-      name: id,
-      status: 'idle',
-      finalReport: null,
-      lastUpdated: Date.now()
-    };
-  projectsStore.set(id, newProject);
-  persistProjectsFile().catch(e => console.error('Failed to persist projects (new project)', e));
-  return res.json(newProject);
+    // Project not found - return 404 rather than implicitly creating a synthetic project.
+    return res.status(404).json({ error: 'Project not found' });
   }
   
   res.json(project);
+});
+
+// Create a new project and persist it
+app.post('/api/projects', async (req, res) => {
+  try {
+    const { name, location, notes } = req.body || {};
+    if (!name) return res.status(400).json({ error: 'Missing name' });
+
+    // create an id based on timestamp
+    const id = Date.now().toString();
+    const project = {
+      id,
+      name,
+      location: location ?? null,
+      notes: notes ?? null,
+      createdAt: new Date().toISOString(),
+      status: 'not_started',
+      finalReport: null,
+      lastUpdated: Date.now()
+    };
+
+    // ensure project directory exists under ROOT
+    try {
+      const projDir = path.join(ROOT, id);
+      await fs.mkdir(projDir, { recursive: true });
+    } catch (mkdirErr) {
+      console.warn('Failed to create project directory', mkdirErr);
+      // continue - metadata persistence is the priority
+    }
+
+    // store in-memory and persist to disk
+    projectsStore.set(id, project);
+    await persistProjectsFile();
+
+    const projects = Array.from(projectsStore.values());
+    const relProjPath = id; // relative path under ROOT
+    res.status(201).json({ project, projects, folderPath: relProjPath });
+  } catch (e) {
+    console.error('POST /api/projects error', e);
+    res.status(500).json({ error: String(e) });
+  }
 });
 
 // --- 4. Project & File Management ---
@@ -1115,20 +1151,104 @@ function inferFileType(name) {
   return ext;
 }
 
-// List Projects (Top-level folders in ROOT)
+// List Projects (persisted canonical list)
 app.get('/api/projects', async (req, res) => {
   try {
-    const entries = await fs.readdir(ROOT, { withFileTypes: true });
-    const projects = entries
-      .filter(ent => ent.isDirectory() && !ent.name.startsWith('.'))
-      .map(ent => ({ id: ent.name, name: ent.name, root: ent.name }));
-    
-    // Default fallback if empty
-    if (projects.length === 0) projects.push({ id: 'default', name: 'Default Project', root: '.' });
-    
+    // Return canonical persisted projects from the in-memory store (backed by projects.json)
+    const projects = Array.from(projectsStore.values()).map(p => ({
+      id: p.id,
+      name: p.name,
+      location: p.location || null,
+      notes: p.notes || null,
+      createdAt: p.createdAt || null,
+      status: p.status || 'not_started'
+    }));
+
     res.json({ projects });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+  // Delete a project (remove from store, persist, and delete project folder)
+  app.delete('/api/projects/:id', async (req, res) => {
+    try {
+      const id = req.params.id;
+      if (!projectsStore.has(id)) return res.status(404).json({ error: 'Not found' });
+
+      // Remove from in-memory store
+      projectsStore.delete(id);
+
+      // Persist to disk
+      await persistProjectsFile();
+
+      // Remove project directory if it exists under ROOT
+      try {
+        const projDir = path.join(ROOT, id);
+        await fs.rm(projDir, { recursive: true, force: true });
+      } catch (e) {
+        console.warn('Failed to remove project directory', e);
+      }
+
+      // Broadcast update
+      try { io.emit('projects-updated', { id }); } catch (e) {}
+
+      res.status(204).send();
+    } catch (err) {
+      console.error('DELETE /api/projects/:id error', err);
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+// File upload for a specific project - saves file to project folder under ROOT and appends metadata
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const id = req.params && req.params.id;
+    if (!id) return cb(new Error('Missing project id'));
+    const projDir = path.join(ROOT, id);
+    try {
+      fsSync.mkdirSync(projDir, { recursive: true });
+      cb(null, projDir);
+    } catch (e) {
+      cb(e);
+    }
+  },
+  filename: function (req, file, cb) {
+    const name = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
+    cb(null, name);
+  }
+});
+const upload = multer({ storage });
+
+app.post('/api/projects/:id/files', upload.single('file'), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    if (!req.file) return res.status(400).json({ error: 'Missing file' });
+
+    const project = projectsStore.get(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const file = req.file;
+    const relPath = path.relative(ROOT, file.path).replace(/\\/g, '/');
+    const meta = {
+      id: Date.now().toString() + '-' + Math.random().toString(36).slice(2, 8),
+      name: file.originalname,
+      filename: file.filename,
+      size: file.size,
+      path: relPath,
+      uploadedAt: new Date().toISOString(),
+      analyzedAt: null
+    };
+
+    const nextFiles = Array.isArray(project.files) ? [...project.files, meta] : [meta];
+    const updated = Object.assign({}, project, { files: nextFiles, lastUpdated: Date.now() });
+    projectsStore.set(projectId, updated);
+    await persistProjectsFile();
+
+    res.json({ project: updated });
+  } catch (e) {
+    console.error('POST /api/projects/:id/files error', e);
+    res.status(500).json({ error: String(e) });
   }
 });
 
@@ -1254,5 +1374,51 @@ server.listen(PORT, () => {
     console.warn('WARNING: Mock mode is active. AI inference is bypassed.');
   } else {
     console.log(`Mock Mode: DISABLED (live AI inference)`);
+  }
+});
+
+// Delete a file from a project (remove file binary and metadata)
+app.delete('/api/projects/:id/files/:fileId', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const fileId = req.params.fileId;
+
+    const project = projectsStore.get(projectId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (!Array.isArray(project.files)) return res.status(404).json({ error: 'File not found' });
+
+    var fidx = project.files.findIndex(function(f){return f.id === fileId});
+    // If not found by id, try filename/path matching to be tolerant
+    if (fidx === -1) {
+      fidx = project.files.findIndex(function(f){
+        var filename = f.filename || f.name || '';
+        var p = f.path || '';
+        if (!fileId) return false;
+        return filename === fileId || f.name === fileId || p === fileId || p.endsWith('/' + fileId) || filename.endsWith(fileId) || p.indexOf(fileId) !== -1;
+      });
+    }
+    if (fidx === -1) return res.status(404).json({ error: 'File not found' });
+
+    const fileMeta = project.files[fidx];
+    try {
+      const abs = path.join(ROOT, fileMeta.path || '');
+      if (abs.startsWith(ROOT) && fsSync.existsSync(abs)) {
+        await fs.rm(abs, { force: true });
+      }
+    } catch (e) {
+      console.warn('Failed to remove file binary', e);
+    }
+
+    project.files.splice(fidx, 1);
+    projectsStore.set(projectId, project);
+    await persistProjectsFile();
+
+    try { io.emit('projects-updated', project); } catch (e) {}
+    try { io.emit('file-removed', { path: fileMeta.path }); } catch (e) {}
+
+    res.json({ project });
+  } catch (e) {
+    console.error('DELETE /api/projects/:id/files/:fileId error', e);
+    res.status(500).json({ error: String(e) });
   }
 });
