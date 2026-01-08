@@ -76,8 +76,12 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
       {showContextSidebar && (
         <div 
          ref={sidebarRef}
-         className={`relative flex flex-col bg-[#1e1e1e] border-r border-white/5 transition-all duration-300 ease-in-out shrink-0 ${!isSidebarOpen && 'w-0 border-r-0 overflow-hidden'}`}
-         style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
+         className={`relative flex flex-col bg-[#1e1e1e] border-r border-white/5 shrink-0 ${!isSidebarOpen && 'border-r-0 overflow-hidden'}`}
+         style={{ 
+           width: isSidebarOpen ? sidebarWidth : 0,
+           transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+           willChange: isResizing ? 'width' : 'auto'
+         }}
         >
           {/* Content Wrapper to prevent layout thrashing during collapse */}
           <div className="w-full h-full overflow-hidden" style={{ width: sidebarWidth }}>
@@ -110,10 +114,11 @@ const UnifiedLayout: React.FC<UnifiedLayoutProps> = ({ currentView, onChangeView
             {showContextSidebar && (
               <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={`absolute top-4 z-30 p-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/60 shadow-lg transition-all duration-300 ${isSidebarOpen ? '-left-3 opacity-0 hover:opacity-100 hover:left-1' : 'left-3'}`}
+                className={`absolute top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300 ${isSidebarOpen ? 'left-[calc(var(--sidebar-width)-0.75rem)] opacity-20 hover:opacity-100' : 'left-3 opacity-80 hover:opacity-100'}`}
+                style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
                 title={isSidebarOpen ? "Collapse Explorer" : "Expand Explorer"}
               >
-                  {isSidebarOpen ? <ChevronLeft size={14} /> : <PanelLeftOpen size={16} />}
+                  {isSidebarOpen ? <ChevronLeft size={12} /> : <PanelLeftOpen size={14} />}
               </button>
             )}
 
