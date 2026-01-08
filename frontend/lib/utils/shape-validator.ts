@@ -51,6 +51,11 @@ const SHAPE_TYPE_RULES: Record<ValidShape, {
       'instrument_controller',
       'valve_ball',        // Ball valves have circle body with diagonal line
       'valve_butterfly',   // Butterfly valves have circle body with bar
+      'equipment_pump',    // Centrifugal pumps are circular with impeller
+      'pump',              // Generic pump notation
+      'compressor',        // Compressors often circular
+      'blower',            // Blowers often circular
+      'fan',               // Fans are circular
       'analyzer',
       'gauge'
     ],

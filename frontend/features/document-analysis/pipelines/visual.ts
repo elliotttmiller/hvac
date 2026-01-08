@@ -107,10 +107,24 @@ export async function analyzeVisual(imageData: string): Promise<VisualAnalysisRe
       enableValidation: true
     });
     
-    // ENHANCEMENT: Generate intelligent labels for components with "unknown" labels
+    // CRITICAL: Filter by confidence BEFORE label generation
+    // This ensures we only generate labels for high-confidence detections
+    // Implements requirement: "if AI is not highly confident, it should not label or show detection"
+    console.log('[Visual Pipeline] Applying confidence-based quality control...');
+    result = filterByConfidence(
+      result,
+      clientConfig.MIN_COMPONENT_CONFIDENCE,
+      clientConfig.MIN_CONNECTION_CONFIDENCE
+    );
+    
+    // ENHANCEMENT: Generate intelligent labels ONLY for high-confidence components
+    // Only components that passed confidence filtering will get generated labels
     console.log('[Visual Pipeline] Generating intelligent labels for unlabeled components...');
     const beforeLabelCount = result.components.filter(c => !c.label || c.label === 'unknown').length;
-    result.components = generateIntelligentLabels(result.components);
+    result.components = generateIntelligentLabels(
+      result.components,
+      clientConfig.MIN_LABEL_GENERATION_CONFIDENCE
+    );
     const afterLabelCount = result.components.filter(c => !c.label || c.label === 'unknown').length;
     console.log(`[Visual Pipeline] Label generation: ${beforeLabelCount - afterLabelCount} components labeled`);
     
@@ -1077,6 +1091,118 @@ function getHVACComponentCategory(comp: any): string {
   }
   
   return 'other';
+}
+
+/**
+ * Filter components and connections by confidence thresholds
+ * Ensures only high-quality, truthful detections are returned
+ * 
+ * This implements the critical requirement: "if AI is not highly confident,
+ * it should not label or show that it's a detection at all"
+ */
+function filterByConfidence(
+  result: VisualAnalysisResult,
+  minComponentConfidence: number,
+  minConnectionConfidence: number
+): VisualAnalysisResult {
+  const originalComponentCount = result.components.length;
+  const originalConnectionCount = result.connections.length;
+  
+  // Track filtered items for batched logging
+  const filteredComponentIds: string[] = [];
+  
+  // Filter components by confidence threshold
+  const filteredComponents = result.components.filter(comp => {
+    if (!comp.confidence || comp.confidence < minComponentConfidence) {
+      filteredComponentIds.push(
+        `${comp.id} (${comp.confidence?.toFixed(2) || 'N/A'})`
+      );
+      return false;
+    }
+    return true;
+  });
+  
+  // Log filtered components (batched for performance)
+  if (filteredComponentIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${filteredComponentIds.length} low-confidence components ` +
+      `(threshold: ${minComponentConfidence}): ${filteredComponentIds.slice(0, 5).join(', ')}` +
+      (filteredComponentIds.length > 5 ? ` and ${filteredComponentIds.length - 5} more` : '')
+    );
+  }
+  
+  // Create a set of valid component IDs for connection filtering
+  const validComponentIds = new Set(filteredComponents.map(c => c.id));
+  
+  // Track filtered connections for batched logging
+  const filteredConnectionIds: string[] = [];
+  const orphanedConnectionIds: string[] = [];
+  
+  // Filter connections by:
+  // 1. Confidence threshold
+  // 2. Both endpoints must exist in filtered components
+  const filteredConnections = result.connections.filter(conn => {
+    if (!conn.confidence || conn.confidence < minConnectionConfidence) {
+      filteredConnectionIds.push(
+        `${conn.from_id}->${conn.to_id} (${conn.confidence?.toFixed(2) || 'N/A'})`
+      );
+      return false;
+    }
+    
+    // Ensure both endpoints exist
+    if (!validComponentIds.has(conn.from_id) || !validComponentIds.has(conn.to_id)) {
+      orphanedConnectionIds.push(`${conn.from_id}->${conn.to_id}`);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Log filtered connections (batched for performance)
+  if (filteredConnectionIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${filteredConnectionIds.length} low-confidence connections ` +
+      `(threshold: ${minConnectionConfidence}): ${filteredConnectionIds.slice(0, 3).join(', ')}` +
+      (filteredConnectionIds.length > 3 ? ` and ${filteredConnectionIds.length - 3} more` : '')
+    );
+  }
+  if (orphanedConnectionIds.length > 0) {
+    console.log(
+      `[Confidence Filter] Removed ${orphanedConnectionIds.length} orphaned connections ` +
+      `(endpoint filtered): ${orphanedConnectionIds.slice(0, 3).join(', ')}` +
+      (orphanedConnectionIds.length > 3 ? ` and ${orphanedConnectionIds.length - 3} more` : '')
+    );
+  }
+  
+  const componentsRemoved = originalComponentCount - filteredComponents.length;
+  const connectionsRemoved = originalConnectionCount - filteredConnections.length;
+  
+  if (componentsRemoved > 0 || connectionsRemoved > 0) {
+    console.log(
+      `[Confidence Filter] Quality control summary: ` +
+      `${componentsRemoved} components removed, ${connectionsRemoved} connections removed, ` +
+      `${filteredComponents.length} components retained, ${filteredConnections.length} connections retained`
+    );
+  } else {
+    console.log('[Confidence Filter] All detections meet quality thresholds');
+  }
+  
+  return {
+    ...result,
+    components: filteredComponents,
+    connections: filteredConnections,
+    metadata: {
+      ...result.metadata,
+      confidence_filter: {
+        min_component_confidence: minComponentConfidence,
+        min_connection_confidence: minConnectionConfidence,
+        components_removed: componentsRemoved,
+        connections_removed: connectionsRemoved,
+        components_retained: filteredComponents.length,
+        connections_retained: filteredConnections.length
+      }
+    }
+  };
 }
 
 /**

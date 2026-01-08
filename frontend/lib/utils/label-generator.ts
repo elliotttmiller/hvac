@@ -16,11 +16,13 @@ const SAME_ROW_THRESHOLD = 0.05; // 5% threshold for considering components on s
 const LABEL_NUMBER_PADDING = 3; // Number of digits for zero-padding (e.g., 001, 002)
 
 /**
- * Check if a label is non-descriptive (single letter or generic text)
+ * Check if a label is non-descriptive (single letter, generic text, or UNREADABLE)
  */
 function isNonDescriptiveLabel(label: string): boolean {
   if (!label || label.trim() === '') return true;
   if (label === 'unknown' || label.toLowerCase() === 'unknown') return true;
+  // UNREADABLE labels should be replaced
+  if (label.toUpperCase().startsWith('UNREADABLE')) return true;
   // Single letter labels (A-Z) are not descriptive
   if (label.length === 1 && /^[A-Z]$/i.test(label)) return true;
   return false;
@@ -54,7 +56,11 @@ const TYPE_TO_ISA_PREFIX: Record<string, string> = {
   'controller_flow': 'FIC',
   'controller_level': 'LIC',
   
-  // Equipment
+  // Equipment (P&ID)
+  'equipment_pump': 'P',
+  'equipment_vessel': 'V',
+  'equipment_tank': 'TK',
+  'equipment_strainer': 'Y',
   'pump': 'PMP',
   'chiller': 'CH',
   'cooling_tower': 'CT',
@@ -77,16 +83,54 @@ const TYPE_TO_ISA_PREFIX: Record<string, string> = {
 
 /**
  * Generate intelligent labels for components with "unknown" or missing labels
+ * 
+ * @param components - Array of components to process
+ * @param minConfidence - Minimum confidence threshold to generate labels (default: 0.80)
+ *                        Only components above this confidence will receive generated labels
+ *                        This ensures we don't "guess" labels for uncertain detections
  */
-export function generateIntelligentLabels(components: any[]): any[] {
-  // First pass: identify components that need labels
-  const needsLabel = components.filter(c => isNonDescriptiveLabel(c.label));
+export function generateIntelligentLabels(
+  components: any[],
+  minConfidence: number = 0.80
+): any[] {
+  // Track skipped components for batched logging
+  const skippedComponents: string[] = [];
+  
+  // First pass: identify components that need labels AND meet confidence threshold
+  const needsLabel = components.filter(c => {
+    // Must need a label
+    if (!isNonDescriptiveLabel(c.label)) {
+      return false;
+    }
+    
+    // Must meet minimum confidence threshold
+    if (!c.confidence || c.confidence < minConfidence) {
+      skippedComponents.push(
+        `${c.id} (${c.confidence?.toFixed(2) || 'N/A'})`
+      );
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Log skipped components (batched for performance)
+  if (skippedComponents.length > 0) {
+    console.log(
+      `[Label Generator] Skipped ${skippedComponents.length} low-confidence components ` +
+      `(threshold: ${minConfidence}): ${skippedComponents.slice(0, 3).join(', ')}` +
+      (skippedComponents.length > 3 ? ` and ${skippedComponents.length - 3} more` : '')
+    );
+  }
   
   if (needsLabel.length === 0) {
     return components; // No changes needed
   }
   
-  console.log(`[Label Generator] Generating labels for ${needsLabel.length} components`);
+  console.log(
+    `[Label Generator] Generating labels for ${needsLabel.length} high-confidence components ` +
+    `(confidence >= ${minConfidence})`
+  );
   
   // Sort components by position (top-to-bottom, left-to-right)
   // This ensures sequential numbering follows natural reading order
