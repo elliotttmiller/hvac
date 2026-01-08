@@ -41,6 +41,60 @@ const PHASE_CONFIG = {
   }
 };
 
+// Shared animation keyframes used across both overlay modes
+const SHARED_ANIMATIONS = `
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes slideInRight {
+    from { 
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes spinReverse {
+    to { transform: rotate(-360deg); }
+  }
+  @keyframes pulse {
+    0%, 100% { 
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% { 
+      opacity: 0.6;
+      transform: scale(1.05);
+    }
+  }
+  @keyframes glow {
+    0%, 100% { 
+      opacity: 1;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    }
+    50% { 
+      opacity: 0.8;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+    }
+  }
+`;
+
 /**
  * ProcessingOverlay with dual modes
  */
@@ -166,48 +220,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
           </div>
         </div>
         
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes scaleIn {
-            from { 
-              opacity: 0;
-              transform: scale(0.9);
-            }
-            to { 
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-          @keyframes spinReverse {
-            to { transform: rotate(-360deg); }
-          }
-          @keyframes pulse {
-            0%, 100% { 
-              opacity: 1;
-              transform: scale(1);
-            }
-            50% { 
-              opacity: 0.6;
-              transform: scale(1.05);
-            }
-          }
-          @keyframes glow {
-            0%, 100% { 
-              opacity: 1;
-              box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
-            }
-            50% { 
-              opacity: 0.8;
-              box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
-            }
-          }
-        `}</style>
+        <style>{SHARED_ANIMATIONS}</style>
       </div>
     );
   }
@@ -265,21 +278,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
         </div>
       </div>
       
-      <style>{`
-        @keyframes slideInRight {
-          from { 
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <style>{SHARED_ANIMATIONS}</style>
     </div>
   );
 };
