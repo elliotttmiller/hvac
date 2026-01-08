@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { convertNormalizedToDisplay, NormBBox } from '../../lib/geometry';
 import { Scan, Type, Layers, X, ZoomIn, ZoomOut, Upload, FileSearch, Play } from 'lucide-react';
 import { DetectedComponent } from '@/features/document-analysis/types';
+import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
 
 interface InteractiveViewerProps {
   imageUrl: string | null;
   components: DetectedComponent[]; // <--- CORRECTED PROP NAME
   isProcessing: boolean;
+  processingPhase?: ProcessingPhase;
   selectedBoxId?: string | null;
   onSelectBox?: (id: string | null) => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -19,6 +21,7 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
   imageUrl,
   components = [], // <--- ADDED DEFAULT VALUE
   isProcessing,
+  processingPhase = 'uploading',
   selectedBoxId,
   onSelectBox,
   onFileUpload,
@@ -118,6 +121,9 @@ const InteractiveViewer: React.FC<InteractiveViewerProps> = ({
               transform: `scale(${zoom})`,
             }}
           >
+            {/* Processing Overlay - positioned relative to image container */}
+            <ProcessingOverlay isOpen={isProcessing} phase={processingPhase} />
+            
             {/* The Image */}
             <img 
               ref={imageRef}

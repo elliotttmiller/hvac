@@ -870,7 +870,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
     return (
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto scrollbar-thin space-y-4">
           {!hasData ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <ClipboardList size={48} className="text-zinc-600 mb-4" />
@@ -879,7 +879,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </div>
                ) : hasFinalReport ? (
                   // NARRATIVE-FOCUSED FINAL ANALYSIS REPORT (with copy + scroll)
-                  <>
+                  <div className="p-4 space-y-4">
                      <div className="flex items-center justify-end gap-2">
                         <button onClick={copyFinalReport} aria-label="Copy final report" title="Copy final report" className="text-zinc-400 hover:text-white p-2 rounded-md transition-colors">
                            <Copy size={14} />
@@ -889,7 +889,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         )}
                      </div>
 
-                     <div className="max-h-[60vh] overflow-y-auto space-y-4">
+                     <div className="space-y-4">
                         {/* Report Title */}
                         {finalAnalysisReport.report_title && (
                            <div className="bg-gradient-to-br from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 rounded-xl p-4">
@@ -1108,10 +1108,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                            )}
                         </div>
                      </div>
-                  </>
+                  </div>
           ) : (
             // LOADING STATE - Show placeholder while background analysis is running
-            <div className="space-y-4">
+            <div className="p-4 space-y-4">
               <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-6 bg-cyan-500 rounded-full"></div>

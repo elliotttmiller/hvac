@@ -5,8 +5,9 @@ import { analyzeDocument, generateBackgroundAnalysis } from '@/features/document
 import startConsoleCapture from '@/lib/consoleCapture';
 import { config } from '@/app/config';
 import { DetectedComponent, ValidationIssue} from '@/features/document-analysis/types';
-import { ProcessingOverlay, ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
+import { ProcessingPhase } from '@/components/feedback/ProcessingOverlay';
 import { useToastHelpers } from '@/lib/hooks/useToast';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const BlueprintWorkspace: React.FC<{
   fileToAnalyze?: string | null;
@@ -369,12 +370,11 @@ const BlueprintWorkspace: React.FC<{
 
   return (
     <div className="flex-1 flex h-full bg-[#121212] overflow-hidden relative">
-      <ProcessingOverlay isOpen={isProcessing} phase={processingPhase} />
-      
       <InteractiveViewer 
         imageUrl={imageUrl}
         components={detectedBoxes} // <--- CORRECTED PROP NAME
         isProcessing={isProcessing}
+        processingPhase={processingPhase}
         selectedBoxId={selectedBoxId}
         onSelectBox={setSelectedBoxId}
         onFileUpload={handleFileUpload}
@@ -392,8 +392,12 @@ const BlueprintWorkspace: React.FC<{
 
       {/* Resizable Right Panel */}
       <div 
-        className={`relative flex flex-col bg-[#1e1e1e] border-l border-white/5 transition-all duration-300 shrink-0 ${!isPanelOpen && 'w-0 border-l-0 overflow-hidden'}`}
-        style={{ width: isPanelOpen ? panelWidth : 0 }}
+        className={`relative flex flex-col bg-[#1e1e1e] border-l border-white/5 shrink-0 ${!isPanelOpen && 'border-l-0 overflow-hidden'}`}
+        style={{ 
+          width: isPanelOpen ? panelWidth : 0,
+          transition: isResizingPanel ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          willChange: isResizingPanel ? 'width' : 'auto'
+        }}
       >
           <div className="w-full h-full overflow-hidden flex flex-col" style={{ width: panelWidth }}>
             <InspectorPanel 
@@ -417,6 +421,16 @@ const BlueprintWorkspace: React.FC<{
               <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-0.5 h-8 bg-white/10 group-hover:bg-cyan-400 rounded-full transition-colors"></div>
             </div>
           )}
+          
+          {/* Floating Toggle Button for Right Panel */}
+          <button 
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            className={`absolute top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-zinc-400 hover:text-white hover:bg-black/50 shadow-lg transition-all duration-300 ${isPanelOpen ? 'right-[calc(var(--panel-width)-0.75rem)] opacity-20 hover:opacity-100' : '-right-10 opacity-80 hover:opacity-100'}`}
+            style={{ '--panel-width': `${panelWidth}px` } as React.CSSProperties}
+            title={isPanelOpen ? "Collapse Inspector" : "Expand Inspector"}
+          >
+            {isPanelOpen ? <ChevronRight size={12} /> : <ChevronLeft size={14} />}
+          </button>
       </div>
     </div>
   );

@@ -146,28 +146,28 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '20px',
+          gap: '12px',
           animation: 'scaleIn 0.4s ease-out'
         }}>
-          {/* Animated spinner with rings */}
+          {/* Animated spinner with rings - made smaller */}
           <div style={{
             position: 'relative',
-            width: '80px',
-            height: '80px'
+            width: '48px',
+            height: '48px'
           }}>
             {/* Outer ring */}
             <div style={{
               position: 'absolute',
               inset: '0',
-              border: '3px solid rgba(6, 182, 212, 0.2)',
+              border: '2px solid rgba(6, 182, 212, 0.2)',
               borderRadius: '50%',
               animation: 'pulse 2s ease-in-out infinite'
             }} />
             {/* Middle spinning ring */}
             <div style={{
               position: 'absolute',
-              inset: '8px',
-              border: '3px solid transparent',
+              inset: '6px',
+              border: '2px solid transparent',
               borderTopColor: '#06b6d4',
               borderRightColor: '#06b6d4',
               borderRadius: '50%',
@@ -176,8 +176,8 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             {/* Inner spinning ring */}
             <div style={{
               position: 'absolute',
-              inset: '16px',
-              border: '2px solid transparent',
+              inset: '12px',
+              border: '1.5px solid transparent',
               borderTopColor: '#22d3ee',
               borderRadius: '50%',
               animation: 'spinReverse 0.8s linear infinite'
@@ -185,23 +185,23 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             {/* Center dot */}
             <div style={{
               position: 'absolute',
-              inset: '32px',
+              inset: '20px',
               backgroundColor: '#06b6d4',
               borderRadius: '50%',
               animation: 'glow 1.5s ease-in-out infinite'
             }} />
           </div>
           
-          {/* Text content */}
+          {/* Text content - made more compact */}
           <div style={{
             textAlign: 'center',
-            maxWidth: '320px'
+            maxWidth: '220px'
           }}>
             <div style={{
-              fontSize: '18px',
+              fontSize: '13px',
               fontWeight: '600',
               color: '#f4f4f5',
-              marginBottom: '8px',
+              marginBottom: '4px',
               textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
               letterSpacing: '0.025em'
             }}>
@@ -209,7 +209,7 @@ export const ProcessingOverlay: React.FC<ProcessingOverlayProps> = ({
             </div>
             {progress > 0 && (
               <div style={{
-                fontSize: '14px',
+                fontSize: '12px',
                 color: '#06b6d4',
                 fontFamily: 'monospace',
                 fontWeight: '500'
