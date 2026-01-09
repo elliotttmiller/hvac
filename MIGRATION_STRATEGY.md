@@ -84,12 +84,12 @@ mv old_app/* .
 #### Action 1.2: Handle `/app` Directory
 ```bash
 # Option A (Recommended): Delete it
-rm -rf app/
+git rm -r app/
 git commit -m "Remove deprecated /app prototype"
 
 # Option B: Archive for reference
 mkdir archive/
-mv app/ archive/app-prototype/
+git mv app/ archive/app-prototype/
 git commit -m "Archive /app prototype for reference"
 
 # Option C: Keep as sandbox (document clearly)
