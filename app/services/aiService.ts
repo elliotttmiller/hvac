@@ -2,6 +2,10 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { DetectedComponent } from "../types";
 import { HVAC_KNOWLEDGE_BASE } from "../data/hvacKnowledgeBase";
 import { getComponentPricing } from "./pricingService";
+import { aiCache } from "./semanticCache";
+
+// Single source of truth for the active model
+export const ACTIVE_MODEL_NAME = 'gemini-3-flash-preview';
 
 export type ExtractionResult = {
   detectedComponents: DetectedComponent[];
@@ -11,134 +15,24 @@ export type AnalysisReportResult = {
   analysisReport: string;
 };
 
-// Semantic Cache: In-memory caching for cost optimization
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  hits: number;
-}
-
-class SemanticCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
-  private readonly maxAge = 3600000; // 1 hour
-  private readonly maxSize = 50; // Keep last 50 analyses
-
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    if (Date.now() - entry.timestamp > this.maxAge) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    entry.hits++;
-    console.log(`✅ Cache HIT (hits: ${entry.hits})`);
-    return entry.data;
-  }
-
-  set<T>(key: string, data: T): void {
-    if (this.cache.size >= this.maxSize) {
-      const oldest = Array.from(this.cache.entries())
-        .sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
-      this.cache.delete(oldest[0]);
-    }
-    
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      hits: 0
-    });
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-const cache = new SemanticCache();
-
-// ISA-5.1 Validation: Engineering standards compliance
-const ISA_5_1_FIRST_LETTERS: Record<string, string> = {
-  'A': 'Analysis',
-  'B': 'Burner/Combustion',
-  'C': 'Conductivity',
-  'D': 'Density/Specific Gravity',
-  'E': 'Voltage',
-  'F': 'Flow',
-  'G': 'Gauging/Position',
-  'H': 'Hand',
-  'I': 'Current',
-  'J': 'Power',
-  'K': 'Time/Schedule',
-  'L': 'Level',
-  'M': 'Moisture',
-  'N': 'User Defined',
-  'O': 'User Defined',
-  'P': 'Pressure',
-  'Q': 'Quantity/Event',
-  'R': 'Radiation',
-  'S': 'Speed/Frequency',
-  'T': 'Temperature',
-  'U': 'Multivariable',
-  'V': 'Vibration',
-  'W': 'Weight/Force',
-  'X': 'Unclassified',
-  'Y': 'Event/State',
-  'Z': 'Position/Dimension'
-};
-
-function validateISATag(tag: string): { valid: boolean; variable?: string; issue?: string } {
-  const match = tag.match(/^([A-Z]+)-?(\d+)$/i);
-  if (!match) {
-    return { valid: false, issue: 'Invalid tag format' };
-  }
-  
-  const [, letters, number] = match;
-  const firstLetter = letters[0].toUpperCase();
-  const variable = ISA_5_1_FIRST_LETTERS[firstLetter];
-  
-  if (!variable) {
-    return { valid: false, issue: `Unrecognized ISA-5.1 symbol: ${firstLetter}` };
-  }
-  
-  return { valid: true, variable };
-}
-
-// Enhanced component validation with ISA-5.1 compliance
-function enhanceComponentsWithValidation(components: DetectedComponent[]): DetectedComponent[] {
-  return components.map(comp => {
-    if (comp.id) {
-      const validation = validateISATag(comp.id);
-      if (!validation.valid && validation.issue) {
-        console.warn(`ISA-5.1 Warning: ${comp.id} - ${validation.issue}`);
-      } else if (validation.valid && validation.variable) {
-        console.log(`ISA-5.1 Valid: ${comp.id} (${validation.variable})`);
-      }
-    }
-    return comp;
-  });
-}
-
 /**
  * STAGE 1: Forensic Component Extraction
  * High-precision identification and technical profiling of assets.
- * Enhanced with semantic caching and ISA-5.1 validation.
+ * OPTIMIZED: Uses Gemini 3 Flash for maximum cost-efficiency while maintaining high reasoning via thinking budget.
  */
 export const stage1Extraction = async (
   base64Image: string, 
   mimeType: string
 ): Promise<ExtractionResult> => {
-  // Generate cache key based on image data
-  const cacheKey = `stage1:${base64Image.length}:${base64Image.substring(0, 100)}`;
+  // 1. CACHE CHECK
+  const cacheKey = aiCache.generateKey('STAGE_1_EXTRACTION', base64Image);
+  const cachedResult = aiCache.get<ExtractionResult>(cacheKey);
   
-  // Check cache first for cost optimization
-  const cached = cache.get<ExtractionResult>(cacheKey);
-  if (cached) {
-    console.log('⚡ Instant result from cache (saved API cost)');
-    return cached;
+  if (cachedResult) {
+      return cachedResult;
   }
 
+  // 2. API EXECUTION
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
   const prompt = `
@@ -146,22 +40,28 @@ export const stage1Extraction = async (
     Senior Instrumentation & Controls Engineer. Expert in ISA-5.1 standards.
 
     # OBJECTIVE
-    Perform a forensic extraction of every identifiable component in the provided HVAC P&ID. 
-    Focus on granularity and technical accuracy.
+    Perform a rigorous, pixel-level forensic extraction of EVERY single component in the P&ID. 
+    It is critical to detect ALL assets, not just a sample. High recall is the priority.
+
+    # STRATEGY - CRITICAL
+    1.  **Systematic Grid Scan**: Visually traverse the drawing from Top-Left to Bottom-Right, section by section.
+    2.  **Exhaustive Listing**: Do NOT group similar items (e.g., do not say "3x VAVs"). You must return a distinct JSON object for EACH individual component found.
+    3.  **Symbol Sensitivity**: deeply analyze small circles (sensors), distinct valve geometries, damper blades, and equipment tags.
+    4.  **Implicit Detection**: If a line interacts with a device, check for associated actuators or sensors that might be unlabeled but visually present.
 
     # KNOWLEDGE BASE
     ${HVAC_KNOWLEDGE_BASE}
 
     # REQUIREMENTS
-    1. Identify every tag/instrument (VAV, TT, PT, TIC, Valve, Actuator, etc.).
-    2. Extract the exact Tag ID following ISA-5.1 format (e.g. TT-101, PT-205).
+    1. Identify every tag/instrument (VAV, TT, PT, TIC, Valve, Actuator, Dampers, Thermostats, Pumps, Fans, etc.).
+    2. Extract the exact Tag ID (e.g., VAV-101). If ID is illegible or missing, generate a logical unique ID (e.g., VAV-001, VAV-002).
     3. Determine the Manufacturer if visible or common for this symbol type.
     4. Estimate installation man-hours based on standard MCAA/NECA labor units.
     5. Provide specific technical specifications (Voltage, Signal Type, Range).
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: ACTIVE_MODEL_NAME,
     contents: {
       parts: [
         { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -169,7 +69,7 @@ export const stage1Extraction = async (
       ]
     },
     config: {
-      thinkingConfig: { thinkingBudget: 4096 },
+      thinkingConfig: { thinkingBudget: 16000 },
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -214,7 +114,7 @@ export const stage1Extraction = async (
 
   const result = JSON.parse(response.text || "{}");
   
-  let components: DetectedComponent[] = result.detectedComponents?.map((c: any) => {
+  const components: DetectedComponent[] = result.detectedComponents?.map((c: any) => {
     const specsMap: { [key: string]: string } = {};
     if (Array.isArray(c.technicalSpecs)) {
         c.technicalSpecs.forEach((spec: { key: string, value: string }) => {
@@ -242,39 +142,34 @@ export const stage1Extraction = async (
     };
   }) || [];
 
-  // Apply ISA-5.1 validation to enhance component quality
-  components = enhanceComponentsWithValidation(components);
+  const finalResult = { detectedComponents: components };
 
-  const extractionResult: ExtractionResult = { detectedComponents: components };
-  
-  // Cache the result for future requests (cost optimization)
-  cache.set(cacheKey, extractionResult);
-  console.log('💾 Result cached for future requests');
+  // 3. CACHE SET
+  aiCache.set(cacheKey, finalResult);
 
-  return extractionResult;
+  return finalResult;
 };
 
 /**
- * STAGE 2: Neural Interpretation & Forensic Report
+ * STAGE 2: AI Interpretation & Forensic Report
  * Deep-dive analysis of system logic, flaws, and optimizations.
- * Enhanced with semantic caching for cost optimization.
+ * OPTIMIZED: Uses Gemini 3 Flash for efficient yet professional engineering reasoning.
  */
 export const stage2Analysis = async (
   base64Image: string, 
   mimeType: string,
   detectedComponents: DetectedComponent[]
 ): Promise<AnalysisReportResult> => {
-  // Generate cache key
-  const componentIds = detectedComponents.map(c => c.id).sort().join(',');
-  const cacheKey = `stage2:${base64Image.length}:${componentIds}`;
-  
-  // Check cache first
-  const cached = cache.get<AnalysisReportResult>(cacheKey);
-  if (cached) {
-    console.log('⚡ Instant analysis from cache (saved API cost)');
-    return cached;
+  // 1. CACHE CHECK (Semantic: Image + Component Context)
+  // If the user manually edits components in the UI, this key changes, triggering a fresh analysis.
+  const cacheKey = aiCache.generateKey('STAGE_2_ANALYSIS', base64Image, detectedComponents);
+  const cachedResult = aiCache.get<AnalysisReportResult>(cacheKey);
+
+  if (cachedResult) {
+      return cachedResult;
   }
 
+  // 2. API EXECUTION
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
   const context = `Extracted Components List: ${JSON.stringify(detectedComponents.map(c => ({ id: c.id, name: c.name, type: c.type })))}`;
@@ -287,20 +182,28 @@ export const stage2Analysis = async (
     Components already extracted: ${context}
 
     # OBJECTIVE
-    Generate a high-density forensic report based on the provided P&ID. 
+    Generate a high-density, professionally formatted forensic report.
 
-    # TASKS
-    1. **System Topology**: Define the sequence of operations logic.
-    2. **Critical Flaw Detection**: Identify safety gaps (Missing freeze-stats, static high limits, flow switches).
-    3. **Engineering Observations**: Logic check on control loops.
-    4. **Optimization Recommendations**: Energy recovery, VFD integration, and DCV strategies.
+    # OUTPUT STRUCTURE RULES
+    1.  **Start with a Blockquote**: Use ">" to create an Executive Summary at the very top. Summarize the system type, overall health, and critical actions in 3-4 sentences.
+    2.  **Section Headers**: Use "##" for major sections (System Topology, Critical Findings, Recommendations).
+    3.  **Bulleted Lists**: Use lists for findings to ensure readability.
+    4.  **Tables**: If comparing data (e.g., flow rates, schedules), use Markdown tables.
 
-    # OUTPUT FORMAT
-    Strict Markdown. Use professional engineering terminology.
+    # CONTENT TASKS
+    1.  **System Topology**: Define the sequence of operations logic.
+    2.  **Critical Flaw Detection**: Identify safety gaps (Missing freeze-stats, static high limits, flow switches).
+    3.  **Engineering Observations**: Logic check on control loops.
+    4.  **Optimization Recommendations**: Energy recovery, VFD integration.
+
+    # FORMATTING CONSTRAINT
+    *   Do NOT include standard memo headers (To, From, Date).
+    *   Start directly with the Executive Summary blockquote.
+    *   Use technical but accessible language.
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: ACTIVE_MODEL_NAME,
     contents: {
       parts: [
         { inlineData: { mimeType: mimeType, data: base64Image } },
@@ -308,18 +211,15 @@ export const stage2Analysis = async (
       ]
     },
     config: {
-      thinkingConfig: { thinkingBudget: 4096 },
+      thinkingConfig: { thinkingBudget: 12000 },
       maxOutputTokens: 20000
     }
   });
 
-  const analysisResult: AnalysisReportResult = { 
-    analysisReport: response.text || "Report generation failed." 
-  };
-  
-  // Cache the result
-  cache.set(cacheKey, analysisResult);
-  console.log('💾 Analysis cached for future requests');
+  const finalResult = { analysisReport: response.text || "Report generation failed." };
 
-  return analysisResult;
+  // 3. CACHE SET
+  aiCache.set(cacheKey, finalResult);
+
+  return finalResult;
 };

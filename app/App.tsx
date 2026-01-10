@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Icons } from "./components/Icons";
 import { NavButton } from "./components/common";
 import { DashboardView } from "./views/DashboardView";
@@ -7,8 +7,9 @@ import { WorkspaceView } from "./views/WorkspaceView";
 import { RightPanel } from "./features/RightPanel";
 import { stage1Extraction, stage2Analysis } from "./services/aiService";
 import { projectDatabase } from "./services/projectDatabase";
-import { ViewState, DetectedComponent, QuoteItem, QuoteInfo, Project, AnalysisReport, Blueprint } from "./types";
+import { ViewState, DetectedComponent, QuoteItem, QuoteInfo, Project, AnalysisReport, Blueprint, Comment } from "./types";
 import { NewProjectData } from "./components/NewProjectModal";
+import { ToastContainer, ToastMsg, ToastType } from "./components/Toasts";
 
 export const App = () => {
   const [view, setView] = useState<ViewState>('dashboard');
@@ -29,6 +30,17 @@ export const App = () => {
       date: new Date().toLocaleDateString(),
       laborRate: 115.00 
   });
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const addToast = (title: string, message: string, type: ToastType = 'info') => {
+      const id = Date.now().toString();
+      setToasts(prev => [...prev, { id, title, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // Load state from DB
   const refreshProjects = useCallback(() => {
@@ -60,11 +72,37 @@ export const App = () => {
     } else {
       setUploadedImage(null);
     }
-    // Clear ephemeral analysis state when switching blueprints
-    setAiAnalysis(null);
-    setComponents([]);
-    setQuoteItems([]);
-  }, [activeBlueprintId, activeBlueprint]);
+  }, [activeBlueprint?.id, activeBlueprint?.imageData]);
+
+  // RESTORE STATE: Load analysis results when switching blueprints
+  useEffect(() => {
+    // 1. Components & Quote
+    if (activeBlueprint?.detectedComponents && activeBlueprint.detectedComponents.length > 0) {
+        setComponents(activeBlueprint.detectedComponents);
+        // Regenerate quote items from stored components
+        setQuoteItems(activeBlueprint.detectedComponents.map(c => ({
+              id: c.id,
+              description: c.name,
+              sku: c.sku,
+              quantity: 1,
+              unit: 'EA',
+              materialCost: c.cost,
+              hours: c.estimatedInstallHours || 2,
+              laborCost: (c.estimatedInstallHours || 2) * quoteInfo.laborRate,
+              comments: c.comments || []
+        })));
+    } else {
+        setComponents([]);
+        setQuoteItems([]);
+    }
+
+    // 2. Analysis Report
+    if (activeBlueprint?.analysisText) {
+        setAiAnalysis(activeBlueprint.analysisText);
+    } else {
+        setAiAnalysis(null);
+    }
+  }, [activeBlueprint?.id, activeBlueprint?.detectedComponents, activeBlueprint?.analysisText, quoteInfo.laborRate]);
 
   const handleNavigate = (v: ViewState) => setView(v);
   
@@ -109,6 +147,13 @@ export const App = () => {
       const updated = projectDatabase.addProject(newProject);
       setProjects(updated);
       setActiveProjectId(newProject.id);
+      addToast("Project Created", `${data.name} initialized successfully.`, 'success');
+  };
+
+  const handleUpdateProject = (updatedProject: Project) => {
+      const updatedList = projectDatabase.updateProject(updatedProject);
+      setProjects(updatedList);
+      addToast("Project Updated", "Changes saved successfully.", 'success');
   };
 
   /**
@@ -136,21 +181,49 @@ export const App = () => {
       if (targetProjectId === activeProjectId) {
         setActiveBlueprintId(newBlueprint.id);
       }
+      addToast("File Uploaded", "Blueprint upload complete. Ready for analysis.", 'info');
     };
     reader.readAsDataURL(file);
   };
 
+  const cancelAnalysis = () => {
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+          setIsProcessing(false);
+          setIsAnalyzing(false);
+          addToast("Operation Cancelled", "Analysis pipeline stopped by user.", 'info');
+      }
+  };
+
   const runAnalysis = async () => {
     if (!uploadedImage || !activeProjectId) return;
-    setIsProcessing(true);
+    
+    // Create new abort controller for this run
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // STAGE 1: Visual Extraction
+    setIsProcessing(true); // Triggers visual overlay on image
     setAiAnalysis(null);
+    addToast("Stage 1 Initiated", "AI Vision extracting component topology...", 'info');
     
     try {
         const matches = uploadedImage.match(/^data:(.+);base64,(.+)$/);
         const mimeType = matches ? matches[1] : 'image/png';
         const base64Data = matches ? matches[2] : uploadedImage.split(',')[1];
 
+        // Check cancellation before expensive call
+        if (controller.signal.aborted) throw new Error("Cancelled");
+
         const extractionResult = await stage1Extraction(base64Data, mimeType);
+        
+        // Check cancellation after call
+        if (controller.signal.aborted) throw new Error("Cancelled");
+
+        // --- CRITICAL UI UPDATE ---
+        // Visual processing (Stage 1) is done. Remove overlay so user can see the image with results.
+        setIsProcessing(false); 
         
         if (extractionResult.detectedComponents) {
             setComponents(extractionResult.detectedComponents);
@@ -162,14 +235,39 @@ export const App = () => {
                   unit: 'EA',
                   materialCost: c.cost,
                   hours: c.estimatedInstallHours || 2,
-                  laborCost: (c.estimatedInstallHours || 2) * quoteInfo.laborRate
+                  laborCost: (c.estimatedInstallHours || 2) * quoteInfo.laborRate,
+                  comments: []
             })));
+            addToast("Stage 1 Complete", `${extractionResult.detectedComponents.length} assets identified and tagged.`, 'success');
+
+            // --- PERSIST STAGE 1 ---
+            if (activeProjectId && activeBlueprintId) {
+                const latestProjects = projectDatabase.getProjects();
+                const targetBp = latestProjects.find(p => p.id === activeProjectId)?.blueprintsData.find(b => b.id === activeBlueprintId);
+                if (targetBp) {
+                    targetBp.detectedComponents = extractionResult.detectedComponents;
+                    const updated = projectDatabase.saveBlueprint(activeProjectId, targetBp);
+                    setProjects(updated);
+                }
+            }
         }
 
+        // STAGE 2: Deep Analysis
+        // We set isAnalyzing to true. This locks the button but DOES NOT obscure the image.
         setIsAnalyzing(true);
+        addToast("Stage 2 Initiated", "Generating forensic engineering report...", 'info');
+        
+        // Check cancellation before next expensive call
+        if (controller.signal.aborted) throw new Error("Cancelled");
+
         const analysisResult = await stage2Analysis(base64Data, mimeType, extractionResult.detectedComponents);
+        
+        // Check cancellation after call
+        if (controller.signal.aborted) throw new Error("Cancelled");
+
         setAiAnalysis(analysisResult.analysisReport);
         setIsAnalyzing(false);
+        addToast("Stage 2 Complete", "Forensic analysis report generated successfully.", 'success');
 
         // SYNC: Commit report to database
         if (analysisResult.analysisReport) {
@@ -179,27 +277,40 @@ export const App = () => {
                 blueprintName: currentBlueprint.name,
                 date: new Date().toLocaleString(),
                 content: analysisResult.analysisReport,
-                author: "Neuro-Engine Stage 2"
+                author: "AI Engine Stage 2"
             };
             projectDatabase.addReport(activeProjectId, newReport);
             
-            // Update metadata in blueprint
-            const currentBp = projectDatabase.getProjects().find(p => p.id === activeProjectId)?.blueprintsData.find(b => b.id === currentBlueprint.id);
-            if (currentBp) {
-                currentBp.status = 'processed';
-                currentBp.compliance = 85 + Math.floor(Math.random() * 10);
-                projectDatabase.saveBlueprint(activeProjectId, currentBp);
+            // --- PERSIST STAGE 2 & METADATA ---
+            if (activeProjectId && activeBlueprintId) {
+                const latestProjects = projectDatabase.getProjects();
+                const targetBp = latestProjects.find(p => p.id === activeProjectId)?.blueprintsData.find(b => b.id === activeBlueprintId);
+                if (targetBp) {
+                    targetBp.status = 'processed';
+                    targetBp.compliance = 85 + Math.floor(Math.random() * 10);
+                    targetBp.analysisText = analysisResult.analysisReport; // Save Report Text
+                    const updated = projectDatabase.saveBlueprint(activeProjectId, targetBp);
+                    setProjects(updated);
+                }
             }
-            
-            refreshProjects();
         }
 
-    } catch (err) {
-        console.error("Analysis failed", err);
-        setAiAnalysis("Critical analysis failure. Pipeline interrupted.");
+    } catch (err: any) {
+        if (err.message === "Cancelled") {
+            // Already handled by cancel logic, mostly for clean exit
+            console.log("Analysis run cancelled by user.");
+        } else {
+            console.error("Analysis failed", err);
+            setAiAnalysis("Critical analysis failure. Pipeline interrupted.");
+            addToast("Pipeline Error", "AI inference failed. Please try again.", 'error');
+        }
     } finally {
-        setIsProcessing(false);
-        setIsAnalyzing(false);
+        // Only reset if we are still the active controller (avoids race conditions with new runs)
+        if (abortControllerRef.current === controller) {
+            setIsProcessing(false);
+            setIsAnalyzing(false);
+            abortControllerRef.current = null;
+        }
     }
   };
 
@@ -234,7 +345,8 @@ export const App = () => {
           unit: 'EA',
           materialCost: 0,
           laborCost: 0,
-          hours: 0
+          hours: 0,
+          comments: []
       }]);
   };
 
@@ -242,12 +354,73 @@ export const App = () => {
       setQuoteItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleAddComment = (targetId: string, text: string) => {
+      const newComment: Comment = {
+          id: `c-${Date.now()}`,
+          text,
+          author: 'Me', // In a real app, this comes from auth
+          initials: 'ME',
+          timestamp: 'Just now',
+          role: 'Lead'
+      };
+
+      // Update Components
+      setComponents(prev => prev.map(c => 
+          c.id === targetId 
+            ? { ...c, comments: [...(c.comments || []), newComment] } 
+            : c
+      ));
+
+      // Update Quote Items
+      setQuoteItems(prev => prev.map(q => 
+          q.id === targetId
+            ? { ...q, comments: [...(q.comments || []), newComment] }
+            : q
+      ));
+
+      // Persist to DB (Simulated)
+      if (activeProjectId && activeBlueprintId) {
+          const latestProjects = projectDatabase.getProjects();
+          const targetBp = latestProjects.find(p => p.id === activeProjectId)?.blueprintsData.find(b => b.id === activeBlueprintId);
+          if (targetBp) {
+              const compIndex = targetBp.detectedComponents?.findIndex(c => c.id === targetId);
+              if (compIndex !== undefined && compIndex !== -1 && targetBp.detectedComponents) {
+                  const existingComments = targetBp.detectedComponents[compIndex].comments || [];
+                  targetBp.detectedComponents[compIndex].comments = [...existingComments, newComment];
+                  projectDatabase.saveBlueprint(activeProjectId, targetBp);
+              }
+          }
+      }
+  };
+
+  // SEND PROPOSAL HANDLER
+  const handleSendProposal = (recipients: string[], note: string) => {
+      if (!activeProject) return;
+
+      // Log activity
+      const updatedProject = {
+          ...activeProject,
+          activityLog: [
+              { 
+                  text: `Proposal sent to ${recipients.join(', ')}`, 
+                  time: 'Just now', 
+                  type: 'clipboard' as const 
+              },
+              ...activeProject.activityLog
+          ]
+      };
+      projectDatabase.updateProject(updatedProject);
+      refreshProjects();
+      
+      addToast("Proposal Sent", `Quote distributed to ${recipients.length} team members.`, 'success');
+  };
+
   if (!activeProject && projects.length === 0) {
       return (
           <div className="h-screen bg-black flex items-center justify-center">
               <div className="text-center">
                   <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Waking neural cores...</p>
+                  <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Initializing AI engine...</p>
               </div>
           </div>
       );
@@ -278,6 +451,7 @@ export const App = () => {
                 onSelectProject={handleSelectProject} 
                 onCreateProject={handleCreateProject}
                 onUploadBlueprint={handleUploadBlueprint}
+                onUpdateProject={handleUpdateProject}
             />
         )}
         {view === 'workspace' && activeProject && (
@@ -286,9 +460,11 @@ export const App = () => {
                 activeProject={activeProject}
                 projects={projects}
                 onSelectProject={handleSelectProject}
-                isProcessing={isProcessing || isAnalyzing}
-                uploadedImage={uploadedImage}
+                isProcessing={isProcessing}
+                isAnalyzing={isAnalyzing}
                 onRunAnalysis={runAnalysis}
+                onCancelAnalysis={cancelAnalysis}
+                uploadedImage={uploadedImage}
                 onUpload={(e) => {
                     const file = e.target.files?.[0];
                     if (file && activeProjectId) handleUploadBlueprint(file, activeProjectId);
@@ -312,8 +488,14 @@ export const App = () => {
               isAnalyzing={isAnalyzing}
               uploadedImage={uploadedImage}
               onRunAnalysis={runAnalysis}
+              // Pass Team Data
+              teamMembers={activeProject?.team}
+              onSendProposal={handleSendProposal}
+              onAddComment={handleAddComment}
           />
       )}
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };

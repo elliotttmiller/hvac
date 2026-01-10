@@ -9,12 +9,14 @@ export const ProjectsView = ({
     projects, 
     onSelectProject,
     onCreateProject,
-    onUploadBlueprint
+    onUploadBlueprint,
+    onUpdateProject
 }: { 
     projects: Project[], 
     onSelectProject: (projectId: string, blueprintId?: string) => void,
     onCreateProject: (data: NewProjectData) => void,
-    onUploadBlueprint: (file: File, projectId: string) => void
+    onUploadBlueprint: (file: File, projectId: string) => void,
+    onUpdateProject: (project: Project) => void
 }) => {
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [isCreating, setIsCreating] = useState(false);
@@ -92,10 +94,10 @@ export const ProjectsView = ({
                                             <div className="h-1.5 w-16 bg-gray-800 rounded-full overflow-hidden">
                                                 <div className={`h-full ${barColors[health]}`} style={{ width: `${proj.progress}%` }}></div>
                                             </div>
-                                            <span className="text-[10px] text-gray-500">{proj.progress}%</span>
+                                            <span className="text-[10px] text-gray-500 tabular-nums">{proj.progress}%</span>
                                         </div>
                                     </div>
-                                    <div className="col-span-2 text-right text-xs font-mono text-[var(--text-muted)]">
+                                    <div className="col-span-2 text-right text-xs font-medium text-[var(--text-muted)]">
                                         {proj.lastUpdated}
                                     </div>
                                 </div>
@@ -118,6 +120,7 @@ export const ProjectsView = ({
                     onClose={() => setSelectedProjectId(null)}
                     onOpenWorkspace={(blueprintId) => onSelectProject(selectedProject.id, blueprintId)}
                     onUploadBlueprint={onUploadBlueprint}
+                    onUpdateProject={onUpdateProject}
                 />
             )}
 

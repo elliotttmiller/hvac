@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Icons } from "./Icons";
-import { Project, Activity, AnalysisReport } from "../types";
+import { Project, Activity, AnalysisReport, ProjectSettings, TeamMember } from "../types";
 import { MarkdownRenderer, getStatusColor, HealthStatus } from "./common";
 
 const MetricCard = ({ label, value, subtext, icon, health }: { label: string, value: string, subtext: React.ReactNode, icon: React.ReactNode, health: HealthStatus }) => {
@@ -21,7 +21,7 @@ const MetricCard = ({ label, value, subtext, icon, health }: { label: string, va
                     {icon}
                 </div>
             </div>
-            <div className="text-2xl font-bold text-white tracking-tight">{value}</div>
+            <div className="text-2xl font-bold text-white tracking-tight tabular-nums">{value}</div>
             <div className="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
                 {subtext}
             </div>
@@ -50,20 +50,123 @@ const WorkflowStep = ({ label, status, date, health }: { label: string, status: 
     );
 };
 
+const SettingsSection = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
+    <div className="bg-[#121214] border border-[#27272a] rounded-xl overflow-hidden mb-6">
+        <div className="px-6 py-4 border-b border-[#27272a] bg-[#18181b]/50 flex items-center gap-3">
+            <div className="text-blue-400">{icon}</div>
+            <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
+        </div>
+        <div className="p-6">
+            {children}
+        </div>
+    </div>
+);
+
+const SettingField = ({ label, children, description }: { label: string, children: React.ReactNode, description?: string }) => (
+    <div className="mb-5 last:mb-0">
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label}</label>
+        {children}
+        {description && <p className="text-[10px] text-gray-600 mt-1.5 leading-relaxed">{description}</p>}
+    </div>
+);
+
 export const ProjectModal = ({ 
     project, 
     onClose, 
     onOpenWorkspace,
-    onUploadBlueprint
+    onUploadBlueprint,
+    onUpdateProject
 }: { 
     project: Project, 
     onClose: () => void, 
     onOpenWorkspace: (blueprintId?: string) => void,
-    onUploadBlueprint: (file: File, projectId: string) => void
+    onUploadBlueprint: (file: File, projectId: string) => void,
+    onUpdateProject: (project: Project) => void
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'blueprints' | 'analysis' | 'team' | 'settings'>('overview');
     const [viewingReport, setViewingReport] = useState<AnalysisReport | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // --- SETTINGS STATE ---
+    // Initialize local settings with defaults if they don't exist
+    const [localSettings, setLocalSettings] = useState<ProjectSettings>(project.settings || {
+        jobNumber: `JOB-${new Date().getFullYear()}-${Math.floor(Math.random()*1000)}`,
+        phase: 'Design Development',
+        buildingCode: 'IBC 2021',
+        ashraeStandards: ['62.1-2019', '90.1-2019'],
+        laborRate: 115.00,
+        materialMarkup: 15,
+        taxRate: 8.25,
+        contingency: 10,
+        measurementSystem: 'imperial'
+    });
+    
+    // Local editable state for basic fields
+    const [basicInfo, setBasicInfo] = useState({
+        name: project.name,
+        client: project.client,
+        location: project.location,
+        budget: project.budget,
+        description: project.description
+    });
+
+    const [isSaving, setIsSaving] = useState(false);
+
+    // --- TEAM STATE ---
+    const [isAddingMember, setIsAddingMember] = useState(false);
+    const [newMember, setNewMember] = useState<TeamMember>({ name: '', role: 'Engineer', initials: '' });
+
+
+    const handleSaveSettings = () => {
+        setIsSaving(true);
+        setTimeout(() => {
+            const updatedProject: Project = {
+                ...project,
+                ...basicInfo,
+                settings: localSettings,
+                lastUpdated: 'Just now'
+            };
+            onUpdateProject(updatedProject);
+            setIsSaving(false);
+        }, 600);
+    };
+
+    const handleArchiveProject = () => {
+        if(confirm("Are you sure you want to archive this project? It will move to read-only state.")) {
+             const updatedProject: Project = {
+                ...project,
+                status: 'archived',
+                lastUpdated: 'Just now'
+            };
+            onUpdateProject(updatedProject);
+            onClose();
+        }
+    };
+
+    const handleAddMember = () => {
+        if (!newMember.name || !newMember.initials) return;
+        
+        const updatedProject: Project = {
+            ...project,
+            team: [...project.team, newMember]
+        };
+        onUpdateProject(updatedProject);
+        
+        setNewMember({ name: '', role: 'Engineer', initials: '' });
+        setIsAddingMember(false);
+    };
+
+    const toggleAshrae = (std: string) => {
+        setLocalSettings(prev => {
+            const exists = prev.ashraeStandards.includes(std);
+            return {
+                ...prev,
+                ashraeStandards: exists 
+                    ? prev.ashraeStandards.filter(s => s !== std)
+                    : [...prev.ashraeStandards, std]
+            };
+        });
+    };
 
     const handleContentClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -149,7 +252,7 @@ export const ProjectModal = ({
                                 <span className="w-1 h-1 rounded-full bg-gray-700"></span>
                                 <span className="flex items-center gap-1.5"><Icons.Home width={12} height={12} /> {project.location || 'Site Unspecified'}</span>
                                 <span className="w-1 h-1 rounded-full bg-gray-700"></span>
-                                <span className="font-mono text-[10px] opacity-40 tracking-wider">ID: {project.id}</span>
+                                <span className="font-medium text-[10px] opacity-60 tracking-wider">ID: {project.id}</span>
                             </div>
                         </div>
                     </div>
@@ -178,7 +281,7 @@ export const ProjectModal = ({
                         { id: 'blueprints', label: 'Blueprints' },
                         { id: 'analysis', label: 'Analysis Reports' },
                         { id: 'team', label: 'Team' },
-                        { id: 'settings', label: 'Settings' }
+                        { id: 'settings', label: 'Configuration' }
                     ].map((tab) => (
                          <button 
                             key={tab.id}
@@ -195,7 +298,7 @@ export const ProjectModal = ({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto bg-[#0c0c0e] relative">
+                <div className="flex-1 overflow-y-auto bg-[#0c0c0e] relative custom-scrollbar">
                     
                     {/* OVERVIEW TAB */}
                     {activeTab === 'overview' && (
@@ -272,7 +375,7 @@ export const ProjectModal = ({
                                     <div className="bg-[#121214] border border-[#27272a] rounded-xl p-5 shadow-sm">
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Workflow Status</h3>
                                         <div className="space-y-4">
-                                            <WorkflowStep label="Data Ingestion" status={project.progress > 0 ? 'complete' : 'current'} date={project.startDate} health={projectHealth} />
+                                            <WorkflowStep label="Data Upload" status={project.progress > 0 ? 'complete' : 'current'} date={project.startDate} health={projectHealth} />
                                             <WorkflowStep label="AI Analysis" status={project.progress > 25 ? 'complete' : project.progress > 0 ? 'current' : 'pending'} health={projectHealth} />
                                             <WorkflowStep label="Engineering Review" status={project.progress > 60 ? 'complete' : project.progress > 25 ? 'current' : 'pending'} health={projectHealth} />
                                             <WorkflowStep label="Client Report" status={project.progress >= 100 ? 'complete' : project.progress > 60 ? 'current' : 'pending'} health={projectHealth} />
@@ -300,12 +403,12 @@ export const ProjectModal = ({
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="text-lg font-medium text-white">Project Files</h3>
-                                    <p className="text-xs text-gray-500 mt-1">Ingested blueprints and P&ID schematics for this project.</p>
+                                    <p className="text-xs text-gray-500 mt-1">Uploaded blueprints and P&ID schematics for this project.</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={handleUploadClick} className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
                                         <Icons.Upload width={14} height={14} /> 
-                                        Ingest New File
+                                        Upload New File
                                     </button>
                                 </div>
                             </div>
@@ -321,7 +424,7 @@ export const ProjectModal = ({
                                                 <div>
                                                     <div className="text-sm font-medium text-white">{bp.name}</div>
                                                     <div className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-2">
-                                                        <span className="font-mono uppercase">ID: {bp.id}</span>
+                                                        <span className="font-medium uppercase">ID: {bp.id}</span>
                                                         <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
                                                         <span>Uploaded by {bp.uploadedBy || 'Lead Engineer'}</span>
                                                     </div>
@@ -340,7 +443,7 @@ export const ProjectModal = ({
                                                 </div>
                                                 <div className="text-right w-24">
                                                     <div className="text-[9px] text-gray-600 uppercase tracking-widest mb-1">Compliance</div>
-                                                    <div className="text-sm font-mono text-white">{bp.compliance > 0 ? `${bp.compliance}%` : '-'}</div>
+                                                    <div className="text-sm font-medium tabular-nums text-white">{bp.compliance > 0 ? `${bp.compliance}%` : '-'}</div>
                                                 </div>
                                                 <button 
                                                     onClick={() => { onOpenWorkspace(bp.id); onClose(); }}
@@ -358,7 +461,7 @@ export const ProjectModal = ({
                                         </div>
                                         <p className="text-sm font-medium text-gray-300">Project File Bucket Empty</p>
                                         <p className="text-xs text-gray-500 mt-1 max-w-[280px] text-center px-6 leading-relaxed">
-                                            No blueprints or architectural plans have been uploaded to this project. Click here or the button above to ingest your first file.
+                                            No blueprints or architectural plans have been uploaded to this project. Click here or the button above to upload your first file.
                                         </p>
                                     </div>
                                 )}
@@ -376,7 +479,7 @@ export const ProjectModal = ({
                                             <button onClick={() => setViewingReport(null)} className="p-2 hover:bg-[#27272a] rounded text-gray-400 hover:text-white"><Icons.ChevronLeft /></button>
                                             <div>
                                                 <h4 className="text-sm font-semibold text-white">Forensic Analysis: {viewingReport.blueprintName}</h4>
-                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">{viewingReport.date} • {viewingReport.author}</p>
+                                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">{viewingReport.date} • {viewingReport.author}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -393,7 +496,7 @@ export const ProjectModal = ({
                                     <div className="flex items-center justify-between mb-8">
                                         <div>
                                             <h3 className="text-lg font-medium text-white">Forensic Reports Registry</h3>
-                                            <p className="text-xs text-gray-500 mt-1">Registry of neural interpretations generated via Stage 2 inference.</p>
+                                            <p className="text-xs text-gray-500 mt-1">Registry of AI interpretations generated via Stage 2 inference.</p>
                                         </div>
                                     </div>
 
@@ -417,7 +520,7 @@ export const ProjectModal = ({
                                                             <div className="flex items-center justify-between mt-6">
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-4 h-4 rounded-full bg-blue-600 flex items-center justify-center text-[8px] text-white">AI</div>
-                                                                    <span className="text-[10px] text-gray-600 italic">Neural Engine</span>
+                                                                    <span className="text-[10px] text-gray-600 italic">AI Engine</span>
                                                                 </div>
                                                                 <span className="text-[10px] text-gray-500">{report.date}</span>
                                                             </div>
@@ -431,7 +534,7 @@ export const ProjectModal = ({
                                             <div className="p-4 rounded-full bg-[#18181b] border border-[#27272a] text-purple-900/40 mb-4">
                                                 <Icons.Sparkles width={32} height={32} />
                                             </div>
-                                            <p className="text-sm font-medium text-gray-300">Neural Registry Pending</p>
+                                            <p className="text-sm font-medium text-gray-300">Analysis Registry Pending</p>
                                             <p className="text-xs text-gray-500 mt-2 max-w-[320px] text-center px-6 leading-relaxed">
                                                 No forensic reports have been generated for this project. To create one, open a blueprint in the <b>Workspace</b> and execute the <b>Run Pipeline</b> command.
                                             </p>
@@ -450,11 +553,65 @@ export const ProjectModal = ({
                                     <h3 className="text-lg font-medium text-white">Collaborators</h3>
                                     <p className="text-xs text-gray-500 mt-1">Manage project access and permissions for your engineering team.</p>
                                 </div>
-                                <button className="px-4 py-2 bg-[#18181b] border border-[#3f3f46] text-white text-xs font-medium rounded hover:bg-[#27272a] transition-all flex items-center gap-2">
+                                <button 
+                                    onClick={() => setIsAddingMember(true)}
+                                    className="px-4 py-2 bg-[#18181b] border border-[#3f3f46] text-white text-xs font-medium rounded hover:bg-[#27272a] transition-all flex items-center gap-2"
+                                >
                                     <Icons.Plus width={14} height={14} /> 
                                     Add Member
                                 </button>
                             </div>
+
+                            {/* Add Member Form */}
+                            {isAddingMember && (
+                                <div className="mb-6 p-4 bg-[#18181b] border border-[#27272a] rounded-lg animate-fade-in">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">New Team Member</h4>
+                                    <div className="grid grid-cols-4 gap-4 mb-4">
+                                        <div className="col-span-2">
+                                            <input 
+                                                type="text" 
+                                                placeholder="Full Name"
+                                                value={newMember.name}
+                                                onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                                                className="w-full bg-[#09090b] border border-[#27272a] rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Role (e.g. Engineer)"
+                                                value={newMember.role}
+                                                onChange={(e) => setNewMember({...newMember, role: e.target.value})}
+                                                className="w-full bg-[#09090b] border border-[#27272a] rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Initials (e.g. JD)"
+                                                value={newMember.initials}
+                                                onChange={(e) => setNewMember({...newMember, initials: e.target.value})}
+                                                className="w-full bg-[#09090b] border border-[#27272a] rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-3">
+                                        <button 
+                                            onClick={() => setIsAddingMember(false)}
+                                            className="px-3 py-1.5 text-xs text-gray-400 hover:text-white"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            onClick={handleAddMember}
+                                            disabled={!newMember.name || !newMember.initials}
+                                            className={`px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded ${(!newMember.name || !newMember.initials) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-500'}`}
+                                        >
+                                            Save Member
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 {project.team.length > 0 ? (
@@ -483,50 +640,121 @@ export const ProjectModal = ({
 
                     {/* SETTINGS TAB */}
                     {activeTab === 'settings' && (
-                        <div className="p-8 max-w-3xl mx-auto animate-fade-in space-y-10">
-                            <div>
-                                <h3 className="text-lg font-medium text-white mb-6">General Configuration</h3>
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Project Name</label>
-                                        <input 
-                                            type="text" 
-                                            defaultValue={project.name}
-                                            className="w-full bg-[#121214] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Client Organization</label>
-                                            <input 
-                                                type="text" 
-                                                defaultValue={project.client}
-                                                className="w-full bg-[#121214] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Site Location</label>
-                                            <input 
-                                                type="text" 
-                                                defaultValue={project.location}
-                                                className="w-full bg-[#121214] border border-[#27272a] rounded-lg px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="pt-4 border-t border-[#27272a] flex justify-end">
-                                        <button className="px-6 py-2 bg-blue-600 text-white text-xs font-bold rounded hover:bg-blue-500 transition-all">Save Changes</button>
-                                    </div>
+                        <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+                            <div className="flex justify-between items-center mb-8">
+                                <div>
+                                    <h3 className="text-lg font-medium text-white">Project Configuration</h3>
+                                    <p className="text-xs text-gray-500 mt-1">System-wide parameters for financials, compliance, and metadata.</p>
                                 </div>
+                                <button 
+                                    onClick={handleSaveSettings}
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                                >
+                                    {isSaving ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Icons.CheckCircle width={14} height={14} />}
+                                    Save Changes
+                                </button>
                             </div>
 
-                            <div className="pt-10 border-t border-[#27272a]">
-                                <h3 className="text-sm font-bold text-rose-500 uppercase tracking-widest mb-4">Danger Zone</h3>
-                                <div className="p-5 border border-rose-500/20 bg-rose-500/5 rounded-xl flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm font-semibold text-gray-100">Archive Project</div>
-                                        <p className="text-[11px] text-gray-500 mt-1 max-w-[400px]">Archiving a project moves it to long-term storage. You can still access blueprints but Stage 2 analysis will be disabled until restored.</p>
+                            <div className="grid grid-cols-3 gap-8">
+                                <div className="col-span-2 space-y-6">
+                                    {/* SECTION 1: IDENTITY */}
+                                    <SettingsSection title="Identity & Metadata" icon={<Icons.FileText width={18} height={18} />}>
+                                        <div className="grid grid-cols-2 gap-5">
+                                            <SettingField label="Project Name">
+                                                <input type="text" value={basicInfo.name} onChange={e => setBasicInfo({...basicInfo, name: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
+                                            </SettingField>
+                                            <SettingField label="Client Organization">
+                                                <input type="text" value={basicInfo.client} onChange={e => setBasicInfo({...basicInfo, client: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none" />
+                                            </SettingField>
+                                            <SettingField label="Internal Job #">
+                                                <input type="text" value={localSettings.jobNumber} onChange={e => setLocalSettings({...localSettings, jobNumber: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-blue-500 focus:outline-none" />
+                                            </SettingField>
+                                            <SettingField label="Project Phase">
+                                                <select value={localSettings.phase} onChange={e => setLocalSettings({...localSettings, phase: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none">
+                                                    <option>Pre-Design / Audit</option>
+                                                    <option>Design Development</option>
+                                                    <option>Construction Documents</option>
+                                                    <option>Permitting</option>
+                                                    <option>Construction Admin</option>
+                                                </select>
+                                            </SettingField>
+                                            <div className="col-span-2">
+                                                <SettingField label="Scope Description">
+                                                    <textarea rows={3} value={basicInfo.description} onChange={e => setBasicInfo({...basicInfo, description: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none resize-none" />
+                                                </SettingField>
+                                            </div>
+                                        </div>
+                                    </SettingsSection>
+
+                                    {/* SECTION 2: FINANCIALS */}
+                                    <SettingsSection title="Financial Parameters" icon={<Icons.DollarSign width={18} height={18} />}>
+                                        <div className="grid grid-cols-2 gap-5">
+                                            <SettingField label="Total Budget Limit" description="Hard cap for budget tracking warnings.">
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500 text-xs">$</span>
+                                                    <input type="number" value={basicInfo.budget} onChange={e => setBasicInfo({...basicInfo, budget: parseFloat(e.target.value) || 0})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none tabular-nums" />
+                                                </div>
+                                            </SettingField>
+                                            <SettingField label="Default Labor Rate" description="Applied to all new quote items automatically.">
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-2 text-gray-500 text-xs">$</span>
+                                                    <input type="number" value={localSettings.laborRate} onChange={e => setLocalSettings({...localSettings, laborRate: parseFloat(e.target.value) || 0})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg pl-6 pr-10 py-2 text-sm text-white focus:border-blue-500 focus:outline-none tabular-nums" />
+                                                    <span className="absolute right-3 top-2.5 text-gray-600 text-[10px]">/hr</span>
+                                                </div>
+                                            </SettingField>
+                                            <SettingField label="Material Markup %" description="Standard markup applied to component list prices.">
+                                                <input type="number" value={localSettings.materialMarkup} onChange={e => setLocalSettings({...localSettings, materialMarkup: parseFloat(e.target.value) || 0})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none tabular-nums" />
+                                            </SettingField>
+                                            <SettingField label="Sales Tax Rate %">
+                                                <input type="number" value={localSettings.taxRate} onChange={e => setLocalSettings({...localSettings, taxRate: parseFloat(e.target.value) || 0})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none tabular-nums" />
+                                            </SettingField>
+                                        </div>
+                                    </SettingsSection>
+                                </div>
+
+                                <div className="space-y-6">
+                                     {/* SECTION 3: COMPLIANCE */}
+                                    <SettingsSection title="Engineering Standards" icon={<Icons.CheckCircle width={18} height={18} />}>
+                                        <div className="space-y-5">
+                                            <SettingField label="Building Code Version">
+                                                <select value={localSettings.buildingCode} onChange={e => setLocalSettings({...localSettings, buildingCode: e.target.value})} className="w-full bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2 text-sm text-gray-300 focus:border-blue-500 focus:outline-none">
+                                                    <option>IBC 2021 (International Building Code)</option>
+                                                    <option>IBC 2018</option>
+                                                    <option>IMC 2021 (Mechanical Code)</option>
+                                                    <option>UMC 2021 (Uniform Mechanical Code)</option>
+                                                </select>
+                                            </SettingField>
+                                            
+                                            <SettingField label="Active ASHRAE Standards">
+                                                <div className="space-y-2">
+                                                    {['62.1-2019 Ventilation', '90.1-2019 Energy', '55-2020 Thermal Comfort', '170-2021 Healthcare'].map(std => (
+                                                        <label key={std} onClick={() => toggleAshrae(std)} className="flex items-center gap-3 p-3 bg-[#09090b] border border-[#27272a] rounded-lg cursor-pointer hover:border-blue-500/50 transition-colors group">
+                                                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${localSettings.ashraeStandards.includes(std) ? 'bg-blue-600 border-blue-600' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                                                                {localSettings.ashraeStandards.includes(std) && <Icons.CheckCircle width={12} height={12} className="text-white" />}
+                                                            </div>
+                                                            <span className={`text-xs ${localSettings.ashraeStandards.includes(std) ? 'text-white font-medium' : 'text-gray-400'}`}>{std}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </SettingField>
+                                        </div>
+                                    </SettingsSection>
+
+                                    <div className="pt-6 border-t border-[#27272a]">
+                                        <h3 className="text-xs font-bold text-rose-500 uppercase tracking-widest mb-4">Danger Zone</h3>
+                                        <div className="p-4 border border-rose-500/20 bg-rose-500/5 rounded-xl space-y-4">
+                                            <div>
+                                                <div className="text-sm font-semibold text-gray-100">Archive Project</div>
+                                                <p className="text-[10px] text-gray-500 mt-1 leading-relaxed">Moves project to cold storage. Stage 2 analysis will be disabled.</p>
+                                            </div>
+                                            <button 
+                                                onClick={handleArchiveProject}
+                                                className="w-full py-2 bg-[#09090b] border border-rose-500/30 text-rose-500 text-xs font-bold rounded hover:bg-rose-600 hover:text-white transition-all"
+                                            >
+                                                Archive Project
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button className="px-4 py-2 bg-[#121214] border border-rose-500/30 text-rose-500 text-xs font-bold rounded hover:bg-rose-500 hover:text-white transition-all">Archive Project</button>
                                 </div>
                             </div>
                         </div>

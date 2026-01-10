@@ -1,3 +1,4 @@
+
 export type Blueprint = {
   id: string;
   name: string;
@@ -6,12 +7,23 @@ export type Blueprint = {
   uploadedBy?: string;
   uploadedAt?: string;
   imageData?: string; // Base64 data for persistence
+  detectedComponents?: DetectedComponent[];
+  analysisText?: string;
 };
 
 export type TeamMember = {
   name: string;
   role: string;
   initials: string;
+};
+
+export type Comment = {
+  id: string;
+  text: string;
+  author: string;
+  initials: string;
+  timestamp: string;
+  role: string;
 };
 
 export type Activity = {
@@ -27,6 +39,18 @@ export type AnalysisReport = {
   date: string;
   content: string;
   author: string;
+};
+
+export type ProjectSettings = {
+  jobNumber: string;
+  phase: string;
+  buildingCode: string; // e.g., "IBC 2021"
+  ashraeStandards: string[]; // e.g., ["62.1", "90.1"]
+  laborRate: number;
+  materialMarkup: number; // Percentage
+  taxRate: number;
+  contingency: number;
+  measurementSystem: 'imperial' | 'metric';
 };
 
 export type Project = {
@@ -45,6 +69,7 @@ export type Project = {
   activityLog: Activity[];
   blueprintsData: Blueprint[];
   analysisReports: AnalysisReport[];
+  settings?: ProjectSettings; // Optional for backward compatibility
 };
 
 export type ViewState = 'dashboard' | 'workspace' | 'projects';
@@ -63,6 +88,7 @@ export type DetectedComponent = {
   estimatedLifespan?: string;
   efficiencyRating?: string;
   estimatedInstallHours?: number; 
+  comments?: Comment[];
 };
 
 export type QuoteItem = {
@@ -74,6 +100,7 @@ export type QuoteItem = {
   materialCost: number;
   laborCost: number;
   hours: number;
+  comments?: Comment[];
 };
 
 export type QuoteInfo = {
