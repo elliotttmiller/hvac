@@ -57,6 +57,7 @@ class SemanticCache {
     this.cache = new Map();
     this.maxAge = 3600000; // 1 hour TTL
     this.maxSize = 100; // Increased capacity
+    this.costPerRequest = 0.03; // Approximate cost per AI request in dollars
     this.stats = {
       hits: 0,
       misses: 0,
@@ -72,7 +73,8 @@ class SemanticCache {
       return null;
     }
     
-    if (Date.now() - entry.timestamp > this.maxAge) {
+    // Check expiration (current time > timestamp + TTL)
+    if (Date.now() > entry.timestamp + this.maxAge) {
       this.cache.delete(key);
       this.stats.misses++;
       return null;
@@ -80,7 +82,7 @@ class SemanticCache {
     
     entry.hits++;
     this.stats.hits++;
-    this.stats.totalSaved += 0.03; // Approximate cost per request
+    this.stats.totalSaved += this.costPerRequest;
     console.log(`[Cache HIT] Key: ${key.substring(0, 30)}... (${entry.hits} hits, $${this.stats.totalSaved.toFixed(2)} saved)`);
     return entry.data;
   }

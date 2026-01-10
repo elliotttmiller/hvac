@@ -17,7 +17,7 @@
     "react-markdown": "9.0.1",
     "remark-gfm": "4.0.0",
     "cors": "^2.8.5",
-    "express": "^5.2.1"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

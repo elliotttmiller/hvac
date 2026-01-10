@@ -39,7 +39,7 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, options);
       
-      // Don't retry on client errors (4xx)
+      // Don't retry on client errors (4xx) except 429 (rate limit)
       if (response.status >= 400 && response.status < 500 && response.status !== 429) {
         return response;
       }

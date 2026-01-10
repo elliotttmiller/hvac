@@ -5,13 +5,16 @@ import { stage1Extraction, stage2Analysis, getCacheStats } from './aiService.js'
 const app = express();
 const PORT = process.env.PORT_SERVER || 4000;
 
+// Configuration constants
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 30;
+const MIN_BASE64_LENGTH = 100; // Minimum length for valid base64 image data
+
 app.use(cors());
 app.use(express.json({ limit: '25mb' }));
 
 // Request tracking for rate limiting
 const requestCounts = new Map();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 30;
 
 // Simple rate limiting middleware
 function rateLimit(req, res, next) {
@@ -46,8 +49,8 @@ function validateImageData(req, res, next) {
     return res.status(400).json({ error: 'invalid_request', message: 'base64Image is required and must be a string' });
   }
   
-  // Validate base64 format
-  if (base64Image.length < 100) {
+  // Validate base64 format (minimum length check for valid image data)
+  if (base64Image.length < MIN_BASE64_LENGTH) {
     return res.status(400).json({ error: 'invalid_request', message: 'base64Image appears to be too short' });
   }
   

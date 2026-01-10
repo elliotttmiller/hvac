@@ -2,19 +2,20 @@
  * SEMANTIC CACHE LAYER - Production Grade
  * 
  * Purpose: Drastically reduce AI inference costs and latency.
- * Strategy: In-Memory LRU (Least Recently Used) with Time-To-Live (TTL) and quota management.
+ * Strategy: Browser-persistent cache using localStorage with LRU eviction and TTL expiration.
  * 
  * Enhancements from production:
  * - Storage quota monitoring and management
  * - Automatic eviction policies
  * - Cache statistics and hit rate tracking
- * - Persistent storage with localStorage
+ * - Persistent storage across browser sessions
  * 
  * Specs:
+ * - Storage: localStorage (persists across sessions)
  * - Capacity: 100 items (LRU eviction)
  * - TTL: 24 Hours (configurable)
  * - Key Generation: Context-aware (Image + Metadata)
- * - Storage: localStorage with quota management
+ * - Quota: 4MB with automatic management
  */
 
 type CacheEntry<T> = {
@@ -43,6 +44,7 @@ class SemanticCache {
     private readonly TTL_MS = 24 * 60 * 60 * 1000; // 24 Hours (increased from 1 hour)
     private readonly MAX_CACHE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB localStorage limit
     private readonly STORAGE_KEY = 'hvac-ai-cache';
+    private readonly COST_PER_REQUEST = 0.03; // Approximate cost per AI request in dollars
     private stats = {
         hits: 0,
         misses: 0,
@@ -81,8 +83,8 @@ class SemanticCache {
         const entry = this.cache.get(key)!;
         const now = Date.now();
 
-        // 1. Check Expiration
-        if (now - entry.timestamp > entry.ttl) {
+        // 1. Check Expiration (compare current time against timestamp + TTL)
+        if (now > entry.timestamp + entry.ttl) {
             console.log(`[CACHE] Expired: ${key.substring(0, 20)}...`);
             this.cache.delete(key);
             this.saveToStorage();
@@ -93,14 +95,14 @@ class SemanticCache {
         // 2. Cache Hit Logic (LRU Refresh)
         entry.hits++;
         this.stats.hits++;
-        this.stats.totalSaved += 0.03; // Approximate cost per AI request
+        this.stats.totalSaved += this.COST_PER_REQUEST;
         
         // Move to end of Map (most recently used)
         this.cache.delete(key);
         this.cache.set(key, entry);
 
         const hitRate = this.getHitRate();
-        console.log(`%c[CACHE HIT] Saved $0.03 | Total saved: $${this.stats.totalSaved.toFixed(2)} | Hit rate: ${hitRate}% | Entry hits: ${entry.hits}`, 'color: #10b981; font-weight: bold;');
+        console.log(`%c[CACHE HIT] Saved $${this.COST_PER_REQUEST.toFixed(2)} | Total saved: $${this.stats.totalSaved.toFixed(2)} | Hit rate: ${hitRate}% | Entry hits: ${entry.hits}`, 'color: #10b981; font-weight: bold;');
         
         this.saveToStorage();
         return entry.data as T;
@@ -220,7 +222,8 @@ class SemanticCache {
         let cleaned = 0;
 
         for (const [key, entry] of this.cache.entries()) {
-            if (now - entry.timestamp > entry.ttl) {
+            // Check if expired (current time > timestamp + TTL)
+            if (now > entry.timestamp + entry.ttl) {
                 this.cache.delete(key);
                 cleaned++;
             }
