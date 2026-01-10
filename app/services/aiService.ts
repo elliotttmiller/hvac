@@ -1,4 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { DetectedComponent } from "../types";
 import { HVAC_KNOWLEDGE_BASE } from "../data/hvacKnowledgeBase";
 import { getComponentPricing } from "./pricingService";
@@ -7,153 +6,122 @@ import { aiCache } from "./semanticCache";
 // Single source of truth for the active model
 export const ACTIVE_MODEL_NAME = 'gemini-3-flash-preview';
 
+// Server proxy configuration
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+
 export type ExtractionResult = {
   detectedComponents: DetectedComponent[];
+  meta?: {
+    processingTime: number;
+    timestamp: string;
+  };
 };
 
 export type AnalysisReportResult = {
   analysisReport: string;
+  meta?: {
+    processingTime: number;
+    timestamp: string;
+  };
 };
 
 /**
+ * Enhanced error handling with retry logic
+ */
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries = 2
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Don't retry on client errors (4xx)
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        return response;
+      }
+      
+      // Retry on server errors (5xx) or rate limit (429)
+      if (!response.ok && attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.warn(`Request failed (${response.status}), retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.warn(`Request error, retrying in ${delay}ms...`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Request failed after retries');
+}
+
+/**
  * STAGE 1: Forensic Component Extraction
- * High-precision identification and technical profiling of assets.
- * OPTIMIZED: Uses Gemini 3 Flash for maximum cost-efficiency while maintaining high reasoning via thinking budget.
+ * Now uses secure server-side proxy instead of direct API calls
  */
 export const stage1Extraction = async (
   base64Image: string, 
   mimeType: string
 ): Promise<ExtractionResult> => {
-  // 1. CACHE CHECK
+  // 1. CACHE CHECK (Client-side for instant results)
   const cacheKey = aiCache.generateKey('STAGE_1_EXTRACTION', base64Image);
   const cachedResult = aiCache.get<ExtractionResult>(cacheKey);
   
   if (cachedResult) {
+      console.log('%c[CLIENT CACHE HIT] Stage 1 - Instant result', 'color: #10b981; font-weight: bold;');
       return cachedResult;
   }
 
-  // 2. API EXECUTION
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // 2. API EXECUTION via Server Proxy
+  try {
+    const response = await fetchWithRetry(`${SERVER_URL}/api/ai/extract`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        base64Image,
+        mimeType
+      })
+    });
 
-  const prompt = `
-    # ROLE
-    Senior Instrumentation & Controls Engineer. Expert in ISA-5.1 standards.
-
-    # OBJECTIVE
-    Perform a rigorous, pixel-level forensic extraction of EVERY single component in the P&ID. 
-    It is critical to detect ALL assets, not just a sample. High recall is the priority.
-
-    # STRATEGY - CRITICAL
-    1.  **Systematic Grid Scan**: Visually traverse the drawing from Top-Left to Bottom-Right, section by section.
-    2.  **Exhaustive Listing**: Do NOT group similar items (e.g., do not say "3x VAVs"). You must return a distinct JSON object for EACH individual component found.
-    3.  **Symbol Sensitivity**: deeply analyze small circles (sensors), distinct valve geometries, damper blades, and equipment tags.
-    4.  **Implicit Detection**: If a line interacts with a device, check for associated actuators or sensors that might be unlabeled but visually present.
-
-    # KNOWLEDGE BASE
-    ${HVAC_KNOWLEDGE_BASE}
-
-    # REQUIREMENTS
-    1. Identify every tag/instrument (VAV, TT, PT, TIC, Valve, Actuator, Dampers, Thermostats, Pumps, Fans, etc.).
-    2. Extract the exact Tag ID (e.g., VAV-101). If ID is illegible or missing, generate a logical unique ID (e.g., VAV-001, VAV-002).
-    3. Determine the Manufacturer if visible or common for this symbol type.
-    4. Estimate installation man-hours based on standard MCAA/NECA labor units.
-    5. Provide specific technical specifications (Voltage, Signal Type, Range).
-  `;
-
-  const response = await ai.models.generateContent({
-    model: ACTIVE_MODEL_NAME,
-    contents: {
-      parts: [
-        { inlineData: { mimeType: mimeType, data: base64Image } },
-        { text: prompt }
-      ]
-    },
-    config: {
-      thinkingConfig: { thinkingBudget: 16000 },
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          detectedComponents: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                name: { type: Type.STRING },
-                type: { type: Type.STRING },
-                confidence: { type: Type.NUMBER },
-                status: { type: Type.STRING },
-                cost: { type: Type.NUMBER },
-                sku: { type: Type.STRING },
-                description: { type: Type.STRING },
-                maintenanceNotes: { type: Type.STRING },
-                estimatedLifespan: { type: Type.STRING },
-                efficiencyRating: { type: Type.STRING },
-                estimatedInstallHours: { type: Type.NUMBER },
-                technicalSpecs: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            key: { type: Type.STRING },
-                            value: { type: Type.STRING }
-                        },
-                        required: ["key", "value"]
-                    }
-                }
-              },
-              required: ["id", "name", "type", "confidence", "status", "cost", "sku", "description", "technicalSpecs", "estimatedInstallHours"]
-            }
-          }
-        },
-        required: ["detectedComponents"]
-      }
-    }
-  });
-
-  const result = JSON.parse(response.text || "{}");
-  
-  const components: DetectedComponent[] = result.detectedComponents?.map((c: any) => {
-    const specsMap: { [key: string]: string } = {};
-    if (Array.isArray(c.technicalSpecs)) {
-        c.technicalSpecs.forEach((spec: { key: string, value: string }) => {
-            if (spec.key && spec.value) {
-                specsMap[spec.key] = spec.value;
-            }
-        });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Server error: ${response.status}`);
     }
 
-    const componentToMatch: DetectedComponent = {
-      ...c,
-      technicalSpecs: specsMap,
-      status: (c.status === 'verified' || c.status === 'review') ? c.status : 'review'
-    };
+    const result = await response.json();
+    
+    // 3. CACHE SET
+    aiCache.set(cacheKey, result);
+    
+    console.log(`[Stage 1] Success: ${result.detectedComponents?.length || 0} components detected`);
+    if (result.meta?.processingTime) {
+      console.log(`[Stage 1] Processing time: ${result.meta.processingTime}ms`);
+    }
 
-    // Integrate Pricing Logic - Hydrating from Catalog Truth
-    const pricing = getComponentPricing(componentToMatch);
-
-    return {
-      ...componentToMatch,
-      cost: pricing.matched_sku !== "N/A" ? pricing.estimated_cost : c.cost,
-      sku: pricing.matched_sku !== "N/A" ? pricing.matched_sku : c.sku,
-      name: pricing.matched_sku !== "N/A" ? `${c.name} [${pricing.matched_sku}]` : c.name,
-      description: pricing.description || c.description
-    };
-  }) || [];
-
-  const finalResult = { detectedComponents: components };
-
-  // 3. CACHE SET
-  aiCache.set(cacheKey, finalResult);
-
-  return finalResult;
+    return result;
+  } catch (error) {
+    console.error('[Stage 1] Error:', error);
+    throw new Error(`Component extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };
 
 /**
  * STAGE 2: AI Interpretation & Forensic Report
- * Deep-dive analysis of system logic, flaws, and optimizations.
- * OPTIMIZED: Uses Gemini 3 Flash for efficient yet professional engineering reasoning.
+ * Now uses secure server-side proxy instead of direct API calls
  */
 export const stage2Analysis = async (
   base64Image: string, 
@@ -161,65 +129,50 @@ export const stage2Analysis = async (
   detectedComponents: DetectedComponent[]
 ): Promise<AnalysisReportResult> => {
   // 1. CACHE CHECK (Semantic: Image + Component Context)
-  // If the user manually edits components in the UI, this key changes, triggering a fresh analysis.
   const cacheKey = aiCache.generateKey('STAGE_2_ANALYSIS', base64Image, detectedComponents);
   const cachedResult = aiCache.get<AnalysisReportResult>(cacheKey);
 
   if (cachedResult) {
+      console.log('%c[CLIENT CACHE HIT] Stage 2 - Instant result', 'color: #10b981; font-weight: bold;');
       return cachedResult;
   }
 
-  // 2. API EXECUTION
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // 2. API EXECUTION via Server Proxy
+  try {
+    const response = await fetchWithRetry(`${SERVER_URL}/api/ai/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        base64Image,
+        mimeType,
+        detectedComponents: detectedComponents.map(c => ({ 
+          id: c.id, 
+          name: c.name, 
+          type: c.type 
+        }))
+      })
+    });
 
-  const context = `Extracted Components List: ${JSON.stringify(detectedComponents.map(c => ({ id: c.id, name: c.name, type: c.type })))}`;
-
-  const prompt = `
-    # ROLE
-    Professional Forensic HVAC Engineer (PE).
-
-    # CONTEXT
-    Components already extracted: ${context}
-
-    # OBJECTIVE
-    Generate a high-density, professionally formatted forensic report.
-
-    # OUTPUT STRUCTURE RULES
-    1.  **Start with a Blockquote**: Use ">" to create an Executive Summary at the very top. Summarize the system type, overall health, and critical actions in 3-4 sentences.
-    2.  **Section Headers**: Use "##" for major sections (System Topology, Critical Findings, Recommendations).
-    3.  **Bulleted Lists**: Use lists for findings to ensure readability.
-    4.  **Tables**: If comparing data (e.g., flow rates, schedules), use Markdown tables.
-
-    # CONTENT TASKS
-    1.  **System Topology**: Define the sequence of operations logic.
-    2.  **Critical Flaw Detection**: Identify safety gaps (Missing freeze-stats, static high limits, flow switches).
-    3.  **Engineering Observations**: Logic check on control loops.
-    4.  **Optimization Recommendations**: Energy recovery, VFD integration.
-
-    # FORMATTING CONSTRAINT
-    *   Do NOT include standard memo headers (To, From, Date).
-    *   Start directly with the Executive Summary blockquote.
-    *   Use technical but accessible language.
-  `;
-
-  const response = await ai.models.generateContent({
-    model: ACTIVE_MODEL_NAME,
-    contents: {
-      parts: [
-        { inlineData: { mimeType: mimeType, data: base64Image } },
-        { text: prompt }
-      ]
-    },
-    config: {
-      thinkingConfig: { thinkingBudget: 12000 },
-      maxOutputTokens: 20000
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Server error: ${response.status}`);
     }
-  });
 
-  const finalResult = { analysisReport: response.text || "Report generation failed." };
+    const result = await response.json();
+    
+    // 3. CACHE SET
+    aiCache.set(cacheKey, result);
+    
+    console.log(`[Stage 2] Success: Report generated`);
+    if (result.meta?.processingTime) {
+      console.log(`[Stage 2] Processing time: ${result.meta.processingTime}ms`);
+    }
 
-  // 3. CACHE SET
-  aiCache.set(cacheKey, finalResult);
-
-  return finalResult;
+    return result;
+  } catch (error) {
+    console.error('[Stage 2] Error:', error);
+    throw new Error(`Analysis report generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 };
