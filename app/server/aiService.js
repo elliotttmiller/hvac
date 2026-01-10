@@ -1,6 +1,55 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { HVAC_KNOWLEDGE_BASE } from '../data/hvacKnowledgeBase.js';
-import { getComponentPricing } from '../services/pricingService.js';
+
+// Inline minimal HVAC knowledge base for server
+const HVAC_KNOWLEDGE_BASE = `
+ISA-5.1 Standard Instrument Tags:
+- T: Temperature (TT=Transmitter, TIC=Controller, TE=Element)
+- P: Pressure (PT=Transmitter, PIC=Controller, PSV=Safety Valve)
+- F: Flow (FT=Transmitter, FIC=Controller, FE=Element)
+- L: Level (LT=Transmitter, LIC=Controller, LS=Switch)
+- V: Valve (CV=Control Valve, MOV=Motor Operated Valve)
+- D: Damper (MD=Modulating Damper, BD=Backdraft Damper)
+
+HVAC Equipment:
+- AHU: Air Handling Unit
+- VAV: Variable Air Volume Box
+- FCU: Fan Coil Unit
+- RTU: Rooftop Unit
+- Chiller, Boiler, Cooling Tower, Heat Exchanger
+`;
+
+// Inline simplified pricing function
+function getComponentPricing(component) {
+  // Simple pricing logic - in real app this would query catalog
+  const basePrice = 150;
+  const priceMap = {
+    'temperature': 200,
+    'pressure': 250,
+    'flow': 300,
+    'valve': 500,
+    'damper': 400,
+    'sensor': 150,
+    'controller': 800,
+    'actuator': 350
+  };
+  
+  const type = (component.type || '').toLowerCase();
+  for (const [key, price] of Object.entries(priceMap)) {
+    if (type.includes(key)) {
+      return {
+        matched_sku: `HVAC-${key.toUpperCase()}-001`,
+        estimated_cost: price,
+        description: `${component.name || 'Component'}`
+      };
+    }
+  }
+  
+  return {
+    matched_sku: 'N/A',
+    estimated_cost: component.cost || basePrice,
+    description: component.description || component.name || 'Component'
+  };
+}
 
 // Production-grade in-memory cache with statistics
 class SemanticCache {
