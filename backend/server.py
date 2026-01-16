@@ -50,7 +50,7 @@ async def analyze_document(request: AnalyzeRequest):
     Phase 1 - Extraction: Fast per-page extraction of literal text/numbers from pages.
     Phase 2 - Reasoning: Feed extracted data into the MN_HVAC_SYSTEM_INSTRUCTION and return strict JSON.
     """
-    print(f"🚀 Starting 'Gemini-Style' Pipeline with {MODEL_NAME}")
+    print(f"Starting 'Gemini-Style' Pipeline with {MODEL_NAME}")
 
     is_pdf = request.mime_type and request.mime_type.lower().startswith("application/pdf")
     # Fallback sniff
@@ -82,7 +82,7 @@ async def analyze_document(request: AnalyzeRequest):
             # limit pages to first 20 by default to keep latency reasonable
             max_pages = min(total_pages, 20)
             for p in range(1, max_pages + 1):
-                print(f"   👁️ Scanning Page {p}...")
+                print(f"   Scanning Page {p}...")
                 img_result = await pdf_session.call_tool("render_page_for_vision", arguments={"pdf_base64": request.file_base64, "page_number": p})
                 img_data = json.loads(img_result.content[0].text)
                 image_data_url = f"data:image/png;base64,{img_data.get('image_data')}"
@@ -122,23 +122,23 @@ async def analyze_document(request: AnalyzeRequest):
             )
             extracted_data.append(f"--- IMAGE ---\n{resp.choices[0].message.content}")
 
-        # Phase 2: Reasoning with strict system prompt
-        print("🧠 Running Engineering Inference (Gemini Logic)...")
-        full_context = "\n\n".join(extracted_data)
+    # Phase 2: Reasoning with strict system prompt
+    print("Running Engineering Inference (Gemini Logic)...")
+    full_context = "\n\n".join(extracted_data)
 
-        final = await client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
-                {"role": "user", "content": f"Here is the data extracted from the plans:\n\n{full_context}\n\nGenerate the compliance report."}
-            ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
-        )
+    final = await client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
+            {"role": "user", "content": f"Here is the data extracted from the plans:\n\n{full_context}\n\nGenerate the compliance report."}
+        ],
+        temperature=0.1,
+        response_format={"type": "json_object"}
+    )
 
-        raw_json = final.choices[0].message.content
-        print("✅ Report Generated.")
-        return {"report": raw_json}
+    raw_json = final.choices[0].message.content
+    print("Report generated.")
+    return {"report": raw_json}
 
 
 @app.post("/api/upload")
