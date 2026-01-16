@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+mcp
+pypdf
+pymupdf
+openai
+python-multipart
+httpx
+fuzzywuzzy
+python-levenshtein
