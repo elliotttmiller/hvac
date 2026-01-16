@@ -14,11 +14,20 @@ class ComplianceStatus(str, Enum):
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
 
 
+class PDFQuality(str, Enum):
+    """PDF rendering quality presets."""
+    FAST = "fast"  # 1.5x zoom - faster processing
+    BALANCED = "balanced"  # 2.0x zoom - default
+    DETAILED = "detailed"  # 3.0x zoom - for complex blueprints
+    ULTRA = "ultra"  # 4.0x zoom - maximum quality
+
+
 class AnalyzeRequest(BaseModel):
     """Request payload for document analysis."""
     file_base64: str = Field(..., description="Base64-encoded file data")
     mime_type: str = Field(..., description="MIME type of the file")
     max_pages: Optional[int] = Field(20, ge=1, le=50, description="Maximum pages to process")
+    quality: Optional[PDFQuality] = Field(PDFQuality.BALANCED, description="PDF rendering quality")
     
     @field_validator('file_base64')
     @classmethod

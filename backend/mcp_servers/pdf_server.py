@@ -52,15 +52,16 @@ def split_pdf_metadata(pdf_base64: str) -> str:
         return json.dumps({"error": str(e)})
 
 @mcp.tool()
-def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
+def render_page_for_vision(pdf_base64: str, page_number: int, zoom_factor: float = 2.0) -> str:
     """Renders a specific page as a High-Res PNG for Qwen VL.
     
-    Uses configurable zoom (default 2x) for crisp text recognition while balancing
+    Uses configurable zoom for crisp text recognition while balancing
     payload size for 8GB VRAM constraint.
     
     Args:
         pdf_base64: Base64-encoded PDF data
         page_number: Page number to render (1-indexed)
+        zoom_factor: Zoom multiplier (1.5=fast, 2.0=balanced, 3.0=detailed, 4.0=ultra)
         
     Returns:
         JSON string with image_data (base64 PNG) and dimensions, or error field
@@ -83,9 +84,14 @@ def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
         
         page = doc.load_page(page_number - 1)  # 0-indexed
         
-        # Use configurable zoom factor (default 2.0)
-        # Higher zoom (3.0+) improves quality but increases VRAM usage
-        zoom_matrix = fitz.Matrix(PDF_ZOOM_FACTOR, PDF_ZOOM_FACTOR)
+        # Use provided zoom factor (with fallback to environment or default)
+        if zoom_factor <= 0:
+            zoom_factor = PDF_ZOOM_FACTOR
+        
+        # Clamp zoom factor to reasonable range
+        zoom_factor = max(1.0, min(zoom_factor, 4.0))
+        
+        zoom_matrix = fitz.Matrix(zoom_factor, zoom_factor)
         pix = page.get_pixmap(matrix=zoom_matrix)
         
         img_base64 = base64.b64encode(pix.tobytes("png")).decode("utf-8")
@@ -94,11 +100,12 @@ def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
             "image_data": img_base64,
             "page_number": page_number,
             "width": pix.width,
-            "height": pix.height
+            "height": pix.height,
+            "zoom_factor": zoom_factor
         }
         
         doc.close()
-        logger.info(f"Rendered page {page_number}: {pix.width}x{pix.height}px (zoom={PDF_ZOOM_FACTOR}x)")
+        logger.info(f"Rendered page {page_number}: {pix.width}x{pix.height}px (zoom={zoom_factor}x)")
         
         return json.dumps(result)
         

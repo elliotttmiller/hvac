@@ -10,7 +10,8 @@ from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION
 from backend.config import get_settings
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,
-    ModelStatus, ErrorResponse, PDFMetadata, PageImageData, AnalysisReport
+    ModelStatus, ErrorResponse, PDFMetadata, PageImageData, AnalysisReport,
+    PDFQuality
 )
 from backend.utils import (
     RequestTracer, retry_with_backoff, repair_json, validate_json_schema,
@@ -43,6 +44,14 @@ client = AsyncOpenAI(
     api_key=settings.ollama_api_key
 )
 MODEL_NAME = settings.model_name
+
+# Map quality enum to zoom factor for PDF rendering
+QUALITY_ZOOM_MAP = {
+    PDFQuality.FAST: 1.5,
+    PDFQuality.BALANCED: 2.0,
+    PDFQuality.DETAILED: 3.0,
+    PDFQuality.ULTRA: 4.0
+}
 
 
 @app.get("/api/catalog")
@@ -138,7 +147,9 @@ async def analyze_document(request: AnalyzeRequest):
                     total_pages = doc_info.get('total_pages', 1)
                     max_pages = min(total_pages, request.max_pages or settings.max_pages_default)
                     
-                    logger.info(f"[{request_id}] Processing {max_pages}/{total_pages} pages")
+                    # Get zoom factor from quality setting
+                    zoom_factor = QUALITY_ZOOM_MAP.get(request.quality, 2.0)
+                    logger.info(f"[{request_id}] Processing {max_pages}/{total_pages} pages (quality={request.quality.value}, zoom={zoom_factor}x)")
 
                     # Process each page with graceful failure handling
                     for p in range(1, max_pages + 1):
@@ -146,7 +157,11 @@ async def analyze_document(request: AnalyzeRequest):
                             logger.info(f"[{request_id}] Scanning Page {p}/{max_pages}...")
                             img_result = await pdf_session.call_tool(
                                 "render_page_for_vision", 
-                                arguments={"pdf_base64": request.file_base64, "page_number": p}
+                                arguments={
+                                    "pdf_base64": request.file_base64, 
+                                    "page_number": p,
+                                    "zoom_factor": zoom_factor
+                                }
                             )
                             img_data = json.loads(img_result.content[0].text)
                             

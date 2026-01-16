@@ -3,7 +3,8 @@ import {
   AnalyzeRequest, 
   AnalyzeResponse, 
   ErrorResponse,
-  BackendAnalysisReport 
+  BackendAnalysisReport,
+  PDFQuality 
 } from './apiTypes';
 
 const BACKEND_URL = "http://localhost:8000/api/analyze";
@@ -67,9 +68,10 @@ function parseErrorResponse(data: unknown): ErrorResponse {
 export const analyzeDocument = async (
   fileBase64: string,
   mimeType: string,
-  onLog: (msg: string) => void
+  onLog: (msg: string) => void,
+  quality: PDFQuality = 'balanced'
 ): Promise<AnalysisReport> => {
-  onLog?.("🚀 Sending to local backend for vision+reasoning...");
+  onLog?.(`🚀 Sending to local backend for vision+reasoning (quality: ${quality})...`);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -78,7 +80,8 @@ export const analyzeDocument = async (
     const requestBody: AnalyzeRequest = {
       file_base64: fileBase64,
       mime_type: mimeType,
-      max_pages: 20
+      max_pages: 20,
+      quality
     };
 
     const resp = await fetch(BACKEND_URL, {

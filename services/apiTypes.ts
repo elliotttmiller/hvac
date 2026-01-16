@@ -5,10 +5,13 @@
 
 export type ComplianceStatus = 'COMPLIANT' | 'NON_COMPLIANT' | 'REVIEW_REQUIRED';
 
+export type PDFQuality = 'fast' | 'balanced' | 'detailed' | 'ultra';
+
 export interface AnalyzeRequest {
   file_base64: string;
   mime_type: string;
   max_pages?: number;
+  quality?: PDFQuality;
 }
 
 export interface UploadRequest {

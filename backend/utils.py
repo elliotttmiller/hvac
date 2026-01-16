@@ -5,6 +5,7 @@ import json
 import logging
 import time
 import re
+import random
 from typing import Optional, Any, Callable, TypeVar, Dict
 from functools import wraps
 import sys
@@ -49,15 +50,17 @@ def retry_with_backoff(
     max_retries: int = 3,
     initial_delay: float = 1.0,
     backoff_factor: float = 2.0,
+    jitter: bool = True,
     exceptions: tuple = (Exception,)
 ):
     """
-    Decorator for retry logic with exponential backoff.
+    Decorator for retry logic with exponential backoff and optional jitter.
     
     Args:
         max_retries: Maximum number of retry attempts
         initial_delay: Initial delay in seconds
         backoff_factor: Multiplier for delay after each retry
+        jitter: Add random jitter to prevent thundering herd (default: True)
         exceptions: Tuple of exception types to catch
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
@@ -72,11 +75,13 @@ def retry_with_backoff(
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
+                        # Add jitter: random value between 0 and delay
+                        actual_delay = delay * (1 + random.random()) if jitter else delay
                         logger.warning(
                             f"Attempt {attempt + 1}/{max_retries} failed for {func.__name__}: {e}. "
-                            f"Retrying in {delay:.1f}s..."
+                            f"Retrying in {actual_delay:.1f}s..."
                         )
-                        time.sleep(delay)
+                        time.sleep(actual_delay)
                         delay *= backoff_factor
                     else:
                         logger.error(
@@ -96,11 +101,13 @@ def retry_with_backoff(
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
+                        # Add jitter: random value between 0 and delay
+                        actual_delay = delay * (1 + random.random()) if jitter else delay
                         logger.warning(
                             f"Attempt {attempt + 1}/{max_retries} failed for {func.__name__}: {e}. "
-                            f"Retrying in {delay:.1f}s..."
+                            f"Retrying in {actual_delay:.1f}s..."
                         )
-                        time.sleep(delay)
+                        time.sleep(actual_delay)
                         delay *= backoff_factor
                     else:
                         logger.error(
