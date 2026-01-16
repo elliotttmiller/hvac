@@ -26,7 +26,12 @@ class AnalyzeRequest(BaseModel):
     """Request payload for document analysis."""
     file_base64: str = Field(..., description="Base64-encoded file data")
     mime_type: str = Field(..., description="MIME type of the file")
-    max_pages: Optional[int] = Field(20, ge=1, le=50, description="Maximum pages to process")
+    max_pages: Optional[int] = Field(
+        20, 
+        ge=1, 
+        le=100,  # Upper limit can be adjusted in config
+        description="Maximum pages to process (development default: 20)"
+    )
     quality: Optional[PDFQuality] = Field(PDFQuality.BALANCED, description="PDF rendering quality")
     
     @field_validator('file_base64')

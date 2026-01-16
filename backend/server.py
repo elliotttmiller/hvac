@@ -64,14 +64,15 @@ async def get_catalog():
         return {"error": "catalog not found"}
 @retry_with_backoff(
     max_retries=settings.max_retries, 
-    initial_delay=settings.retry_initial_delay, 
+    initial_delay=settings.retry_initial_delay,
+    jitter=True,
     exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException)
 )
 async def extract_page_text(image_data_url: str, page_num: int, request_id: str) -> str:
     """Extract text from a single page with retry logic.
     
-    Only retries on transient errors (network, timeout, model errors).
-    Does not retry on validation or logic errors.
+    Only retries on transient errors (network, timeout, model failures).
+    Validation errors and logic errors are not retried as they won't resolve with retry.
     """
     with RequestTracer(request_id, f"extract_page_{page_num}"):
         resp = await client.chat.completions.create(

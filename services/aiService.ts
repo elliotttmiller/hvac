@@ -241,6 +241,8 @@ export const synthesizeMultiPageReport = async (
   filename: string,
   modelId: string = AI_MODELS.PRO.id
 ): Promise<AnalysisReportResult> => {
+  // For development: simple concatenation is sufficient for single-user
+  // Production note: For very large documents, consider streaming/chunking
   const combined = `DOCUMENT: ${filename}\n\n` + pageReports.map((r, i) => `--- PAGE ${i + 1} ---\n${r}\n`).join('\n');
   return { analysisReport: combined };
 };

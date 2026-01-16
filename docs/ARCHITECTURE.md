@@ -323,6 +323,12 @@ ollama serve
 npm run dev
 ```
 
+**Note**: Development uses `http://localhost` for all communication. For production deployment, consider:
+- Using HTTPS with proper certificates
+- Configuring OLLAMA_BASE_URL in environment
+- Setting up proper CORS restrictions
+- Implementing authentication/authorization
+
 ### Production (Single Server)
 
 ```bash
