@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION
 from backend.config import get_settings
 from backend.models import (
@@ -56,10 +56,14 @@ async def get_catalog():
 @retry_with_backoff(
     max_retries=settings.max_retries, 
     initial_delay=settings.retry_initial_delay, 
-    exceptions=(Exception,)
+    exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException)
 )
 async def extract_page_text(image_data_url: str, page_num: int, request_id: str) -> str:
-    """Extract text from a single page with retry logic."""
+    """Extract text from a single page with retry logic.
+    
+    Only retries on transient errors (network, timeout, model errors).
+    Does not retry on validation or logic errors.
+    """
     with RequestTracer(request_id, f"extract_page_{page_num}"):
         resp = await client.chat.completions.create(
             model=MODEL_NAME,

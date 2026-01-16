@@ -104,7 +104,7 @@ def retry_with_backoff(
                         delay *= backoff_factor
                     else:
                         logger.error(
-                            f"All {max_retries} exhausted for {func.__name__}: {e}"
+                            f"All {max_retries} retries exhausted for {func.__name__}: {e}"
                         )
             
             raise last_exception
