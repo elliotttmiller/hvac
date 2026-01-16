@@ -7,6 +7,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI
 from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION
+from backend.config import get_settings
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,
     ModelStatus, ErrorResponse, PDFMetadata, PageImageData, AnalysisReport
@@ -21,17 +22,27 @@ from uuid import uuid4
 import httpx
 import time
 
-app = FastAPI(title="HVAC Analysis API", version="2.0.0")
+# Load configuration
+settings = get_settings()
+
+app = FastAPI(
+    title="HVAC Analysis API", 
+    version="2.0.0",
+    description="Local-first HVAC engineering analysis with Ollama + MCP"
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-client = AsyncOpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
-MODEL_NAME = "qwen2.5vl"
+client = AsyncOpenAI(
+    base_url=settings.ollama_base_url, 
+    api_key=settings.ollama_api_key
+)
+MODEL_NAME = settings.model_name
 
 
 @app.get("/api/catalog")
@@ -42,7 +53,11 @@ async def get_catalog():
         return data
     except FileNotFoundError:
         return {"error": "catalog not found"}
-@retry_with_backoff(max_retries=2, initial_delay=2.0, exceptions=(Exception,))
+@retry_with_backoff(
+    max_retries=settings.max_retries, 
+    initial_delay=settings.retry_initial_delay, 
+    exceptions=(Exception,)
+)
 async def extract_page_text(image_data_url: str, page_num: int, request_id: str) -> str:
     """Extract text from a single page with retry logic."""
     with RequestTracer(request_id, f"extract_page_{page_num}"):
@@ -54,8 +69,8 @@ async def extract_page_text(image_data_url: str, page_num: int, request_id: str)
                     {"type": "image_url", "image_url": {"url": image_data_url}}
                 ]}
             ],
-            max_tokens=1200,
-            temperature=0.0
+            max_tokens=settings.extraction_max_tokens,
+            temperature=settings.extraction_temperature
         )
         return resp.choices[0].message.content
 
@@ -117,7 +132,7 @@ async def analyze_document(request: AnalyzeRequest):
                         raise HTTPException(status_code=400, detail=f"PDF metadata error: {doc_info['error']}")
                     
                     total_pages = doc_info.get('total_pages', 1)
-                    max_pages = min(total_pages, request.max_pages or 20)
+                    max_pages = min(total_pages, request.max_pages or settings.max_pages_default)
                     
                     logger.info(f"[{request_id}] Processing {max_pages}/{total_pages} pages")
 
@@ -177,7 +192,7 @@ async def analyze_document(request: AnalyzeRequest):
         full_context = "\n\n".join(extracted_data)
         
         # Truncate if needed to fit context window
-        full_context = truncate_to_token_limit(full_context, max_tokens=28000)
+        full_context = truncate_to_token_limit(full_context, max_tokens=settings.context_window_max_tokens)
         
         try:
             final = await client.chat.completions.create(
@@ -186,7 +201,7 @@ async def analyze_document(request: AnalyzeRequest):
                     {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
                     {"role": "user", "content": f"Here is the data extracted from the plans:\n\n{full_context}\n\nGenerate the compliance report."}
                 ],
-                temperature=0.1,
+                temperature=settings.reasoning_temperature,
                 response_format={"type": "json_object"}
             )
 
@@ -231,7 +246,7 @@ async def upload_pdf(request: UploadRequest):
     request_id = f"req-{uuid4().hex[:12]}"
     
     with RequestTracer(request_id, "upload_pdf"):
-        os.makedirs("backend/uploads", exist_ok=True)
+        os.makedirs(settings.upload_dir, exist_ok=True)
         upload_id = f"up-{uuid4().hex[:8]}"
         
         # Sanitize filename to prevent path traversal
@@ -241,7 +256,7 @@ async def upload_pdf(request: UploadRequest):
         try:
             header, b64 = request.file_base64.split(",", 1) if "," in request.file_base64 else (None, request.file_base64)
             pdf_bytes = base64.b64decode(b64)
-            save_path = os.path.join("backend", "uploads", f"{upload_id}.pdf")
+            save_path = os.path.join(settings.upload_dir, f"{upload_id}.pdf")
             with open(save_path, "wb") as f:
                 f.write(pdf_bytes)
             logger.info(f"[{request_id}] Saved PDF: {save_path}")
@@ -274,8 +289,8 @@ async def upload_pdf(request: UploadRequest):
                 
                 total_pages = doc_info.get("total_pages", 0)
 
-                # Limit to first 20 pages for preview
-                max_pages = min(total_pages, 20)
+                # Limit to preview pages
+                max_pages = min(total_pages, settings.max_pages_default)
 
                 for p in range(1, max_pages + 1):
                     try:

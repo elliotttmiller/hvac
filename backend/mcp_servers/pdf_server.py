@@ -4,11 +4,15 @@ import io
 import json
 import fitz  # PyMuPDF
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP("pdf-processor")
+
+# Load zoom factor from environment or use default
+PDF_ZOOM_FACTOR = float(os.environ.get("HVAC_PDF_ZOOM_FACTOR", "2.0"))
 
 @mcp.tool()
 def split_pdf_metadata(pdf_base64: str) -> str:
@@ -51,7 +55,7 @@ def split_pdf_metadata(pdf_base64: str) -> str:
 def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
     """Renders a specific page as a High-Res PNG for Qwen VL.
     
-    Uses 2x zoom (matrix=2) for crisp text recognition while balancing
+    Uses configurable zoom (default 2x) for crisp text recognition while balancing
     payload size for 8GB VRAM constraint.
     
     Args:
@@ -79,9 +83,9 @@ def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
         
         page = doc.load_page(page_number - 1)  # 0-indexed
         
-        # Zoom=2.0 ensures text is crisp for OCR while managing payload size
-        # Higher zoom (3.0+) would improve quality but increase VRAM usage
-        zoom_matrix = fitz.Matrix(2, 2)
+        # Use configurable zoom factor (default 2.0)
+        # Higher zoom (3.0+) improves quality but increases VRAM usage
+        zoom_matrix = fitz.Matrix(PDF_ZOOM_FACTOR, PDF_ZOOM_FACTOR)
         pix = page.get_pixmap(matrix=zoom_matrix)
         
         img_base64 = base64.b64encode(pix.tobytes("png")).decode("utf-8")
@@ -94,7 +98,7 @@ def render_page_for_vision(pdf_base64: str, page_number: int) -> str:
         }
         
         doc.close()
-        logger.info(f"Rendered page {page_number}: {pix.width}x{pix.height}px")
+        logger.info(f"Rendered page {page_number}: {pix.width}x{pix.height}px (zoom={PDF_ZOOM_FACTOR}x)")
         
         return json.dumps(result)
         
