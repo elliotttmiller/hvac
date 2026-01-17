@@ -9,6 +9,25 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP("hvac-engineering")
 
+# Ventilation calculation constants
+DEFAULT_ACH_INFILTRATION = 0.30  # Air changes per hour for typical construction
+DEFAULT_CEILING_HEIGHT_FT = 8    # Standard residential ceiling height
+MINUTES_PER_HOUR = 60            # Time conversion constant
+INFILTRATION_CREDIT_FACTOR = 0.5 # ASHRAE 62.2 allows 50% credit for infiltration
+
+# Solar heat gain constants (BTU/h/sqft) for Climate Zone 7 (Minnesota) in July
+SOLAR_INTENSITY_BY_ORIENTATION = {
+    "N": 40,
+    "NE": 90,
+    "E": 140,
+    "SE": 120,
+    "S": 80,
+    "SW": 150,
+    "W": 160,
+    "NW": 110
+}
+DEFAULT_COOLING_LOAD_FACTOR = 0.70  # Typical CLF for residential buildings
+
 # Load Data on Startup
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -444,14 +463,13 @@ def calculate_ventilation_requirement(floor_area_sqft: float, bedrooms: int, occ
     total_cfm = area_component + occupant_component
     
     # Infiltration credit: Can reduce ventilation by measured infiltration
-    # Assume typical construction: 0.30 ACH natural infiltration
-    # Infiltration CFM = (floor_area × ceiling_height × ACH) / 60
-    # Assume 8 ft ceiling for residential
-    volume = floor_area_sqft * 8
-    infiltration_cfm = (volume * 0.30) / 60
+    # Assume typical construction: DEFAULT_ACH_INFILTRATION natural infiltration
+    # Infiltration CFM = (floor_area × ceiling_height × ACH) / MINUTES_PER_HOUR
+    volume = floor_area_sqft * DEFAULT_CEILING_HEIGHT_FT
+    infiltration_cfm = (volume * DEFAULT_ACH_INFILTRATION) / MINUTES_PER_HOUR
     
     # Net ventilation needed (after infiltration credit)
-    net_ventilation_cfm = max(0, total_cfm - (infiltration_cfm * 0.5))  # 50% credit per ASHRAE
+    net_ventilation_cfm = max(0, total_cfm - (infiltration_cfm * INFILTRATION_CREDIT_FACTOR))  # INFILTRATION_CREDIT_FACTOR credit per ASHRAE
     
     result = {
         "floor_area_sqft": floor_area_sqft,
@@ -460,7 +478,7 @@ def calculate_ventilation_requirement(floor_area_sqft: float, bedrooms: int, occ
         "area_component_cfm": round(area_component, 1),
         "occupant_component_cfm": round(occupant_component, 1),
         "total_required_cfm": round(total_cfm, 1),
-        "infiltration_credit_cfm": round(infiltration_cfm * 0.5, 1),
+        "infiltration_credit_cfm": round(infiltration_cfm * INFILTRATION_CREDIT_FACTOR, 1),
         "net_ventilation_cfm": round(net_ventilation_cfm, 1),
         "standard": "ASHRAE 62.2",
         "recommendations": []
@@ -502,31 +520,18 @@ def calculate_solar_heat_gain(window_area_sqft: float, orientation: str, shgc: f
     if not (0 < shgc <= 1.0):
         return json.dumps({"error": "SHGC must be between 0 and 1.0"})
     
-    # Peak solar intensity for Climate Zone 7 (Minnesota) in July
-    # Values in BTU/h/sqft based on orientation
-    solar_intensity = {
-        "N": 40,
-        "NE": 90,
-        "E": 140,
-        "SE": 120,
-        "S": 80,
-        "SW": 150,
-        "W": 160,
-        "NW": 110
-    }
-    
+    # Use module-level constants for solar intensity
     orientation_upper = orientation.upper()
-    if orientation_upper not in solar_intensity:
+    if orientation_upper not in SOLAR_INTENSITY_BY_ORIENTATION:
         return json.dumps({
             "error": f"Unknown orientation: {orientation}",
-            "valid_orientations": list(solar_intensity.keys())
+            "valid_orientations": list(SOLAR_INTENSITY_BY_ORIENTATION.keys())
         })
     
     # Cooling Load Factor (accounts for thermal mass and time lag)
-    # Typical residential: 0.60-0.80
-    clf = 0.70
+    clf = DEFAULT_COOLING_LOAD_FACTOR
     
-    intensity = solar_intensity[orientation_upper]
+    intensity = SOLAR_INTENSITY_BY_ORIENTATION[orientation_upper]
     solar_gain_btu = window_area_sqft * intensity * shgc * clf
     
     result = {

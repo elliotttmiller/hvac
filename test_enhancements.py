@@ -8,7 +8,12 @@ import json
 import sys
 sys.path.insert(0, 'backend')
 
-from backend.models import *
+from backend.models import (
+    ProjectInfo, InfiltrationVentilation, InternalGains, 
+    EquipmentAnalysis, ComplianceStatus, VentilationCompliance, 
+    EconomizerCompliance, LoadCalculations, ComplianceViolation,
+    ComplianceStatusReport
+)
 from backend.utils import validate_hvac_analysis_output
 from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT
 from backend.mcp_servers.engineering_server import (

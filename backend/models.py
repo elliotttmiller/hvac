@@ -62,15 +62,12 @@ class ProjectInfo(BaseModel):
     """Project identification information."""
     project_name: str = Field(default="Unnamed Project")
     climate_zone: str = Field(default="7")
-    design_temp_heating: int = Field(default=-17, alias="design_temp_heating_f")
-    design_temp_cooling: int = Field(default=89, alias="design_temp_cooling_f")
+    design_temp_heating_f: int = Field(default=-17)
+    design_temp_cooling_f: int = Field(default=89)
     building_type: str = Field(default="residential")
     total_conditioned_area_sqft: float = Field(default=0, ge=0)
     design_humidity_winter_percent: int = Field(default=30, ge=0, le=100)
     design_humidity_summer_percent: int = Field(default=50, ge=0, le=100)
-    
-    class Config:
-        populate_by_name = True  # Allow both field name and alias
 
 
 class InfiltrationVentilation(BaseModel):
