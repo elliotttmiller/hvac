@@ -216,6 +216,102 @@ def validate_json_schema(data: Dict[str, Any], required_keys: list[str]) -> bool
     return True
 
 
+def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Comprehensive validation and enhancement of HVAC analysis output.
+    Checks for data consistency, calculates missing fields, and adds warnings.
+    
+    Args:
+        data: Parsed JSON output from analysis
+        
+    Returns:
+        Enhanced data with validation status and warnings
+    """
+    if not isinstance(data, dict):
+        return {"error": "Invalid data structure", "validation_passed": False}
+    
+    warnings = []
+    validation_passed = True
+    
+    # Check for required top-level keys
+    required_keys = ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]
+    missing_keys = [key for key in required_keys if key not in data]
+    if missing_keys:
+        warnings.append(f"Missing required sections: {', '.join(missing_keys)}")
+        validation_passed = False
+    
+    # Validate equipment analysis if present
+    if "equipment_analysis" in data and isinstance(data["equipment_analysis"], dict):
+        eq_analysis = data["equipment_analysis"]
+        
+        # Check for heating oversize calculation
+        if "proposed_heating_capacity" in eq_analysis and "total_heating_load" in data.get("load_calculations", {}):
+            proposed = eq_analysis.get("proposed_heating_capacity", 0)
+            load = data["load_calculations"].get("total_heating_load", 0)
+            
+            if load > 0:
+                actual_oversize = ((proposed / load) - 1) * 100
+                reported_oversize = eq_analysis.get("heating_oversize_percent", 0)
+                
+                # Check if calculation is consistent (within 1% tolerance)
+                if abs(actual_oversize - reported_oversize) > 1.0:
+                    warnings.append(
+                        f"Heating oversize calculation inconsistent: "
+                        f"Reported {reported_oversize:.1f}%, Calculated {actual_oversize:.1f}%"
+                    )
+                    # Use calculated value
+                    eq_analysis["heating_oversize_percent"] = round(actual_oversize, 1)
+                
+                # Validate compliance status
+                if actual_oversize > 40:
+                    if eq_analysis.get("heating_status") != "NON_COMPLIANT":
+                        warnings.append("Heating equipment exceeds 40% oversize limit (MN Rule 1322.0403)")
+                        eq_analysis["heating_status"] = "NON_COMPLIANT"
+        
+        # Check for cooling oversize calculation
+        if "proposed_cooling_capacity" in eq_analysis and "total_cooling_load" in data.get("load_calculations", {}):
+            proposed = eq_analysis.get("proposed_cooling_capacity", 0)
+            load = data["load_calculations"].get("total_cooling_load", 0)
+            
+            if load > 0:
+                actual_oversize = ((proposed / load) - 1) * 100
+                reported_oversize = eq_analysis.get("cooling_oversize_percent", 0)
+                
+                if abs(actual_oversize - reported_oversize) > 1.0:
+                    warnings.append(
+                        f"Cooling oversize calculation inconsistent: "
+                        f"Reported {reported_oversize:.1f}%, Calculated {actual_oversize:.1f}%"
+                    )
+                    eq_analysis["cooling_oversize_percent"] = round(actual_oversize, 1)
+                
+                # Validate compliance status
+                if actual_oversize > 15:
+                    if eq_analysis.get("cooling_status") != "NON_COMPLIANT":
+                        warnings.append("Cooling equipment exceeds 15% oversize limit (MN Rule 1322.0404)")
+                        eq_analysis["cooling_status"] = "NON_COMPLIANT"
+    
+    # Check confidence score validity
+    if "confidence_score" in data:
+        score = data["confidence_score"]
+        if not isinstance(score, (int, float)) or score < 0 or score > 1:
+            warnings.append(f"Invalid confidence score: {score} (must be 0.0-1.0)")
+            data["confidence_score"] = 0.5  # Default moderate confidence
+    
+    # Add validation metadata
+    data["_validation"] = {
+        "passed": validation_passed and len(warnings) == 0,
+        "warnings": warnings,
+        "timestamp": time.time()
+    }
+    
+    if warnings:
+        logger.warning(f"Analysis output validation warnings: {warnings}")
+    else:
+        logger.info("Analysis output validation passed")
+    
+    return data
+
+
 def sanitize_filename(filename: str) -> str:
     """
     Sanitize filename to prevent path traversal attacks.
@@ -242,8 +338,8 @@ def sanitize_filename(filename: str) -> str:
 
 def estimate_token_count(text: str) -> int:
     """
-    Rough estimation of token count for context window management.
-    Uses ~4 characters per token heuristic.
+    More accurate token count estimation for context window management.
+    Uses word-based heuristic combined with character analysis.
     
     Args:
         text: Input text
@@ -253,12 +349,98 @@ def estimate_token_count(text: str) -> int:
     """
     if not text:
         return 0
-    return len(text) // 4
+    
+    # Qwen tokenizer roughly:
+    # - English words: ~1.3 tokens per word
+    # - Numbers/symbols: ~1 token per 3-4 chars
+    # - Whitespace: not counted
+    
+    words = len(text.split())
+    # Heuristic: 1.3 tokens per word for English text
+    return int(words * 1.3)
+
+
+def prioritize_extracted_content(pages_data: list[str], max_tokens: int = 28000) -> str:
+    """
+    Intelligently prioritize and merge extracted page content.
+    Ensures critical information is retained when truncation is needed.
+    
+    Args:
+        pages_data: List of extracted text from each page
+        max_tokens: Maximum token budget
+        
+    Returns:
+        Optimized aggregated text
+    """
+    if not pages_data:
+        return ""
+    
+    # Priority keywords for HVAC analysis
+    priority_keywords = [
+        'btu', 'ton', 'cfm', 'afue', 'seer', 'hspf',  # Equipment specs
+        'furnace', 'boiler', 'heat pump', 'air conditioner', 'condenser',  # Equipment types
+        'capacity', 'efficiency', 'model',  # Equipment details
+        'sqft', 'square feet', 'area', 'dimension',  # Space measurements
+        'window', 'wall', 'ceiling', 'basement', 'floor',  # Building components
+        'r-value', 'r-', 'u-value', 'u=', 'insulation',  # Thermal properties
+        'duct', 'supply', 'return', 'exhaust',  # HVAC distribution
+        'thermostat', 'controller', 'sensor', 'valve',  # Controls
+        'load', 'calculation', 'heating', 'cooling'  # Analysis terms
+    ]
+    
+    # Score each page by priority content
+    page_scores = []
+    for i, page_text in enumerate(pages_data):
+        text_lower = page_text.lower()
+        score = sum(1 for keyword in priority_keywords if keyword in text_lower)
+        tokens = estimate_token_count(page_text)
+        page_scores.append((i, score, tokens, page_text))
+    
+    # Sort by score (descending), keeping original order for ties
+    page_scores.sort(key=lambda x: (-x[1], x[0]))
+    
+    # Build aggregated content within budget
+    aggregated_parts = []
+    total_tokens = 0
+    safety_margin = int(max_tokens * 0.9)  # 10% safety margin
+    
+    for page_num, score, tokens, text in page_scores:
+        if total_tokens + tokens <= safety_margin:
+            aggregated_parts.append((page_num, text))
+            total_tokens += tokens
+        else:
+            # Try to fit partial content from high-priority pages
+            if score > 5:  # High priority page
+                remaining_tokens = safety_margin - total_tokens
+                if remaining_tokens > 100:  # Worth including partial
+                    char_limit = remaining_tokens * 4
+                    truncated = text[:char_limit]
+                    aggregated_parts.append((page_num, truncated))
+                    logger.info(f"Page {page_num+1} partially included (high priority, {score} keywords)")
+                    total_tokens = safety_margin
+                    break
+    
+    # Re-sort by page number for natural flow
+    aggregated_parts.sort(key=lambda x: x[0])
+    
+    result = "\n\n".join(text for _, text in aggregated_parts)
+    
+    if len(aggregated_parts) < len(pages_data):
+        omitted = len(pages_data) - len(aggregated_parts)
+        logger.warning(
+            f"Context prioritization: Included {len(aggregated_parts)}/{len(pages_data)} pages "
+            f"({total_tokens} tokens). Omitted {omitted} low-priority pages."
+        )
+    else:
+        logger.info(f"All {len(pages_data)} pages included ({total_tokens} tokens)")
+    
+    return result
 
 
 def truncate_to_token_limit(text: str, max_tokens: int = 32000) -> str:
     """
     Truncate text to fit within token limit with safety margin.
+    Now uses improved token estimation.
     
     Args:
         text: Input text
@@ -273,9 +455,13 @@ def truncate_to_token_limit(text: str, max_tokens: int = 32000) -> str:
     
     # Add 10% safety margin
     safe_limit = int(max_tokens * 0.9)
-    char_limit = safe_limit * 4
     
-    truncated = text[:char_limit]
+    # Calculate character limit based on word-based truncation
+    words = text.split()
+    target_words = int(safe_limit / 1.3)
+    truncated_words = words[:target_words]
+    truncated = ' '.join(truncated_words)
+    
     logger.warning(
         f"Text truncated from ~{estimated} tokens to ~{safe_limit} tokens "
         f"to fit within {max_tokens} limit"

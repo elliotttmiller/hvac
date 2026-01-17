@@ -298,5 +298,124 @@ def check_equipment_efficiency(equipment_type: str, efficiency_rating: float) ->
     return json.dumps(result)
 
 
+@mcp.tool()
+def recommend_equipment(load_btu: int, equipment_type: str, building_type: str = "residential") -> str:
+    """Recommends appropriately sized HVAC equipment based on calculated load.
+    
+    Args:
+        load_btu: Calculated heating or cooling load in BTU/h
+        equipment_type: heating or cooling
+        building_type: residential or commercial
+        
+    Returns:
+        JSON with equipment recommendations and sizing guidance
+    """
+    if load_btu <= 0:
+        return json.dumps({"error": "Load must be positive"})
+    
+    equipment_lower = equipment_type.lower()
+    
+    if equipment_lower == "heating":
+        # MN Rule: Max 40% oversize
+        max_capacity = int(load_btu * 1.40)
+        min_capacity = int(load_btu * 0.95)  # Allow slight undersize
+        
+        # Common furnace sizes
+        standard_sizes = [40000, 60000, 80000, 100000, 120000]
+        
+        # Find best fit
+        best_fit = None
+        for size in standard_sizes:
+            if min_capacity <= size <= max_capacity:
+                if best_fit is None or abs(size - load_btu) < abs(best_fit - load_btu):
+                    best_fit = size
+        
+        result = {
+            "load_btu": load_btu,
+            "equipment_type": "heating",
+            "min_capacity_btu": min_capacity,
+            "max_capacity_btu": max_capacity,
+            "recommended_size_btu": best_fit,
+            "oversize_limit": "40% (MN Rule 1322.0403)",
+            "standard_sizes_available": standard_sizes,
+            "notes": []
+        }
+        
+        if best_fit:
+            oversize = ((best_fit / load_btu) - 1) * 100
+            result["actual_oversize_percent"] = round(oversize, 1)
+            if oversize > 40:
+                result["notes"].append("WARNING: Recommended size exceeds code limit")
+        else:
+            result["notes"].append("No standard size fits within code limits - consider custom sizing or two-stage equipment")
+        
+        # Add efficiency guidance
+        result["efficiency_guidance"] = {
+            "minimum_afue": 95.0,
+            "recommended_afue": 96.0,
+            "climate_zone": 7,
+            "note": "Consider modulating furnace for better comfort and no oversize limit"
+        }
+        
+    elif equipment_lower == "cooling":
+        # MN Rule: Max 15% oversize
+        max_capacity = int(load_btu * 1.15)
+        min_capacity = int(load_btu * 0.95)
+        
+        # Convert to tons (more common for AC)
+        load_tons = load_btu / 12000.0
+        max_tons = max_capacity / 12000.0
+        min_tons = min_capacity / 12000.0
+        
+        # Common AC sizes (in tons)
+        standard_sizes_tons = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0]
+        standard_sizes_btu = [int(t * 12000) for t in standard_sizes_tons]
+        
+        # Find best fit
+        best_fit = None
+        best_fit_tons = None
+        for size_btu, size_tons in zip(standard_sizes_btu, standard_sizes_tons):
+            if min_capacity <= size_btu <= max_capacity:
+                if best_fit is None or abs(size_btu - load_btu) < abs(best_fit - load_btu):
+                    best_fit = size_btu
+                    best_fit_tons = size_tons
+        
+        result = {
+            "load_btu": load_btu,
+            "load_tons": round(load_tons, 2),
+            "equipment_type": "cooling",
+            "min_capacity_btu": min_capacity,
+            "max_capacity_btu": max_capacity,
+            "min_capacity_tons": round(min_tons, 2),
+            "max_capacity_tons": round(max_tons, 2),
+            "recommended_size_btu": best_fit,
+            "recommended_size_tons": best_fit_tons,
+            "oversize_limit": "15% (MN Rule 1322.0404)",
+            "standard_sizes_available_tons": standard_sizes_tons,
+            "notes": []
+        }
+        
+        if best_fit:
+            oversize = ((best_fit / load_btu) - 1) * 100
+            result["actual_oversize_percent"] = round(oversize, 1)
+            if oversize > 15:
+                result["notes"].append("WARNING: Recommended size exceeds code limit")
+        else:
+            result["notes"].append("No standard size fits within code limits - consider variable capacity equipment")
+        
+        # Add efficiency and airflow guidance
+        result["efficiency_guidance"] = {
+            "minimum_seer": 14.0,
+            "recommended_seer": 16.0,
+            "required_cfm": int(400 * (best_fit / 12000.0)) if best_fit else None,
+            "cfm_per_ton": 400
+        }
+    else:
+        return json.dumps({"error": f"Unknown equipment type: {equipment_type}. Use 'heating' or 'cooling'"})
+    
+    logger.info(f"Equipment recommendation: {load_btu} BTU/h {equipment_type} -> {result.get('recommended_size_btu')} BTU/h")
+    return json.dumps(result)
+
+
 if __name__ == "__main__":
     mcp.run()
