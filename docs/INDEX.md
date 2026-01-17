@@ -65,13 +65,23 @@ Welcome to the comprehensive documentation for HVAC Analysis AI. This index will
   - Security testing
   - Known limitations
 
-- **[test-logs/test_logs.md](./test-logs/test_logs.md)** - Real test run example
+- **[test-logs/test_logs.md](./test-logs/test_logs.md)** - Real test run example with resolution
+  - Issue identified: Basic report output
+  - Resolution: Enhanced to professional standard
   - Complete E2E inference pipeline demonstration
   - Vision extraction results
   - Engineering calculations breakdown
-  - Compliance validation with failures
+  - Compliance validation
   - Performance metrics and timing
-  - Screenshot reference
+
+- **[REPORT_FORMAT.md](./REPORT_FORMAT.md)** - Professional HVAC report format documentation
+  - Version 2.0 industry standard report structure
+  - 13 comprehensive sections explained
+  - Executive summary, detailed calculations, recommendations
+  - Energy efficiency analysis and cost projections
+  - Equipment recommendations with alternatives
+  - Compliance checklist and code citations
+  - Usage examples for frontend display
 
 ### Summary Documents
 - **[SUMMARY.md](./SUMMARY.md)** - E2E audit and optimization summary
@@ -96,8 +106,9 @@ Welcome to the comprehensive documentation for HVAC Analysis AI. This index will
 ### Usage & Workflows
 1. [Basic workflow](../README.md#-usage-guide)
 2. [Understanding analysis reports](../README.md#understanding-the-analysis-report)
-3. [Advanced features](../README.md#advanced-features)
-4. [API reference](../README.md#-api-reference)
+3. [Enhanced report format v2.0](./REPORT_FORMAT.md)
+4. [Advanced features](../README.md#advanced-features)
+5. [API reference](../README.md#-api-reference)
 
 ### Development
 1. [Development environment setup](../README.md#-development)
@@ -198,9 +209,11 @@ docs/
 ├── ENHANCEMENTS.md                 ← Feature enhancements details
 ├── FRONTEND_IMPLEMENTATION.md      ← Frontend components guide
 ├── FRONTEND_MIGRATION_GUIDE.md     ← Frontend migration instructions
+├── REPORT_FORMAT.md                ← Professional report format v2.0 (NEW)
 ├── SUMMARY.md                      ← Implementation summary
+├── MN_REGULATIONS_IMPLEMENTATION.md ← Minnesota code implementation
 └── test-logs/
-    ├── test_logs.md                ← Real E2E test run example
+    ├── test_logs.md                ← Test run with enhancement resolution
     └── image.png                   ← Test results screenshot
 
 Root level:
