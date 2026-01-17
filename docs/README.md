@@ -28,12 +28,21 @@ This directory contains comprehensive documentation for the HVAC Analysis AI sys
 | [FRONTEND_IMPLEMENTATION.md](./FRONTEND_IMPLEMENTATION.md) | Frontend component guide | Frontend Developers |
 | [FRONTEND_MIGRATION_GUIDE.md](./FRONTEND_MIGRATION_GUIDE.md) | Migration instructions | Frontend Developers |
 
+### Testing & Quality Assurance
+
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [Test Logs Audit Report](./test_logs_audit_report.md) | Comprehensive log analysis | Tech Leads, Developers |
+| [Test Logs Executive Summary](./test_logs_executive_summary.md) | Quick findings overview | Stakeholders, Managers |
+| [Test Logs Action Items](./test_logs_action_items.md) | Implementation checklist | Developers |
+| [Test Logs Timeline & Stats](./test_logs_timeline_stats.md) | Data and metrics | Data Analysts |
+| [../TESTING_GUIDE.md](../TESTING_GUIDE.md) | Testing procedures | Developers, QA |
+
 ### Additional Resources
 
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | [INDEX.md](./INDEX.md) | Complete documentation index | All |
-| [../TESTING_GUIDE.md](../TESTING_GUIDE.md) | Testing procedures | Developers, QA |
 | [../README.md](../README.md) | Main documentation entry point | All |
 
 ## 🎯 Quick Navigation
@@ -62,8 +71,9 @@ This directory contains comprehensive documentation for the HVAC Analysis AI sys
 
 **🧪 QA Engineer**
 1. [Testing Guide](../TESTING_GUIDE.md) - Test procedures
-2. [Performance](./PERFORMANCE.md) - Performance benchmarks
-3. [Summary](./SUMMARY.md) - Quality metrics
+2. [Test Logs Audit](./test_logs_audit_report.md) - Runtime analysis
+3. [Performance](./PERFORMANCE.md) - Performance benchmarks
+4. [Summary](./SUMMARY.md) - Quality metrics
 
 ### By Task
 
@@ -84,6 +94,24 @@ This directory contains comprehensive documentation for the HVAC Analysis AI sys
 
 **Testing**
 → [TESTING_GUIDE.md](../TESTING_GUIDE.md)
+→ [Test Logs Audit](./test_logs_audit_report.md)
+
+## 📊 Test Logs Audit (NEW)
+
+**Testing**
+→ [TESTING_GUIDE.md](../TESTING_GUIDE.md)
+→ [Test Logs Audit](./test_logs_audit_report.md)
+
+## 📊 Test Logs Audit
+
+A comprehensive audit of runtime logs has been completed. Choose your entry point:
+
+- **⚡ Quick Overview** → [Executive Summary](./test_logs_executive_summary.md) (5 min)
+- **📋 Implementation** → [Action Items Checklist](./test_logs_action_items.md) (15 min)
+- **🔍 Full Analysis** → [Complete Audit Report](./test_logs_audit_report.md) (45 min)
+- **📈 Data & Metrics** → [Timeline & Statistics](./test_logs_timeline_stats.md) (20 min)
+
+**Key Finding:** Application is functional with B+ grade. Main bottleneck: 91-second AI model loading time (fixable with smaller model quantization).
 
 ## 🔍 Documentation Standards
 
