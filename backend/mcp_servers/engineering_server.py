@@ -9,6 +9,25 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP("hvac-engineering")
 
+# Ventilation calculation constants
+DEFAULT_ACH_INFILTRATION = 0.30  # Air changes per hour for typical construction
+DEFAULT_CEILING_HEIGHT_FT = 8    # Standard residential ceiling height
+MINUTES_PER_HOUR = 60            # Time conversion constant
+INFILTRATION_CREDIT_FACTOR = 0.5 # ASHRAE 62.2 allows 50% credit for infiltration
+
+# Solar heat gain constants (BTU/h/sqft) for Climate Zone 7 (Minnesota) in July
+SOLAR_INTENSITY_BY_ORIENTATION = {
+    "N": 40,
+    "NE": 90,
+    "E": 140,
+    "SE": 120,
+    "S": 80,
+    "SW": 150,
+    "W": 160,
+    "NW": 110
+}
+DEFAULT_COOLING_LOAD_FACTOR = 0.70  # Typical CLF for residential buildings
+
 # Load Data on Startup
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -413,6 +432,278 @@ def recommend_equipment(load_btu: int, equipment_type: str, building_type: str =
         return json.dumps({"error": f"Unknown equipment type: {equipment_type}. Use 'heating' or 'cooling'"})
     
     logger.info(f"Equipment recommendation: {load_btu} BTU/h {equipment_type} -> {result.get('recommended_size_btu')} BTU/h")
+    return json.dumps(result)
+
+
+@mcp.tool()
+def calculate_ventilation_requirement(floor_area_sqft: float, bedrooms: int, occupants: int = None) -> str:
+    """Calculates required ventilation per ASHRAE 62.2 for residential buildings.
+    
+    Args:
+        floor_area_sqft: Total conditioned floor area
+        bedrooms: Number of bedrooms
+        occupants: Number of occupants (if known, otherwise derived from bedrooms)
+        
+    Returns:
+        JSON with ventilation requirements
+    """
+    if floor_area_sqft <= 0:
+        return json.dumps({"error": "Floor area must be positive"})
+    
+    if bedrooms < 0:
+        return json.dumps({"error": "Bedrooms must be non-negative"})
+    
+    # ASHRAE 62.2 formula: Qtotal = 0.03 × floor_area + 7.5 × (bedrooms + 1)
+    # The (bedrooms + 1) approximates occupancy
+    if occupants is None:
+        occupants = bedrooms + 1
+    
+    area_component = 0.03 * floor_area_sqft
+    occupant_component = 7.5 * occupants
+    total_cfm = area_component + occupant_component
+    
+    # Infiltration credit: Can reduce ventilation by measured infiltration
+    # Assume typical construction: DEFAULT_ACH_INFILTRATION natural infiltration
+    # Infiltration CFM = (floor_area × ceiling_height × ACH) / MINUTES_PER_HOUR
+    volume = floor_area_sqft * DEFAULT_CEILING_HEIGHT_FT
+    infiltration_cfm = (volume * DEFAULT_ACH_INFILTRATION) / MINUTES_PER_HOUR
+    
+    # Net ventilation needed (after infiltration credit)
+    net_ventilation_cfm = max(0, total_cfm - (infiltration_cfm * INFILTRATION_CREDIT_FACTOR))  # INFILTRATION_CREDIT_FACTOR credit per ASHRAE
+    
+    result = {
+        "floor_area_sqft": floor_area_sqft,
+        "bedrooms": bedrooms,
+        "estimated_occupants": occupants,
+        "area_component_cfm": round(area_component, 1),
+        "occupant_component_cfm": round(occupant_component, 1),
+        "total_required_cfm": round(total_cfm, 1),
+        "infiltration_credit_cfm": round(infiltration_cfm * INFILTRATION_CREDIT_FACTOR, 1),
+        "net_ventilation_cfm": round(net_ventilation_cfm, 1),
+        "standard": "ASHRAE 62.2",
+        "recommendations": []
+    }
+    
+    # Add equipment recommendations
+    if net_ventilation_cfm > 50:
+        result["recommendations"].append("Consider ERV (Energy Recovery Ventilator) for energy efficiency in Climate Zone 7")
+        result["recommendations"].append("HRV (Heat Recovery Ventilator) is alternative if no humidity control needed")
+    elif net_ventilation_cfm > 0:
+        result["recommendations"].append("Fresh air duct to return plenum with manual damper acceptable")
+    
+    # Check if mechanical ventilation is required
+    if total_cfm > infiltration_cfm:
+        result["mechanical_ventilation_required"] = True
+    else:
+        result["mechanical_ventilation_required"] = False
+        result["recommendations"].append("Natural infiltration may provide sufficient ventilation - verify with blower door test")
+    
+    logger.info(f"Ventilation calculation: {floor_area_sqft} sqft, {bedrooms} BR -> {round(total_cfm, 1)} CFM required")
+    return json.dumps(result)
+
+
+@mcp.tool()
+def calculate_solar_heat_gain(window_area_sqft: float, orientation: str, shgc: float = 0.40) -> str:
+    """Calculates solar heat gain through windows for cooling load.
+    
+    Args:
+        window_area_sqft: Total window area
+        orientation: N, NE, E, SE, S, SW, W, NW
+        shgc: Solar Heat Gain Coefficient (default 0.40 for typical double-pane)
+        
+    Returns:
+        JSON with solar heat gain calculation
+    """
+    if window_area_sqft <= 0:
+        return json.dumps({"error": "Window area must be positive"})
+    
+    if not (0 < shgc <= 1.0):
+        return json.dumps({"error": "SHGC must be between 0 and 1.0"})
+    
+    # Use module-level constants for solar intensity
+    orientation_upper = orientation.upper()
+    if orientation_upper not in SOLAR_INTENSITY_BY_ORIENTATION:
+        return json.dumps({
+            "error": f"Unknown orientation: {orientation}",
+            "valid_orientations": list(SOLAR_INTENSITY_BY_ORIENTATION.keys())
+        })
+    
+    # Cooling Load Factor (accounts for thermal mass and time lag)
+    clf = DEFAULT_COOLING_LOAD_FACTOR
+    
+    intensity = SOLAR_INTENSITY_BY_ORIENTATION[orientation_upper]
+    solar_gain_btu = window_area_sqft * intensity * shgc * clf
+    
+    result = {
+        "window_area_sqft": window_area_sqft,
+        "orientation": orientation_upper,
+        "shgc": shgc,
+        "peak_solar_intensity_btu_per_sqft": intensity,
+        "cooling_load_factor": clf,
+        "solar_heat_gain_btu": round(solar_gain_btu, 0),
+        "notes": [
+            "Solar gain is peak instantaneous load",
+            "Actual load varies by time of day and season",
+            "Consider window shading (overhangs, blinds) to reduce cooling load"
+        ]
+    }
+    
+    # Add recommendations for high-gain orientations
+    if intensity > 140:
+        result["notes"].append(f"{orientation_upper}-facing windows have high solar gain - recommend low-e coating or external shading")
+    
+    logger.info(f"Solar gain: {window_area_sqft} sqft {orientation_upper} @ SHGC={shgc} -> {round(solar_gain_btu, 0)} BTU/h")
+    return json.dumps(result)
+
+
+@mcp.tool()
+def validate_equipment_type(equipment_type: str, application: str, load_variability: str = "medium") -> str:
+    """Validates if equipment type is appropriate for the application.
+    
+    Args:
+        equipment_type: single-stage, two-stage, modulating, variable-speed
+        application: residential, commercial, industrial
+        load_variability: low, medium, high (how much load changes)
+        
+    Returns:
+        JSON with appropriateness assessment
+    """
+    equipment_lower = equipment_type.lower().replace("-", "_").replace(" ", "_")
+    application_lower = application.lower()
+    variability_lower = load_variability.lower()
+    
+    # Equipment characteristics
+    equipment_info = {
+        "single_stage": {
+            "comfort": "basic",
+            "efficiency": "good",
+            "cost": "low",
+            "best_for": "low variability loads, budget-conscious projects",
+            "limitations": "On/off cycling, limited comfort control, subject to 40% oversize limit"
+        },
+        "two_stage": {
+            "comfort": "good",
+            "efficiency": "very good",
+            "cost": "moderate",
+            "best_for": "medium variability loads, balanced comfort and cost",
+            "limitations": "Still some cycling, subject to 40% oversize limit exception"
+        },
+        "modulating": {
+            "comfort": "excellent",
+            "efficiency": "excellent",
+            "cost": "high",
+            "best_for": "high variability loads, maximum comfort",
+            "limitations": "Higher initial cost, exempt from oversize limits"
+        },
+        "variable_speed": {
+            "comfort": "excellent",
+            "efficiency": "excellent",
+            "cost": "high",
+            "best_for": "high variability loads, energy efficiency priority",
+            "limitations": "Higher initial cost, more complex controls"
+        }
+    }
+    
+    if equipment_lower not in equipment_info:
+        return json.dumps({
+            "error": f"Unknown equipment type: {equipment_type}",
+            "valid_types": list(equipment_info.keys())
+        })
+    
+    info = equipment_info[equipment_lower]
+    
+    # Determine appropriateness
+    appropriate = True
+    warnings = []
+    recommendations = []
+    
+    if variability_lower == "high" and equipment_lower == "single_stage":
+        appropriate = False
+        warnings.append("Single-stage equipment not recommended for high load variability")
+        recommendations.append("Consider modulating or variable-speed equipment for better comfort")
+    
+    if variability_lower == "low" and equipment_lower in ["modulating", "variable_speed"]:
+        warnings.append("Premium equipment may not provide sufficient benefit for low variability loads")
+        recommendations.append("Two-stage equipment may be more cost-effective")
+    
+    if application_lower == "commercial" and equipment_lower == "single_stage":
+        warnings.append("Single-stage equipment may not meet comfort requirements for commercial applications")
+    
+    result = {
+        "equipment_type": equipment_type,
+        "application": application,
+        "load_variability": load_variability,
+        "appropriate": appropriate,
+        "comfort_rating": info["comfort"],
+        "efficiency_rating": info["efficiency"],
+        "relative_cost": info["cost"],
+        "best_application": info["best_for"],
+        "limitations": info["limitations"],
+        "warnings": warnings,
+        "recommendations": recommendations
+    }
+    
+    # Add code compliance notes
+    if equipment_lower in ["modulating", "variable_speed"]:
+        result["code_note"] = "Exempt from MN Rule 1322.0403 40% heating oversize limit"
+    else:
+        result["code_note"] = "Subject to MN Rule 1322.0403 40% heating oversize limit"
+    
+    logger.info(f"Equipment validation: {equipment_type} for {application} -> {'appropriate' if appropriate else 'not recommended'}")
+    return json.dumps(result)
+
+
+@mcp.tool()
+def check_economizer_requirement(cooling_capacity_btu: int, climate_zone: int = 7) -> str:
+    """Determines if economizer is required per ASHRAE 90.1 and Minnesota code.
+    
+    Args:
+        cooling_capacity_btu: Total cooling capacity
+        climate_zone: IECC/ASHRAE climate zone (default 7 for Minnesota)
+        
+    Returns:
+        JSON with economizer requirement determination
+    """
+    if cooling_capacity_btu <= 0:
+        return json.dumps({"error": "Cooling capacity must be positive"})
+    
+    # ASHRAE 90.1 and Minnesota requirements
+    # Climate Zone 7: Economizer required if cooling > 54,000 BTU/h (4.5 tons)
+    threshold_btu = 54000
+    threshold_tons = threshold_btu / 12000.0
+    
+    capacity_tons = cooling_capacity_btu / 12000.0
+    required = cooling_capacity_btu > threshold_btu
+    
+    result = {
+        "cooling_capacity_btu": cooling_capacity_btu,
+        "cooling_capacity_tons": round(capacity_tons, 1),
+        "climate_zone": climate_zone,
+        "threshold_btu": threshold_btu,
+        "threshold_tons": round(threshold_tons, 1),
+        "economizer_required": required,
+        "code_reference": "ASHRAE 90.1 / MN Energy Code"
+    }
+    
+    if required:
+        result["economizer_type_options"] = [
+            "Differential dry-bulb (simplest, uses outdoor vs return temp)",
+            "Differential enthalpy (more efficient, uses temp + humidity)",
+            "Fixed dry-bulb (economizer enabled when OAT < 55°F)"
+        ]
+        result["recommendation"] = "Differential enthalpy economizer recommended for Climate Zone 7"
+        result["notes"] = [
+            "Economizer can provide free cooling when outdoor conditions favorable",
+            "Requires motorized outdoor air damper and controls",
+            "Must be able to provide 100% outdoor air for cooling"
+        ]
+    else:
+        result["recommendation"] = "Economizer not required for this capacity"
+        result["notes"] = [
+            f"Cooling capacity {round(capacity_tons, 1)} tons is below {round(threshold_tons, 1)} ton threshold"
+        ]
+    
+    logger.info(f"Economizer check: {cooling_capacity_btu} BTU/h -> {'required' if required else 'not required'}")
     return json.dumps(result)
 
 

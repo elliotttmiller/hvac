@@ -12,6 +12,7 @@ class ComplianceStatus(str, Enum):
     COMPLIANT = "COMPLIANT"
     NON_COMPLIANT = "NON_COMPLIANT"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    EXEMPT_MODULATING = "EXEMPT_MODULATING"  # Modulating equipment exempt from 40% heating limit
 
 
 class PDFQuality(str, Enum):
@@ -61,15 +62,42 @@ class ProjectInfo(BaseModel):
     """Project identification information."""
     project_name: str = Field(default="Unnamed Project")
     climate_zone: str = Field(default="7")
-    design_temp_heating: int = Field(default=-17)
-    design_temp_cooling: int = Field(default=89)
+    design_temp_heating_f: int = Field(default=-17)
+    design_temp_cooling_f: int = Field(default=89)
+    building_type: str = Field(default="residential")
+    total_conditioned_area_sqft: float = Field(default=0, ge=0)
+    design_humidity_winter_percent: int = Field(default=30, ge=0, le=100)
+    design_humidity_summer_percent: int = Field(default=50, ge=0, le=100)
+
+
+class InfiltrationVentilation(BaseModel):
+    """Infiltration and ventilation load components."""
+    infiltration_cfm: float = Field(default=0, ge=0)
+    infiltration_load_heating_btu: float = Field(default=0, ge=0)
+    infiltration_load_cooling_sensible_btu: float = Field(default=0, ge=0)
+    infiltration_load_cooling_latent_btu: float = Field(default=0, ge=0)
+    ventilation_cfm_required: float = Field(default=0, ge=0)
+    ventilation_method: Optional[str] = Field(default=None)
+
+
+class InternalGains(BaseModel):
+    """Internal heat gains from occupants, lighting, and appliances."""
+    people_count: int = Field(default=0, ge=0)
+    people_load_btu: float = Field(default=0, ge=0)
+    lighting_load_btu: float = Field(default=0, ge=0)
+    appliances_load_btu: float = Field(default=0, ge=0)
+    total_internal_gains_btu: float = Field(default=0, ge=0)
 
 
 class LoadCalculations(BaseModel):
     """Heating and cooling load calculations."""
     total_heating_load: int = Field(..., ge=0, description="Total heating load in BTU/h")
     total_cooling_load: int = Field(..., ge=0, description="Total cooling load in BTU/h")
+    total_cooling_load_sensible: Optional[int] = Field(None, ge=0, description="Sensible cooling load in BTU/h")
+    total_cooling_load_latent: Optional[int] = Field(None, ge=0, description="Latent cooling load in BTU/h")
     calculation_method: str = Field(default="Manual J")
+    infiltration_ventilation: Optional[InfiltrationVentilation] = Field(default=None)
+    internal_gains: Optional[InternalGains] = Field(default=None)
 
 
 class EquipmentAnalysis(BaseModel):
@@ -79,6 +107,17 @@ class EquipmentAnalysis(BaseModel):
     status: ComplianceStatus
     proposed_cooling_capacity: Optional[int] = Field(None, ge=0)
     cooling_oversize_percent: Optional[float] = Field(None, ge=0.0, le=100.0)
+    # Enhanced fields for equipment intelligence
+    equipment_type: Optional[str] = Field(None, description="Package Unit, Split System, Mini-Split, RTU, etc.")
+    equipment_stages: Optional[str] = Field(None, description="single-stage, two-stage, modulating, variable-speed")
+    fuel_type: Optional[str] = Field(None, description="natural gas, propane, electric, oil, geothermal")
+    equipment_model: Optional[str] = Field(None)
+    manufacturer: Optional[str] = Field(None)
+    efficiency_heating: Optional[float] = Field(None, description="AFUE% or HSPF")
+    efficiency_cooling: Optional[float] = Field(None, description="SEER or SEER2")
+    airflow_rated_cfm: Optional[float] = Field(None, ge=0)
+    airflow_required_cfm: Optional[float] = Field(None, ge=0)
+    airflow_per_ton_cooling: Optional[float] = Field(None, ge=0)
 
 
 class ComplianceViolation(BaseModel):
@@ -88,10 +127,26 @@ class ComplianceViolation(BaseModel):
     severity: Literal["critical", "warning", "info"] = Field(default="warning")
 
 
+class VentilationCompliance(BaseModel):
+    """Ventilation compliance status."""
+    required_cfm: float = Field(default=0, ge=0)
+    provided_cfm: Optional[float] = Field(None, ge=0)
+    status: Literal["COMPLIANT", "NON_COMPLIANT", "UNKNOWN"] = Field(default="UNKNOWN")
+
+
+class EconomizerCompliance(BaseModel):
+    """Economizer compliance status."""
+    required: bool = Field(default=False)
+    provided: Optional[bool] = Field(None)
+    status: Literal["COMPLIANT", "NON_COMPLIANT", "NOT_APPLICABLE"] = Field(default="NOT_APPLICABLE")
+
+
 class ComplianceStatusReport(BaseModel):
     """Overall compliance status with violations."""
     violations: List[ComplianceViolation] = Field(default_factory=list)
     overall_status: ComplianceStatus
+    ventilation_compliance: Optional[VentilationCompliance] = Field(default=None)
+    economizer_compliance: Optional[EconomizerCompliance] = Field(default=None)
 
 
 class AnalysisReport(BaseModel):
