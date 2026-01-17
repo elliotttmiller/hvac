@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("pdf-processor")
 
 # Load zoom factor from environment or use default
-PDF_ZOOM_FACTOR = float(os.environ.get("HVAC_PDF_ZOOM_FACTOR", "2.0"))
+PDF_ZOOM_FACTOR = float(os.environ.get("PDF_ZOOM_FACTOR", "2.0"))
 
 @mcp.tool()
 def split_pdf_metadata(pdf_base64: str) -> str:

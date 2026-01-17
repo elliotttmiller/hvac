@@ -122,7 +122,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
-        env_prefix = "HVAC_"
+        env_prefix = ""
         case_sensitive = False
 
 

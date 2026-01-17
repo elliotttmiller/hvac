@@ -38,7 +38,7 @@ LOGDIR.mkdir(exist_ok=True)
 
 # Ensure this script runs under the project's .venv Python interpreter when available.
 # If the current interpreter is not the .venv one, re-exec the script using .venv's python.
-if os.environ.get("HVAC_STARTED_IN_VENV") != "1":
+if os.environ.get("STARTED_IN_VENV") != "1":
     venv_py = None
     if os.name == 'nt':
         candidate = ROOT / '.venv' / 'Scripts' / 'python.exe'
@@ -59,7 +59,7 @@ if os.environ.get("HVAC_STARTED_IN_VENV") != "1":
         if os.path.normcase(current) != os.path.normcase(venv_py):
             print(f"Re-launching start.py with project .venv Python: {venv_py}")
             # Mark that we've re-launched to avoid loops
-            os.environ["HVAC_STARTED_IN_VENV"] = "1"
+            os.environ["STARTED_IN_VENV"] = "1"
             os.execv(venv_py, [venv_py] + sys.argv)
     else:
         # No .venv found; continue with current interpreter but warn
