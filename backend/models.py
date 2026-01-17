@@ -131,22 +131,71 @@ class VentilationCompliance(BaseModel):
     """Ventilation compliance status."""
     required_cfm: float = Field(default=0, ge=0)
     provided_cfm: Optional[float] = Field(None, ge=0)
+    ventilation_method: Optional[str] = Field(None, description="ERV, HRV, fresh air duct, or none")
     status: Literal["COMPLIANT", "NON_COMPLIANT", "UNKNOWN"] = Field(default="UNKNOWN")
+    standard: str = Field(default="ASHRAE 62.2")
 
 
 class EconomizerCompliance(BaseModel):
     """Economizer compliance status."""
     required: bool = Field(default=False)
     provided: Optional[bool] = Field(None)
+    economizer_type: Optional[str] = Field(None, description="Type of economizer control")
     status: Literal["COMPLIANT", "NON_COMPLIANT", "NOT_APPLICABLE"] = Field(default="NOT_APPLICABLE")
+    threshold: str = Field(default="54,000 BTU/h (4.5 tons)")
+
+
+class DuctInsulationCompliance(BaseModel):
+    """Duct insulation compliance status."""
+    supply_duct_location: Optional[str] = Field(None, description="conditioned or unconditioned")
+    return_duct_location: Optional[str] = Field(None, description="conditioned or unconditioned")
+    supply_insulation_r_value: Optional[float] = Field(None, ge=0)
+    return_insulation_r_value: Optional[float] = Field(None, ge=0)
+    required_supply_r_value: float = Field(default=8.0)
+    required_return_r_value: float = Field(default=6.0)
+    status: Literal["COMPLIANT", "NON_COMPLIANT", "UNKNOWN"] = Field(default="UNKNOWN")
+    leakage_test_required: bool = Field(default=True)
+    sealing_required: bool = Field(default=True)
+
+
+class CombustionAirCompliance(BaseModel):
+    """Combustion air compliance status."""
+    appliance_type: Optional[str] = Field(None, description="sealed_combustion, category_i, or none")
+    btu_input_total: Optional[int] = Field(None, ge=0)
+    combustion_air_required: bool = Field(default=False)
+    combustion_air_provided: Optional[str] = Field(None)
+    status: Literal["COMPLIANT", "NON_COMPLIANT", "NOT_APPLICABLE"] = Field(default="NOT_APPLICABLE")
+    code_reference: str = Field(default="MN Chapter 1346.5304")
+
+
+class FreezeProtectionCompliance(BaseModel):
+    """Freeze protection compliance status."""
+    hydronic_coils_present: bool = Field(default=False)
+    freeze_stat_provided: Optional[bool] = Field(None)
+    set_point_f: Optional[float] = Field(None)
+    hardwired_shutdown: Optional[bool] = Field(None)
+    status: Literal["COMPLIANT", "NON_COMPLIANT", "NOT_APPLICABLE"] = Field(default="NOT_APPLICABLE")
+    critical_for_climate_zone_7: bool = Field(default=True)
+
+
+class EquipmentSizingCompliance(BaseModel):
+    """Equipment sizing compliance status."""
+    heating_status: ComplianceStatus
+    cooling_status: ComplianceStatus
+    heating_rule: str = Field(default="MN Rule 1322.0403 (40% max oversize)")
+    cooling_rule: str = Field(default="MN Rule 1322.0404 (15% max oversize)")
 
 
 class ComplianceStatusReport(BaseModel):
     """Overall compliance status with violations."""
     violations: List[ComplianceViolation] = Field(default_factory=list)
     overall_status: ComplianceStatus
+    equipment_sizing_compliance: Optional[EquipmentSizingCompliance] = Field(default=None)
     ventilation_compliance: Optional[VentilationCompliance] = Field(default=None)
+    duct_insulation_compliance: Optional[DuctInsulationCompliance] = Field(default=None)
+    combustion_air_compliance: Optional[CombustionAirCompliance] = Field(default=None)
     economizer_compliance: Optional[EconomizerCompliance] = Field(default=None)
+    freeze_protection_compliance: Optional[FreezeProtectionCompliance] = Field(default=None)
 
 
 class AnalysisReport(BaseModel):
