@@ -271,12 +271,13 @@ def start_frontend():
     print("Starting frontend (Vite)...")
     # Use npm run dev; pass desired port through to the dev server
     npm = shutil.which("npm") or "npm"
+    frontend_dir = ROOT / "frontend"
     if os.name == 'nt':
         cmd = f"{npm} run dev -- --port {FRONTEND_PORT}"
-        frontend_proc, frontend_log_file = start_process("frontend", cmd, ROOT, shell=True)
+        frontend_proc, frontend_log_file = start_process("frontend", cmd, frontend_dir, shell=True)
     else:
         cmd = [npm, "run", "dev", "--", "--port", str(FRONTEND_PORT)]
-        frontend_proc, frontend_log_file = start_process("frontend", cmd, ROOT, shell=False)
+        frontend_proc, frontend_log_file = start_process("frontend", cmd, frontend_dir, shell=False)
     return frontend_proc
 
 
