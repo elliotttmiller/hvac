@@ -392,6 +392,35 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
             warnings.append(f"Invalid confidence score: {score} (must be 0.0-1.0)")
             data["confidence_score"] = 0.5  # Default moderate confidence
     
+    # Sync equipment sizing compliance status with equipment_analysis status
+    if "compliance_status" in data and isinstance(data["compliance_status"], dict):
+        if "equipment_sizing_compliance" in data["compliance_status"]:
+            if "equipment_analysis" in data and isinstance(data["equipment_analysis"], dict):
+                eq_status = data["compliance_status"]["equipment_sizing_compliance"]
+                eq_analysis = data["equipment_analysis"]
+                
+                # Sync heating status
+                if "heating_status" in eq_analysis:
+                    eq_status["heating_status"] = eq_analysis["heating_status"]
+                
+                # Sync cooling status  
+                if "cooling_status" in eq_analysis:
+                    eq_status["cooling_status"] = eq_analysis["cooling_status"]
+        
+        # Update overall compliance status based on equipment sizing
+        if "equipment_sizing_compliance" in data["compliance_status"]:
+            sizing = data["compliance_status"]["equipment_sizing_compliance"]
+            heating_status = sizing.get("heating_status", "UNKNOWN")
+            cooling_status = sizing.get("cooling_status", "UNKNOWN")
+            
+            # Overall status is NON_COMPLIANT if either system is NON_COMPLIANT
+            if heating_status == "NON_COMPLIANT" or cooling_status == "NON_COMPLIANT":
+                data["compliance_status"]["overall_status"] = "NON_COMPLIANT"
+            elif heating_status == "COMPLIANT" and cooling_status == "COMPLIANT":
+                data["compliance_status"]["overall_status"] = "COMPLIANT"
+            else:
+                data["compliance_status"]["overall_status"] = "REVIEW_REQUIRED"
+    
     # Add validation metadata
     data["_validation"] = {
         "passed": validation_passed and len(warnings) == 0,
@@ -510,11 +539,17 @@ def normalize_analysis_keys(data: Optional[Dict[str, Any]]) -> Optional[Dict[str
 
 def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
     """
-    Build a deterministic, well-formed analysis report from the extracted text.
+    Build a comprehensive, well-formed analysis report from the extracted text.
 
-    This function uses conservative heuristics to populate the required
-    top-level keys so the API can always return a valid, predictable
-    JSON structure to the frontend even when the model output is unreliable.
+    This function uses conservative heuristics and engineering defaults to populate
+    a complete analysis structure matching the Pydantic models, ensuring the API
+    always returns valid, predictable JSON even when vision extraction is incomplete.
+    
+    Returns comprehensive structure with:
+    - ProjectInfo (climate zone, design temps, building details)
+    - LoadCalculations (heating/cooling with infiltration, ventilation, internal gains)
+    - EquipmentAnalysis (full equipment details, sizing, efficiency)
+    - ComplianceStatusReport (all compliance checks)
     """
     # Defensive defaults
     default_heating = 40000
@@ -544,10 +579,38 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
 
     # Estimate cooling as 60% of heating by conservative default
     cooling = int(round(heating * 0.6))
+    
+    # Estimate building area from load (conservative: 40 BTU/sqft)
+    estimated_sqft = int(heating / 40)
 
     # Proposed equipment capacities (10% oversize)
     proposed_heating_capacity = int(round(heating * 1.1))
     proposed_cooling_capacity = int(round(cooling * 1.1))
+    
+    # Calculate load components
+    cooling_sensible = int(round(cooling * 0.75))  # Typical 75/25 split
+    cooling_latent = int(round(cooling * 0.25))
+    
+    # Estimate infiltration/ventilation loads (typical ~20% of total load)
+    infiltration_heating_btu = int(round(heating * 0.15))
+    infiltration_cooling_sensible = int(round(cooling_sensible * 0.15))
+    infiltration_cooling_latent = int(round(cooling_latent * 0.10))
+    
+    # Estimate ventilation requirement (ASHRAE 62.2: ~7.5 CFM per person + 1 CFM/100 sqft)
+    estimated_occupants = max(2, int(estimated_sqft / 600))  # ~600 sqft per person
+    ventilation_cfm = (estimated_occupants * 7.5) + (estimated_sqft * 0.01)
+    
+    # Estimate internal gains (~10-15% of cooling load)
+    people_load = estimated_occupants * 250  # 250 BTU/hr per person
+    lighting_load = int(estimated_sqft * 1.5)  # 1.5 W/sqft
+    appliances_load = int(estimated_sqft * 1.0)  # 1.0 W/sqft
+    total_internal_gains = people_load + lighting_load + appliances_load
+    
+    # Calculate equipment tonnage and airflow
+    cooling_tons = cooling / 12000
+    heating_tons = heating / 12000
+    airflow_required_cfm = int(cooling_tons * 400)  # 400 CFM/ton typical
+    airflow_per_ton = 400.0
 
     # Try to pick up equipment model (simple alpha-numeric tokens with letters)
     equipment_models = re.findall(r"([A-Za-z0-9\-]{4,40})", text)
@@ -558,19 +621,53 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
             equipment_model = token
             break
 
+    # Build comprehensive report structure matching Pydantic models
     report = {
         "project_info": {
             "project_name": "Untitled project",
             "location": "",
+            "climate_zone": "7",  # Minnesota default
+            "design_temp_heating_f": -17,  # MN Climate Zone 7
+            "design_temp_cooling_f": 89,  # MN summer design
+            "building_type": "residential",
+            "total_conditioned_area_sqft": estimated_sqft,
+            "design_humidity_winter_percent": 30,
+            "design_humidity_summer_percent": 50,
             "design_data_source": "vision_extraction"
         },
         "load_calculations": {
             "total_heating_load": heating,
             "total_cooling_load": cooling,
-            "total_cooling_load_sensible": int(round(cooling * 0.9)),
-            "total_cooling_load_latent": int(round(cooling * 0.1)),
-            "heating_load_breakdown": [{"component": "estimated", "btu": heating}],
-            "cooling_load_breakdown": [{"component": "estimated", "btu": cooling}]
+            "total_cooling_load_sensible": cooling_sensible,
+            "total_cooling_load_latent": cooling_latent,
+            "calculation_method": "Manual J (estimated)",
+            "heating_load_breakdown": [
+                {"component": "envelope", "btu": int(heating * 0.50)},
+                {"component": "infiltration", "btu": infiltration_heating_btu},
+                {"component": "ventilation", "btu": int(heating * 0.20)},
+                {"component": "other", "btu": int(heating * 0.15)}
+            ],
+            "cooling_load_breakdown": [
+                {"component": "envelope_sensible", "btu": int(cooling_sensible * 0.50)},
+                {"component": "infiltration_sensible", "btu": infiltration_cooling_sensible},
+                {"component": "internal_gains", "btu": total_internal_gains},
+                {"component": "latent", "btu": cooling_latent}
+            ],
+            "infiltration_ventilation": {
+                "infiltration_cfm": int(estimated_sqft * 0.15),  # ~0.15 air changes/hr
+                "infiltration_load_heating_btu": infiltration_heating_btu,
+                "infiltration_load_cooling_sensible_btu": infiltration_cooling_sensible,
+                "infiltration_load_cooling_latent_btu": infiltration_cooling_latent,
+                "ventilation_cfm_required": int(ventilation_cfm),
+                "ventilation_method": "ASHRAE 62.2 calculation"
+            },
+            "internal_gains": {
+                "people_count": estimated_occupants,
+                "people_load_btu": people_load,
+                "lighting_load_btu": lighting_load,
+                "appliances_load_btu": appliances_load,
+                "total_internal_gains_btu": total_internal_gains
+            }
         },
         "equipment_analysis": {
             "heating_status": "UNKNOWN",
@@ -579,14 +676,70 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
             "heating_oversize_percent": round(((proposed_heating_capacity / heating) - 1) * 100, 1) if heating else 0,
             "proposed_cooling_capacity": proposed_cooling_capacity,
             "cooling_oversize_percent": round(((proposed_cooling_capacity / cooling) - 1) * 100, 1) if cooling else 0,
-            "model": equipment_model or "",
-            "equipment_stages": ""
+            "equipment_type": "estimated",
+            "equipment_stages": "",  # Will be determined by validation
+            "fuel_type": "natural gas",  # MN common default
+            "equipment_model": equipment_model or "",
+            "manufacturer": "",
+            "efficiency_heating": 95.0,  # Typical modern furnace AFUE
+            "efficiency_cooling": 14.0,  # Typical SEER
+            "airflow_rated_cfm": airflow_required_cfm,
+            "airflow_required_cfm": airflow_required_cfm,
+            "airflow_per_ton_cooling": airflow_per_ton
         },
         "compliance_status": {
-            "violations": []
+            "violations": [],
+            "overall_status": "UNKNOWN",
+            "equipment_sizing_compliance": {
+                "heating_status": "UNKNOWN",
+                "cooling_status": "UNKNOWN",
+                "heating_rule": "MN Rule 1322.0403 (40% max oversize)",
+                "cooling_rule": "MN Rule 1322.0404 (15% max oversize)"
+            },
+            "ventilation_compliance": {
+                "required_cfm": int(ventilation_cfm),
+                "provided_cfm": None,
+                "ventilation_method": None,
+                "status": "UNKNOWN",
+                "standard": "ASHRAE 62.2"
+            },
+            "duct_insulation_compliance": {
+                "supply_duct_location": None,
+                "return_duct_location": None,
+                "supply_insulation_r_value": None,
+                "return_insulation_r_value": None,
+                "required_supply_r_value": 8.0,
+                "required_return_r_value": 6.0,
+                "status": "UNKNOWN",
+                "leakage_test_required": True,
+                "sealing_required": True
+            },
+            "combustion_air_compliance": {
+                "appliance_type": None,
+                "btu_input_total": None,
+                "combustion_air_required": False,
+                "combustion_air_provided": None,
+                "status": "NOT_APPLICABLE",
+                "code_reference": "MN Chapter 1346.5304"
+            },
+            "economizer_compliance": {
+                "required": cooling > 54000,  # >4.5 tons
+                "provided": None,
+                "economizer_type": None,
+                "status": "NOT_APPLICABLE" if cooling <= 54000 else "UNKNOWN",
+                "threshold": "54,000 BTU/h (4.5 tons)"
+            },
+            "freeze_protection_compliance": {
+                "hydronic_coils_present": False,
+                "freeze_stat_provided": None,
+                "set_point_f": None,
+                "hardwired_shutdown": None,
+                "status": "NOT_APPLICABLE",
+                "critical_for_climate_zone_7": True
+            }
         },
-        "confidence_score": 0.6,
-        "reasoning": f"Derived from vision extraction; excerpt: {text[:400]}"
+        "confidence_score": 0.5,  # Lower for estimated values
+        "reasoning": f"Comprehensive report generated from vision extraction with engineering defaults. Extracted text excerpt: {text[:300]}"
     }
 
     return report
