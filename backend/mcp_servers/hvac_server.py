@@ -1,10 +1,16 @@
 from mcp.server.fastmcp import FastMCP
 import logging
+import math
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP("hvac-logic")
+
+# Minnesota Code Constants
+MN_DUCT_INSULATION_R_VALUE_SUPPLY = 8.0  # R-8 minimum for supply ducts in unconditioned spaces
+MN_DUCT_INSULATION_R_VALUE_RETURN = 6.0  # R-6 minimum for return ducts in unconditioned spaces
+COMMON_FLEX_DUCT_R_VALUE = 4.2  # Common non-compliant flex duct insulation R-value
 
 
 @mcp.tool()
@@ -169,7 +175,6 @@ def calculate_combustion_air(btu_input: int, appliance_type: str = "category_i")
         opening_size_sq_in = max(100, opening_size_sq_in)  # Minimum 100 sq in
         
         # Calculate equivalent round duct diameter
-        import math
         diameter_inches = 2 * math.sqrt(opening_size_sq_in / math.pi)
         
         # For ducted outdoor air (stricter requirement)
@@ -239,14 +244,14 @@ def check_duct_insulation_compliance(duct_location: str, insulation_r_value: flo
     else:
         # Unconditioned space: R-8 minimum for supply, R-6 for return
         # Assume supply duct for strictest requirement
-        required_r_value = 8.0
+        required_r_value = MN_DUCT_INSULATION_R_VALUE_SUPPLY
         compliant = insulation_r_value >= required_r_value
         
         result = {
             "compliant": compliant,
             "location": "Unconditioned Space (Attic, Crawlspace, Garage)",
-            "required_r_value_supply": 8.0,
-            "required_r_value_return": 6.0,
+            "required_r_value_supply": MN_DUCT_INSULATION_R_VALUE_SUPPLY,
+            "required_r_value_return": MN_DUCT_INSULATION_R_VALUE_RETURN,
             "actual_r_value": insulation_r_value,
             "status": "COMPLIANT" if compliant else "NON-COMPLIANT",
             "deficiency": 0 if compliant else round(required_r_value - insulation_r_value, 1)
@@ -255,7 +260,7 @@ def check_duct_insulation_compliance(duct_location: str, insulation_r_value: flo
         if not compliant:
             result["violation"] = f"Insulation R-{insulation_r_value} is below R-{required_r_value} minimum"
             result["remediation"] = f"Increase insulation to R-{required_r_value} minimum"
-            result["common_violation"] = "R-4.2 flex duct insulation is NOT code-compliant in Minnesota"
+            result["common_violation"] = f"R-{COMMON_FLEX_DUCT_R_VALUE} flex duct insulation is NOT code-compliant in Minnesota"
         else:
             result["additional_requirements"] = [
                 "Vapor barrier required on exterior of insulation",
