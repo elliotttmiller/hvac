@@ -58,10 +58,10 @@ class Settings(BaseSettings):
         description="Temperature for reasoning phase"
     )
     extraction_max_tokens: int = Field(
-        default=1200,
+        default=2000,
         ge=100,
         le=4096,
-        description="Max tokens for extraction"
+        description="Max tokens for extraction (increased for detailed extraction)"
     )
     context_window_max_tokens: int = Field(
         default=28000,

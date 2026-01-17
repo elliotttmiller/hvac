@@ -6,7 +6,7 @@ from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI, OpenAIError
-from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION
+from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT, MN_HEATING_OVERSIZE_LIMIT, MN_COOLING_OVERSIZE_LIMIT
 from backend.config import get_settings
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,
@@ -15,7 +15,8 @@ from backend.models import (
 )
 from backend.utils import (
     RequestTracer, retry_with_backoff, repair_json, validate_json_schema,
-    sanitize_filename, truncate_to_token_limit, log_model_interaction, logger
+    validate_hvac_analysis_output, sanitize_filename, truncate_to_token_limit, 
+    prioritize_extracted_content, log_model_interaction, logger
 )
 import os
 import base64
@@ -79,7 +80,7 @@ async def extract_page_text(image_data_url: str, page_num: int, request_id: str)
             model=MODEL_NAME,
             messages=[
                 {"role": "user", "content": [
-                    {"type": "text", "text": "Read this blueprint page. List ALL text, room names, dimensions, window sizes, and equipment model numbers you see. Be literal."},
+                    {"type": "text", "text": BLUEPRINT_EXTRACTION_PROMPT},
                     {"type": "image_url", "image_url": {"url": image_data_url}}
                 ]}
             ],
@@ -207,19 +208,29 @@ async def analyze_document(request: AnalyzeRequest):
         if not extracted_data:
             raise HTTPException(status_code=500, detail="No data extracted from document")
 
-        # Phase 2: Reasoning with context window management
+        # Phase 2: Reasoning with intelligent context management
         logger.info(f"[{request_id}] Running engineering inference...")
-        full_context = "\n\n".join(extracted_data)
         
-        # Truncate if needed to fit context window
-        full_context = truncate_to_token_limit(full_context, max_tokens=settings.context_window_max_tokens)
+        # Use intelligent prioritization for multi-page documents
+        if len(extracted_data) > 1:
+            full_context = prioritize_extracted_content(
+                extracted_data, 
+                max_tokens=settings.context_window_max_tokens
+            )
+        else:
+            # Single page - simple concatenation with truncation
+            full_context = "\n\n".join(extracted_data)
+            full_context = truncate_to_token_limit(
+                full_context, 
+                max_tokens=settings.context_window_max_tokens
+            )
         
         try:
             final = await client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
                     {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
-                    {"role": "user", "content": f"Here is the data extracted from the plans:\n\n{full_context}\n\nGenerate the compliance report."}
+                    {"role": "user", "content": f"Here is the data extracted from the HVAC plans:\n\n{full_context}\n\nAnalyze this data and generate the comprehensive compliance report following the exact JSON structure specified."}
                 ],
                 temperature=settings.reasoning_temperature,
                 response_format={"type": "json_object"}
@@ -233,11 +244,14 @@ async def analyze_document(request: AnalyzeRequest):
                 logger.error(f"[{request_id}] JSON repair failed")
                 # Return raw JSON anyway for client-side handling
                 parsed = {"raw_content": raw_json, "parse_error": True}
-            
-            # Validate schema
-            required_keys = ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]
-            if not validate_json_schema(parsed, required_keys):
-                logger.warning(f"[{request_id}] JSON schema validation failed, returning partial data")
+            else:
+                # Validate schema
+                required_keys = ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]
+                if not validate_json_schema(parsed, required_keys):
+                    logger.warning(f"[{request_id}] JSON schema validation failed, returning partial data")
+                else:
+                    # Enhanced validation with calculation checks
+                    parsed = validate_hvac_analysis_output(parsed)
             
             processing_time = time.time() - start_time
             logger.info(f"[{request_id}] Report generated in {processing_time:.2f}s")
