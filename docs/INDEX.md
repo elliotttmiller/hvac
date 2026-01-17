@@ -57,13 +57,21 @@ Welcome to the comprehensive documentation for HVAC Analysis AI. This index will
   - FAQ
 
 ### Testing & Quality Assurance
-- **[../TESTING_GUIDE.md](../TESTING_GUIDE.md)** - Complete testing guide
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Complete testing guide
   - Test scenarios
   - Configuration options
   - Manual testing checklist
   - Performance testing
   - Security testing
   - Known limitations
+
+- **[test-logs/test_logs.md](./test-logs/test_logs.md)** - Real test run example
+  - Complete E2E inference pipeline demonstration
+  - Vision extraction results
+  - Engineering calculations breakdown
+  - Compliance validation with failures
+  - Performance metrics and timing
+  - Screenshot reference
 
 ### Summary Documents
 - **[SUMMARY.md](./SUMMARY.md)** - E2E audit and optimization summary
@@ -82,7 +90,8 @@ Welcome to the comprehensive documentation for HVAC Analysis AI. This index will
 1. [Prerequisites](../README.md#-quick-start)
 2. [Step-by-step installation](../README.md#-installation)
 3. [Configuration](../README.md#%EF%B8%8F-configuration)
-4. [Testing the installation](../TESTING_GUIDE.md)
+4. [Testing the installation](./TESTING_GUIDE.md)
+5. [Example test run](./test-logs/test_logs.md)
 
 ### Usage & Workflows
 1. [Basic workflow](../README.md#-usage-guide)
@@ -189,7 +198,10 @@ docs/
 ├── ENHANCEMENTS.md                 ← Feature enhancements details
 ├── FRONTEND_IMPLEMENTATION.md      ← Frontend components guide
 ├── FRONTEND_MIGRATION_GUIDE.md     ← Frontend migration instructions
-└── SUMMARY.md                      ← Implementation summary
+├── SUMMARY.md                      ← Implementation summary
+└── test-logs/
+    ├── test_logs.md                ← Real E2E test run example
+    └── image.png                   ← Test results screenshot
 
 Root level:
 ├── README.md                       ← Main documentation entry point
@@ -231,5 +243,5 @@ Found an error or want to improve the documentation?
 
 ---
 
-**Last Updated**: January 2026  
+**Last Updated**: January 2024  
 **Version**: 2.1.0

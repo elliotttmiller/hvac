@@ -197,12 +197,21 @@ RETRY_INITIAL_DELAY=2.0
 3. **Performance Validation**: Verify VRAM usage
 4. **Error Scenarios**: Test failure cases
 
+## Test Results
+
+For a complete example of a successful test run with detailed analysis output, see:
+- **Full Test Run Logs**: See `docs/test-logs/test_logs.md`
+- **Visual Results Screenshot**: See `docs/test-logs/image.png`
+
+These logs demonstrate the complete E2E inference pipeline including vision extraction, deterministic calculations, and Minnesota code compliance validation.
+
 ## Support
 
 - **Architecture Questions**: See `docs/ARCHITECTURE.md`
 - **Performance Tuning**: See `docs/PERFORMANCE.md`
 - **Configuration Help**: See `.env.example`
 - **API Reference**: Check OpenAPI docs at `http://localhost:8000/docs`
+- **Test Examples**: See `docs/test-logs/test_logs.md`
 
 ---
 

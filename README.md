@@ -1706,7 +1706,8 @@ Comprehensive documentation is available in the `/docs` directory:
 
 ### Additional Resources
 
-- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Testing procedures and scenarios
+- **[TESTING_GUIDE.md](./docs/TESTING_GUIDE.md)** - Testing procedures and scenarios
+- **[Test Logs Example](./docs/test-logs/test_logs.md)** - Complete E2E test run with detailed analysis
 - **[API Documentation](http://localhost:8000/docs)** - Interactive OpenAPI/Swagger docs (when running)
 
 ---
