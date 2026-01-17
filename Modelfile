@@ -1,0 +1,14 @@
+FROM qwen2.5vl
+
+# 1. Force the Context Window to 2048 tokens.
+# (Standard is 4096 or 8192. Vision tokens eat RAM.
+# 2048 is enough for 1 blueprint page + analysis, and saves ~1-2GB VRAM).
+PARAMETER num_ctx 2048
+
+# 2. Lower the Batch Size.
+# (Processes fewer tokens at once. Slower generation, but much lower VRAM spike).
+PARAMETER num_batch 256
+
+# 3. Force GPU Layers.
+# (Tell Ollama: "Put all 29 layers on the GPU, I insist.")
+PARAMETER num_gpu 29

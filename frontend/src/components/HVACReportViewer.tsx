@@ -7,24 +7,44 @@ interface Props {
 }
 
 export const HVACReportViewer: React.FC<Props> = ({ report }) => {
-  const formatNumber = (num: number) => num.toLocaleString();
-  
+  const formatNumber = (num?: number) => (typeof num === 'number' ? num.toLocaleString() : '—');
+
+  // Defensive defaults: backend may return partial reports. Use safe fallbacks
+  // so the viewer doesn't crash when a section is missing.
+  const project = report?.project_info ?? {} as any;
+  const loads = report?.load_calculations ?? {} as any;
+  const equipment = report?.equipment_analysis ?? {} as any;
+  const compliance = report?.compliance_status ?? { violations: [] } as any;
+  const obs = report?.additional_observations ?? {} as any;
+
+  // Detect missing high-level sections so we can show a helpful banner to the user
+  const missingSections: string[] = [];
+  if (!report?.project_info) missingSections.push('Project Info');
+  if (!report?.load_calculations) missingSections.push('Load Calculations');
+  if (!report?.equipment_analysis) missingSections.push('Equipment Analysis');
+  if (!report?.compliance_status) missingSections.push('Compliance Status');
+
   return (
     <div className="space-y-4">
       {/* Project Header */}
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+        {missingSections.length > 0 && (
+          <div className="mb-3 p-2 rounded border border-yellow-400/20 bg-yellow-900/5 text-[12px] text-yellow-200">
+            <strong>Partial report:</strong> The analysis returned incomplete data. Missing sections: {missingSections.join(', ')}.
+          </div>
+        )}
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-gray-200">
-            {report.project_info.project_name}
+            {project.project_name ?? 'Untitled project'}
           </h3>
           <span className="text-xs text-gray-500">
-            Climate Zone {report.project_info.climate_zone}
+            {project.climate_zone ? `Climate Zone ${project.climate_zone}` : 'Climate Zone —'}
           </span>
         </div>
-        {report.project_info.total_conditioned_area_sqft && (
+        {project.total_conditioned_area_sqft != null && (
           <div className="text-xs text-gray-400">
             <span className="font-medium text-gray-300">
-              {formatNumber(report.project_info.total_conditioned_area_sqft)}
+              {formatNumber(project.total_conditioned_area_sqft)}
             </span>{' '}
             ft² conditioned area
           </div>
@@ -43,13 +63,12 @@ export const HVACReportViewer: React.FC<Props> = ({ report }) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-400">Heating Load</span>
               <span className="text-sm font-bold text-orange-400">
-                {formatNumber(report.load_calculations.total_heating_load)} BTU/h
+                {formatNumber(loads.total_heating_load)} BTU/h
               </span>
             </div>
-            {report.load_calculations.heating_load_breakdown && 
-             report.load_calculations.heating_load_breakdown.length > 0 && (
+            {loads.heating_load_breakdown && loads.heating_load_breakdown.length > 0 && (
               <div className="space-y-1 mt-2">
-                {report.load_calculations.heating_load_breakdown.map((item, idx) => (
+                {loads.heating_load_breakdown.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center text-xs bg-zinc-800/50 rounded px-2 py-1.5">
                     <span className="text-gray-400">{item.component}</span>
                     <span className="text-gray-300 font-mono">
@@ -66,13 +85,12 @@ export const HVACReportViewer: React.FC<Props> = ({ report }) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-400">Cooling Load</span>
               <span className="text-sm font-bold text-blue-400">
-                {formatNumber(report.load_calculations.total_cooling_load)} BTU/h
+                {formatNumber(loads.total_cooling_load)} BTU/h
               </span>
             </div>
-            {report.load_calculations.cooling_load_breakdown && 
-             report.load_calculations.cooling_load_breakdown.length > 0 && (
+            {loads.cooling_load_breakdown && loads.cooling_load_breakdown.length > 0 && (
               <div className="space-y-1 mt-2">
-                {report.load_calculations.cooling_load_breakdown.map((item, idx) => (
+                {loads.cooling_load_breakdown.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center text-xs bg-zinc-800/50 rounded px-2 py-1.5">
                     <span className="text-gray-400">{item.component}</span>
                     <span className="text-gray-300 font-mono">
@@ -98,49 +116,49 @@ export const HVACReportViewer: React.FC<Props> = ({ report }) => {
             <div className="flex-1">
               <div className="text-xs text-gray-400 mb-1">Heating Capacity</div>
               <div className="text-sm text-gray-200">
-                {formatNumber(report.equipment_analysis.proposed_heating_capacity)} BTU/h
+                {formatNumber(equipment.proposed_heating_capacity)} BTU/h
                 <span className={`text-xs ml-2 ${
-                  (report.equipment_analysis.heating_oversize_percent || 0) <= 40 
+                  (equipment.heating_oversize_percent || 0) <= 40 
                     ? 'text-green-400' 
                     : 'text-red-400'
                 }`}>
-                  +{report.equipment_analysis.heating_oversize_percent?.toFixed(1) || '0.0'}%
+                  +{(typeof equipment.heating_oversize_percent === 'number' ? equipment.heating_oversize_percent.toFixed(1) : '0.0')}%
                 </span>
               </div>
             </div>
             <ComplianceBadge 
-              status={report.equipment_analysis.heating_status || report.equipment_analysis.status} 
+              status={equipment.heating_status || equipment.status} 
             />
           </div>
 
           {/* Cooling Equipment */}
-          {report.equipment_analysis.proposed_cooling_capacity && (
+          {equipment.proposed_cooling_capacity && (
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="text-xs text-gray-400 mb-1">Cooling Capacity</div>
                 <div className="text-sm text-gray-200">
-                  {formatNumber(report.equipment_analysis.proposed_cooling_capacity)} BTU/h
+                  {formatNumber(equipment.proposed_cooling_capacity)} BTU/h
                   <span className={`text-xs ml-2 ${
-                    (report.equipment_analysis.cooling_oversize_percent || 0) <= 15 
+                    (equipment.cooling_oversize_percent || 0) <= 15 
                       ? 'text-green-400' 
                       : 'text-red-400'
                   }`}>
-                    +{report.equipment_analysis.cooling_oversize_percent?.toFixed(1)}%
+                    +{(typeof equipment.cooling_oversize_percent === 'number' ? equipment.cooling_oversize_percent.toFixed(1) : '—')}%
                   </span>
                 </div>
               </div>
-              {report.equipment_analysis.cooling_status && (
-                <ComplianceBadge status={report.equipment_analysis.cooling_status} />
+              {equipment.cooling_status && (
+                <ComplianceBadge status={equipment.cooling_status} />
               )}
             </div>
           )}
 
           {/* Equipment Model */}
-          {report.equipment_analysis.equipment_model && (
+          {equipment.equipment_model && (
             <div className="pt-2 border-t border-zinc-800">
               <div className="text-xs text-gray-400">
                 Model: <span className="text-gray-300 font-mono">
-                  {report.equipment_analysis.equipment_model}
+                  {equipment.equipment_model}
                 </span>
               </div>
             </div>
@@ -149,14 +167,14 @@ export const HVACReportViewer: React.FC<Props> = ({ report }) => {
       </div>
 
       {/* Compliance Status */}
-      {report.compliance_status.violations && report.compliance_status.violations.length > 0 && (
+      {compliance.violations && compliance.violations.length > 0 && (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             Code Compliance
           </h3>
           
           <div className="space-y-2">
-            {report.compliance_status.violations.map((violation, idx) => (
+            {compliance.violations.map((violation: any, idx: number) => (
               <div 
                 key={idx}
                 className={`p-3 rounded border ${

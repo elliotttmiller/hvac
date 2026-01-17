@@ -16,7 +16,8 @@ from backend.models import (
 from backend.utils import (
     RequestTracer, retry_with_backoff, repair_json, validate_json_schema,
     validate_hvac_analysis_output, sanitize_filename, truncate_to_token_limit, 
-    prioritize_extracted_content, log_model_interaction, logger
+    prioritize_extracted_content, log_model_interaction, logger,
+    construct_report_from_extracted_text, normalize_analysis_keys
 )
 import os
 import base64
@@ -226,48 +227,39 @@ async def analyze_document(request: AnalyzeRequest):
             )
         
         try:
-            final = await client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
-                    {"role": "user", "content": f"Here is the data extracted from the HVAC plans:\n\n{full_context}\n\nAnalyze this data and generate the comprehensive compliance report following the exact JSON structure specified."}
-                ],
-                temperature=settings.reasoning_temperature,
-                response_format={"type": "json_object"}
-            )
+            # Build the final report deterministically in Python from the extracted text.
+            # This avoids relying on the model to emit the correct top-level schema.
+            logger.info(f"[{request_id}] Building deterministic report from extracted text (no LLM JSON generation)")
 
-            raw_json = final.choices[0].message.content
-            
-            # Attempt JSON repair if needed
-            parsed = repair_json(raw_json)
-            if not parsed:
-                logger.error(f"[{request_id}] JSON repair failed")
-                # Return raw JSON anyway for client-side handling
-                parsed = {"raw_content": raw_json, "parse_error": True}
-            else:
-                # Validate schema
-                required_keys = ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]
-                if not validate_json_schema(parsed, required_keys):
-                    logger.warning(f"[{request_id}] JSON schema validation failed, returning partial data")
-                else:
-                    # Enhanced validation with calculation checks
-                    parsed = validate_hvac_analysis_output(parsed)
-            
+            # Construct a conservative report from the extracted (vision) text
+            parsed = construct_report_from_extracted_text(full_context)
+
+            # Normalize variants if present (defensive)
+            parsed = normalize_analysis_keys(parsed) if isinstance(parsed, dict) else parsed
+
+            # Run enhanced validation to populate _validation metadata and apply corrections
+            parsed = validate_hvac_analysis_output(parsed)
+
+            # Ensure top-level keys exist so clients receive a predictable structure
+            required_keys = ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]
+            for k in required_keys:
+                if k not in parsed:
+                    parsed[k] = {}
+
             processing_time = time.time() - start_time
-            logger.info(f"[{request_id}] Report generated in {processing_time:.2f}s")
-            
+            logger.info(f"[{request_id}] Report generated in {processing_time:.2f}s (deterministic)")
+
             if failed_pages:
                 logger.warning(f"[{request_id}] Failed pages: {failed_pages}")
-            
+
             return AnalyzeResponse(
-                report=json.dumps(parsed) if isinstance(parsed, dict) else raw_json,
+                report=json.dumps(parsed) if isinstance(parsed, dict) else json.dumps({"error": "unexpected_report_format"}),
                 request_id=request_id,
                 pages_processed=pages_processed,
                 processing_time_seconds=round(processing_time, 2)
             )
-            
         except Exception as e:
-            logger.error(f"[{request_id}] Inference failed: {e}")
+            logger.error(f"[{request_id}] Deterministic report generation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
 
 

@@ -36,6 +36,41 @@ ROOT = Path(__file__).resolve().parent
 LOGDIR = ROOT / "logs"
 LOGDIR.mkdir(exist_ok=True)
 
+# Load project .env file (if present) so start.py sees the same MODEL_NAME and
+# related settings developers place in `.env.local` or `.env` without requiring
+# them to export variables in the shell. We only set variables that are not
+# already present in the process environment (so explicit env vars override files).
+def _load_dotenv_if_present():
+    for fname in (".env.local", ".env"):
+        p = ROOT / fname
+        if not p.exists():
+            continue
+        try:
+            with p.open("r", encoding="utf-8") as fh:
+                for raw in fh:
+                    line = raw.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        continue
+                    key, val = line.split("=", 1)
+                    key = key.strip()
+                    val = val.strip()
+                    # remove optional surrounding quotes
+                    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                        val = val[1:-1]
+                    # ignore export prefix if present (e.g., 'export FOO=bar')
+                    if key.lower().startswith("export "):
+                        key = key.split(None, 1)[1]
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+        except Exception:
+            # best-effort loader; do not fail startup if parsing fails
+            pass
+
+# Load .env before reading environment variables below
+_load_dotenv_if_present()
+
 # Ensure this script runs under the project's .venv Python interpreter when available.
 # If the current interpreter is not the .venv one, re-exec the script using .venv's python.
 if os.environ.get("STARTED_IN_VENV") != "1":
