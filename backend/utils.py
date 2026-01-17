@@ -232,13 +232,17 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
     This function performs automatic corrections:
     - Recalculates oversize percentages if reported values are inconsistent (>1% difference)
     - Updates compliance status to NON_COMPLIANT if equipment exceeds code limits
+    - Validates equipment type against staging (modulating exempt from 40% limit)
     - Sets default confidence score (0.5) if invalid or missing
+    - Validates sensible + latent = total for cooling loads
     
     Validation checks:
     - Required sections present
     - Heating oversize ≤ 40% (MN Rule 1322.0403) using MN_HEATING_OVERSIZE_LIMIT constant
+      EXCEPTION: Modulating/variable-speed equipment exempt from limit
     - Cooling oversize ≤ 15% (MN Rule 1322.0404) using MN_COOLING_OVERSIZE_LIMIT constant
     - Confidence score in range [0.0, 1.0]
+    - Airflow validation: CFM/ton should be 350-450 for cooling
     
     Args:
         data: Parsed JSON output from analysis
@@ -264,6 +268,10 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
     if "equipment_analysis" in data and isinstance(data["equipment_analysis"], dict):
         eq_analysis = data["equipment_analysis"]
         
+        # Check if equipment is modulating (exempt from heating oversize limit)
+        equipment_stages = eq_analysis.get("equipment_stages", "").lower()
+        is_modulating = "modulating" in equipment_stages or "variable" in equipment_stages
+        
         # Check for heating oversize calculation
         if "proposed_heating_capacity" in eq_analysis and "total_heating_load" in data.get("load_calculations", {}):
             proposed = eq_analysis.get("proposed_heating_capacity", 0)
@@ -282,11 +290,18 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                     # Use calculated value
                     eq_analysis["heating_oversize_percent"] = round(actual_oversize, 1)
                 
-                # Validate compliance status
+                # Validate compliance status (with modulating exception)
                 if actual_oversize > (MN_HEATING_OVERSIZE_LIMIT * 100):
-                    if eq_analysis.get("heating_status") != "NON_COMPLIANT":
-                        warnings.append(f"Heating equipment exceeds {int(MN_HEATING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0403)")
-                        eq_analysis["heating_status"] = "NON_COMPLIANT"
+                    if is_modulating:
+                        # Modulating equipment is exempt
+                        if eq_analysis.get("heating_status") == "NON_COMPLIANT":
+                            eq_analysis["heating_status"] = "EXEMPT_MODULATING"
+                            warnings.append("Heating equipment is modulating - exempt from 40% oversize limit")
+                    else:
+                        # Single-stage or two-stage must comply
+                        if eq_analysis.get("heating_status") != "NON_COMPLIANT":
+                            warnings.append(f"Heating equipment exceeds {int(MN_HEATING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0403)")
+                            eq_analysis["heating_status"] = "NON_COMPLIANT"
         
         # Check for cooling oversize calculation
         if "proposed_cooling_capacity" in eq_analysis and "total_cooling_load" in data.get("load_calculations", {}):
@@ -309,6 +324,32 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                     if eq_analysis.get("cooling_status") != "NON_COMPLIANT":
                         warnings.append(f"Cooling equipment exceeds {int(MN_COOLING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0404)")
                         eq_analysis["cooling_status"] = "NON_COMPLIANT"
+        
+        # Validate airflow per ton for cooling
+        if "airflow_per_ton_cooling" in eq_analysis and eq_analysis["airflow_per_ton_cooling"]:
+            cfm_per_ton = eq_analysis["airflow_per_ton_cooling"]
+            if cfm_per_ton < 350 or cfm_per_ton > 450:
+                warnings.append(
+                    f"Airflow per ton ({cfm_per_ton:.0f} CFM/ton) outside typical range (350-450 CFM/ton). "
+                    "Check for duct restrictions or oversized equipment."
+                )
+    
+    # Validate cooling load components if present
+    if "load_calculations" in data and isinstance(data["load_calculations"], dict):
+        load_calc = data["load_calculations"]
+        
+        # Check sensible + latent = total for cooling
+        if all(k in load_calc for k in ["total_cooling_load_sensible", "total_cooling_load_latent", "total_cooling_load"]):
+            sensible = load_calc.get("total_cooling_load_sensible", 0)
+            latent = load_calc.get("total_cooling_load_latent", 0)
+            total = load_calc.get("total_cooling_load", 0)
+            
+            calculated_total = sensible + latent
+            if total > 0 and abs(calculated_total - total) > (total * 0.05):  # 5% tolerance
+                warnings.append(
+                    f"Cooling load components don't sum: Sensible {sensible} + Latent {latent} = {calculated_total}, "
+                    f"but Total reported as {total}"
+                )
     
     # Check confidence score validity
     if "confidence_score" in data:
