@@ -6,6 +6,43 @@
 
 This application provides AI-powered HVAC engineering analysis using a fully local inference pipeline with **Ollama (Qwen 2.5 VL)**, **FastAPI**, and **Model Context Protocol (MCP)** servers.
 
+## Project Structure
+
+The codebase is professionally organized into separate frontend and backend directories:
+
+```
+hvac/
+├── frontend/                 # React + TypeScript frontend application
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── views/          # Main application views
+│   │   ├── features/       # Feature-specific components
+│   │   ├── services/       # API services and utilities
+│   │   ├── App.tsx         # Main application component
+│   │   ├── index.tsx       # Application entry point
+│   │   └── types.ts        # TypeScript type definitions
+│   ├── scripts/            # Build and prebuild scripts
+│   ├── index.html          # HTML template
+│   ├── package.json        # Frontend dependencies
+│   ├── vite.config.ts      # Vite bundler configuration
+│   └── tsconfig.json       # TypeScript configuration
+│
+├── backend/                # FastAPI Python backend
+│   ├── mcp_servers/        # Model Context Protocol servers
+│   ├── data/               # Data files and catalogs
+│   ├── uploads/            # Uploaded file storage
+│   ├── server.py           # Main FastAPI server
+│   ├── models.py           # Pydantic data models
+│   ├── utils.py            # Utility functions
+│   ├── config.py           # Configuration management
+│   └── requirements.txt    # Backend dependencies
+│
+├── docs/                   # Documentation
+├── start.py               # Orchestrated startup script
+├── README.md              # This file
+└── .env.example          # Environment configuration template
+```
+
 ## Architecture Overview
 
 ### Stack
@@ -56,9 +93,11 @@ Response with JSON Report + Request Tracing
 
 ```bash
 # Frontend
-npm install
+cd frontend
+npm install --legacy-peer-deps
 
 # Backend
+cd ..
 pip install -r backend/requirements.txt
 ```
 
@@ -80,10 +119,26 @@ python -m uvicorn backend.server:app --reload --port 8000
 ### 4. Start Frontend Dev Server
 
 ```bash
+cd frontend
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:3000`
+
+### Alternative: One-Command Startup
+
+Use the orchestrated startup script that handles all services:
+
+```bash
+python start.py
+```
+
+This script will:
+- Check for required services (Ollama)
+- Free up required ports
+- Start the backend server
+- Start the frontend dev server
+- Monitor processes and ensure clean shutdown
 
 ## API Endpoints
 
@@ -173,7 +228,7 @@ All requests are traced with a unique `request_id`. Logs follow structured forma
 
 ### Type Safety
 - Backend: Pydantic models in `backend/models.py`
-- Frontend: TypeScript interfaces in `services/apiTypes.ts`
+- Frontend: TypeScript interfaces in `frontend/src/services/apiTypes.ts` and `frontend/src/types.ts`
 - No `any` types allowed in core data paths
 
 ### Testing Locally
