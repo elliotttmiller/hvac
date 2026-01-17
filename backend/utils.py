@@ -327,6 +327,10 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                         if eq_analysis.get("heating_status") != "NON_COMPLIANT":
                             warnings.append(f"Heating equipment exceeds {int(MN_HEATING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0403)")
                             eq_analysis["heating_status"] = "NON_COMPLIANT"
+                else:
+                    # Equipment passes validation - set to COMPLIANT if not already set
+                    if eq_analysis.get("heating_status") in ["UNKNOWN", None, ""]:
+                        eq_analysis["heating_status"] = "COMPLIANT"
         
         # Check for cooling oversize calculation
         if "proposed_cooling_capacity" in eq_analysis and "total_cooling_load" in data.get("load_calculations", {}):
@@ -349,6 +353,10 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                     if eq_analysis.get("cooling_status") != "NON_COMPLIANT":
                         warnings.append(f"Cooling equipment exceeds {int(MN_COOLING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0404)")
                         eq_analysis["cooling_status"] = "NON_COMPLIANT"
+                else:
+                    # Equipment passes validation - set to COMPLIANT if not already set
+                    if eq_analysis.get("cooling_status") in ["UNKNOWN", None, ""]:
+                        eq_analysis["cooling_status"] = "COMPLIANT"
         
         # Validate airflow per ton for cooling
         if "airflow_per_ton_cooling" in eq_analysis and eq_analysis["airflow_per_ton_cooling"]:
