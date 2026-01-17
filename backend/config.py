@@ -132,6 +132,27 @@ class Settings(BaseSettings):
         description="Raw CORS origins (comma-separated or JSON array)."
     )
 
+    # LLM structured output toggle
+    use_llm_structured_output: bool = Field(
+        default=False,
+        description="When true, attempt to let the LLM emit the full structured JSON output first; fall back to deterministic parser on failure."
+    )
+
+    # Parameters for LLM-structured JSON generation (only used if use_llm_structured_output=True)
+    llm_structured_temperature: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Temperature to use when asking the model to emit structured JSON"
+    )
+
+    llm_structured_max_tokens: int = Field(
+        default=8000,
+        ge=256,
+        le=32768,
+        description="Max tokens allowed for structured JSON generation"
+    )
+
     @property
     def cors_origins(self) -> list[str]:
         """Return a list[str] for CORS from the raw env value.

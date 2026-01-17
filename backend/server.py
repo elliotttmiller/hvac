@@ -227,9 +227,94 @@ async def analyze_document(request: AnalyzeRequest):
             )
         
         try:
-            # Build the final report deterministically in Python from the extracted text.
-            # This avoids relying on the model to emit the correct top-level schema.
-            logger.info(f"[{request_id}] Building deterministic report from extracted text (no LLM JSON generation)")
+            # Try LLM-structured JSON first when enabled; otherwise fall back to deterministic builder.
+            if settings.use_llm_structured_output:
+                logger.info(f"[{request_id}] Attempting LLM-structured JSON generation (primary path)")
+                try:
+                    reasoning_prompt = f"""
+You are a Senior HVAC Forensic Engineer. Be opinionated, forensic, and explicit about assumptions.
+
+RAW DATA FROM BLUEPRINT (do not invent extra measurements, infer only where clearly reasonable):
+{full_context}
+
+TASK:
+Write a professional engineering analysis in two parts.
+
+PART A - NARRATIVE ANALYSIS (Human-readable):
+- SECTION 1: EXECUTIVE SUMMARY: Describe building type, scope, and primary systems (heating, ventilation, optional features).
+- SECTION 2: SYSTEM TOPOLOGY & LOGIC: Explain how spaces connect, describe mechanical room layout, and infer likely distribution strategy (ducted, mini-split, trunk-and-branch) when obvious.
+- SECTION 3: CRITICAL FINDINGS & COMPLIANCE: Call out missing or contradictory information, possible code issues (combustion air, ventilation, oversize), and discrepancies in area/notes.
+- SECTION 4: OPTIMIZATION RECOMMENDATIONS: Suggest practical improvements (zoning, ERV/HRV, higher efficiency equipment), prioritized.
+
+PART B - STRUCTURED DATA (JSON): After the narrative, output ONLY a strict JSON object matching the required schema for downstream clients. Do NOT include markdown fences or extra commentary after the JSON block.
+
+REQUIRED JSON STRUCTURE EXAMPLE (fill with inferred or calculated numbers where possible):
+{{
+  "project_info": {{ "project_name": "Extracted from Plan", "climate_zone": "7", "building_type": "residential" }},
+  "load_calculations": {{
+    "total_heating_load": 0,
+    "total_cooling_load": 0,
+    "heating_load_breakdown": [ {{ "component": "Envelope", "area_sqft": 0, "u_value": 0.06, "delta_t": 87, "load_btu": 0 }} ]
+  }},
+  "equipment_analysis": {{
+    "equipment_type": "Split System",
+    "equipment_stages": "single-stage",
+    "fuel_type": "natural gas",
+    "proposed_heating_capacity": 0,
+    "proposed_cooling_capacity": 0,
+    "heating_oversize_percent": 0,
+    "cooling_oversize_percent": 0,
+    "heating_status": "UNKNOWN",
+    "cooling_status": "UNKNOWN"
+  }},
+  "compliance_status": {{ "violations": [] }},
+  "confidence_score": 0.9,
+  "reasoning": "See narrative analysis above."
+}}
+
+Remember: Narrative first, JSON second. If any value is uncertain, mark it clearly in the narrative and populate JSON with best-estimate and include assumptions in the JSON or narrative.
+"""
+
+                    resp = await client.chat.completions.create(
+                        model=MODEL_NAME,
+                        messages=[
+                            {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
+                            {"role": "user", "content": reasoning_prompt}
+                        ],
+                        temperature=settings.llm_structured_temperature,
+                        max_tokens=settings.llm_structured_max_tokens
+                    )
+
+                    raw_output = resp.choices[0].message.content
+
+                    # Try to repair and parse JSON emitted by model
+                    parsed = repair_json(raw_output)
+
+                    # Basic schema validation - require canonical top-level keys
+                    if parsed and validate_json_schema(parsed, ["project_info", "load_calculations", "equipment_analysis", "compliance_status"]):
+                        logger.info(f"[{request_id}] LLM structured JSON validated successfully")
+                        parsed = normalize_analysis_keys(parsed)
+                        parsed = validate_hvac_analysis_output(parsed)
+
+                        processing_time = time.time() - start_time
+                        log_model_interaction(request_id, MODEL_NAME, None, None, "llm_structured_json")
+
+                        if failed_pages:
+                            logger.warning(f"[{request_id}] Failed pages: {failed_pages}")
+
+                        return AnalyzeResponse(
+                            report=json.dumps(parsed) if isinstance(parsed, dict) else json.dumps({"error": "unexpected_report_format"}),
+                            request_id=request_id,
+                            pages_processed=pages_processed,
+                            processing_time_seconds=round(processing_time, 2)
+                        )
+                    else:
+                        logger.warning(f"[{request_id}] LLM structured JSON invalid or missing required keys - falling back to deterministic path")
+                except Exception as e:
+                    logger.error(f"[{request_id}] LLM structured generation failed: {e} - falling back to deterministic path")
+
+            # Build the final report deterministically in Python from the extracted text (fallback).
+            logger.info(f"[{request_id}] Building deterministic report from extracted text (deterministic)")
 
             # Construct a conservative report from the extracted (vision) text
             parsed = construct_report_from_extracted_text(full_context)
@@ -259,7 +344,7 @@ async def analyze_document(request: AnalyzeRequest):
                 processing_time_seconds=round(processing_time, 2)
             )
         except Exception as e:
-            logger.error(f"[{request_id}] Deterministic report generation failed: {e}")
+            logger.error(f"[{request_id}] Inference/report generation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
 
 
