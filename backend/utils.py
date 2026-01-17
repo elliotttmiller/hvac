@@ -24,6 +24,13 @@ OVERSIZE_CALCULATION_TOLERANCE = 1.0  # 1% tolerance for oversize percentage cal
 MIN_CFM_PER_TON = 350  # Minimum CFM per ton for cooling
 MAX_CFM_PER_TON = 450  # Maximum CFM per ton for cooling
 
+# Engineering calculation constants
+CONSERVATIVE_BTU_PER_SQFT = 40  # Conservative heating load per square foot
+MIN_OCCUPANTS = 2  # Minimum occupants for residential
+SQFT_PER_PERSON = 600  # Typical square feet per person
+TYPICAL_CFM_PER_TON = 400  # Typical airflow per ton for residential cooling
+TYPICAL_SENSIBLE_LATENT_SPLIT = 0.75  # 75% sensible, 25% latent for cooling
+
 # Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
@@ -36,6 +43,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
+
+def _should_set_compliant_status(current_status: Optional[str]) -> bool:
+    """
+    Helper to determine if status should be set to COMPLIANT.
+    Returns True if current status is unset or unknown.
+    """
+    return current_status in ["UNKNOWN", None, ""]
 
 
 def is_equipment_modulating(equipment_stages: str) -> bool:
@@ -329,7 +344,7 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                             eq_analysis["heating_status"] = "NON_COMPLIANT"
                 else:
                     # Equipment passes validation - set to COMPLIANT if not already set
-                    if eq_analysis.get("heating_status") in ["UNKNOWN", None, ""]:
+                    if _should_set_compliant_status(eq_analysis.get("heating_status")):
                         eq_analysis["heating_status"] = "COMPLIANT"
         
         # Check for cooling oversize calculation
@@ -355,7 +370,7 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                         eq_analysis["cooling_status"] = "NON_COMPLIANT"
                 else:
                     # Equipment passes validation - set to COMPLIANT if not already set
-                    if eq_analysis.get("cooling_status") in ["UNKNOWN", None, ""]:
+                    if _should_set_compliant_status(eq_analysis.get("cooling_status")):
                         eq_analysis["cooling_status"] = "COMPLIANT"
         
         # Validate airflow per ton for cooling
@@ -580,16 +595,16 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
     # Estimate cooling as 60% of heating by conservative default
     cooling = int(round(heating * 0.6))
     
-    # Estimate building area from load (conservative: 40 BTU/sqft)
-    estimated_sqft = int(heating / 40)
+    # Estimate building area from load (conservative estimate)
+    estimated_sqft = int(heating / CONSERVATIVE_BTU_PER_SQFT)
 
     # Proposed equipment capacities (10% oversize)
     proposed_heating_capacity = int(round(heating * 1.1))
     proposed_cooling_capacity = int(round(cooling * 1.1))
     
     # Calculate load components
-    cooling_sensible = int(round(cooling * 0.75))  # Typical 75/25 split
-    cooling_latent = int(round(cooling * 0.25))
+    cooling_sensible = int(round(cooling * TYPICAL_SENSIBLE_LATENT_SPLIT))
+    cooling_latent = int(round(cooling * (1 - TYPICAL_SENSIBLE_LATENT_SPLIT)))
     
     # Estimate infiltration/ventilation loads (typical ~20% of total load)
     infiltration_heating_btu = int(round(heating * 0.15))
@@ -597,7 +612,7 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
     infiltration_cooling_latent = int(round(cooling_latent * 0.10))
     
     # Estimate ventilation requirement (ASHRAE 62.2: ~7.5 CFM per person + 1 CFM/100 sqft)
-    estimated_occupants = max(2, int(estimated_sqft / 600))  # ~600 sqft per person
+    estimated_occupants = max(MIN_OCCUPANTS, int(estimated_sqft / SQFT_PER_PERSON))
     ventilation_cfm = (estimated_occupants * 7.5) + (estimated_sqft * 0.01)
     
     # Estimate internal gains (~10-15% of cooling load)
@@ -609,8 +624,8 @@ def construct_report_from_extracted_text(text: str) -> Dict[str, Any]:
     # Calculate equipment tonnage and airflow
     cooling_tons = cooling / 12000
     heating_tons = heating / 12000
-    airflow_required_cfm = int(cooling_tons * 400)  # 400 CFM/ton typical
-    airflow_per_ton = 400.0
+    airflow_required_cfm = int(cooling_tons * TYPICAL_CFM_PER_TON)
+    airflow_per_ton = float(TYPICAL_CFM_PER_TON)
 
     # Try to pick up equipment model (simple alpha-numeric tokens with letters)
     equipment_models = re.findall(r"([A-Za-z0-9\-]{4,40})", text)
