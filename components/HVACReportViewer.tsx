@@ -1,5 +1,5 @@
 import React from 'react';
-import { BackendAnalysisReport, LoadBreakdownItem } from '../services/apiTypes';
+import { BackendAnalysisReport } from '../services/apiTypes';
 import { Icons } from './Icons';
 
 interface Props {
@@ -100,11 +100,11 @@ export const HVACReportViewer: React.FC<Props> = ({ report }) => {
               <div className="text-sm text-gray-200">
                 {formatNumber(report.equipment_analysis.proposed_heating_capacity)} BTU/h
                 <span className={`text-xs ml-2 ${
-                  report.equipment_analysis.heating_oversize_percent <= 40 
+                  (report.equipment_analysis.heating_oversize_percent || 0) <= 40 
                     ? 'text-green-400' 
                     : 'text-red-400'
                 }`}>
-                  +{report.equipment_analysis.heating_oversize_percent.toFixed(1)}%
+                  +{report.equipment_analysis.heating_oversize_percent?.toFixed(1) || '0.0'}%
                 </span>
               </div>
             </div>
