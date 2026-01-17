@@ -665,3 +665,275 @@ Look for these indicators in specifications:
 - Upgrading 14 SEER to 18 SEER: ~22% energy savings (cooling, but less total impact)
 - Payback period: Calculate based on fuel cost, climate, usage
 
+## SECTION 18: MINNESOTA COMBUSTION AIR REQUIREMENTS (CHAPTER 1346.5304)
+
+### 18.1 General Combustion Air Requirements
+**Purpose**: Provide adequate air for complete combustion, ventilation, and dilution of flue gases
+**Applicable Code**: Minnesota Administrative Rules Chapter 1346.5304 (based on IFGC)
+
+### 18.2 Combustion Air Calculation Methods
+**Standard Method (All Spaces)**
+- For appliances up to 400,000 BTU/h input
+- Net free area required per IFGC Table 304.1
+- Two permanent openings required (one high, one low)
+- Each opening: 1 square inch per 1,000 BTU/h total input
+- Minimum opening size: 100 square inches each
+
+**Example**: 80,000 BTU/h furnace
+- Required opening: 80 sq in per opening (80,000 / 1,000)
+- Two openings minimum: High and low
+- Location: Within 12 inches of ceiling (high), within 12 inches of floor (low)
+
+### 18.3 Category I Appliances (Atmospheric Venting)
+**Requirements**:
+- Natural draft appliances require two permanent openings
+- Openings communicate directly or by ducts with outdoor air
+- Alternative: Single opening to indoor space with adequate volume
+- Adequate volume = 50 cubic feet per 1,000 BTU/h
+
+**80% AFUE Furnaces** (most common Category I):
+- Require combustion air from space or ducted outdoor air
+- Cannot be installed in tight spaces without provisions
+- MN requires worksheet calculation for verification
+
+### 18.4 Category III & IV Appliances (Condensing)
+**Direct Vent / Sealed Combustion** (90%+ AFUE):
+- Outdoor air piped directly to burner
+- Does not use indoor air for combustion
+- PVC or approved plastic vent pipe
+- No combustion air opening required in mechanical room
+- Best practice for tight construction (meets energy code)
+
+### 18.5 Ducted Combustion Air
+**When Required**: All furnaces per MN code amendments
+**Sizing**:
+- Minimum duct area: 1 square inch per 4,000 BTU/h (ducted from outdoors)
+- Minimum duct area: 1 square inch per 2,000 BTU/h (ducted from interior)
+- Duct must be rigid or flex (not building cavities)
+- Termination: Weather-protected, screened, minimum 3 ft from forced air intakes
+
+**Example**: 100,000 BTU/h furnace
+- Ducted outdoor air: 25 sq in minimum (100,000 / 4,000)
+- Equivalent: 6-inch round duct (28 sq in actual)
+
+### 18.6 Combustion Air Safety
+**Carbon Monoxide Risk**:
+- Insufficient combustion air causes incomplete combustion → CO
+- Negative pressure in mechanical room can cause backdrafting
+- Kitchen/bath exhaust can depressurize home (check CAZ depressurization)
+
+**CO Detection Required**:
+- CO alarms near sleeping areas (MN Building Code)
+- Recommended: CO alarm in mechanical room
+- Professional combustion safety test required for all fuel-burning appliances
+
+## SECTION 19: MINNESOTA DUCT SEALING & TESTING REQUIREMENTS
+
+### 19.1 Duct Sealing (MN Energy Code 1322.0700)
+**Mandatory Sealing**:
+- All duct joints, seams, and penetrations must be sealed
+- Approved methods: Mastic, mastic-and-mesh, metal-backed tape (UL 181)
+- NOT approved: Cloth-backed duct tape (degrades over time)
+- Includes: Supply ducts, return ducts, boots, plenums, equipment connections
+
+**Exceptions**:
+- Factory-fabricated rigid duct with gasketed joints
+- Continuously welded and locking-type joints
+
+### 19.2 Duct Leakage Testing (Mandatory for New Construction)
+**Test Method**: Duct Blaster Test per RESNET Standard
+**Performance Target**:
+- Total leakage: ≤ 4 CFM25 per 100 square feet of conditioned floor area
+- OR Leakage to outside: ≤ 4 CFM25 per 100 square feet
+- CFM25 = airflow at 25 Pascal pressure differential
+
+**Example**: 2,000 sq ft home
+- Maximum allowable total leakage: 80 CFM25 (2,000 / 100 × 4)
+- Test performed after rough-in, before insulation (preferred)
+- Re-test after corrections if initial test fails
+
+### 19.3 Duct Insulation in Unconditioned Spaces (MN 1322.0700)
+**Supply Ducts**:
+- Minimum R-8 insulation (Climate Zone 7)
+- Includes: Attics, garages, crawlspaces, unheated basements
+- Vapor barrier required on exterior (prevents condensation)
+
+**Return Ducts**:
+- Minimum R-6 insulation in unconditioned spaces
+- Less critical than supply but required by code
+- Often neglected (common violation)
+
+**Common Violations**:
+- R-4.2 flex duct in attic (non-compliant, needs R-8)
+- Uninsulated return ducts in unconditioned basement
+- Missing vapor barrier on duct insulation
+
+### 19.4 Inspection Requirements
+**Plan Review**:
+- Duct layout and sizing calculations submitted with permit
+- Insulation R-values noted on plans
+- Sealing method specified
+
+**Field Inspection**:
+- Rough-in: Duct routing, sizing, sealing before insulation
+- Final: Leakage test results, insulation installed, equipment operational
+
+## SECTION 20: MINNESOTA SAFETY INTERLOCKS & FREEZE PROTECTION
+
+### 20.1 Freeze Protection (Mandatory for All Hydronic Coils)
+**Why Critical in Climate Zone 7**:
+- Design temperature: -17°F outdoor
+- Unprotected coils freeze in hours during fan failure
+- Frozen coils = expensive replacement, building damage
+
+**Required Protection**:
+- Low-limit freeze stat (TSL) on all hydronic coils
+- Set point: 35°F leaving air temperature
+- Hardwired to shut down supply fan (not BAS-only)
+- Proof-of-flow interlock on pumped coils (verify water flow)
+- Glycol antifreeze if system at risk (20-30% typical for mixed air coils)
+
+**Common Locations Requiring Freeze Protection**:
+- Mixed air sections (outdoor + return air)
+- Preheat coils exposed to outdoor air
+- Heating coils in AHUs with economizer
+- Any coil downstream of outdoor air intake
+
+### 20.2 High Static Pressure Safety
+**Required Interlock**:
+- High static pressure switch (PSH or DPSH)
+- Located on supply fan discharge
+- Set point: Typically 2.0-3.0 in. WC (varies by system)
+- Action: Shut down fan to prevent over-pressurization and duct damage
+
+**Purpose**:
+- Prevents duct blowout if filters clog or dampers close
+- Protects fan motor from overload
+- Code-required for commercial systems
+
+### 20.3 Smoke Detection & Fire Safety
+**Smoke Detectors Required**:
+- Supply air duct (upstream of all branches)
+- Return air duct (before fan, if return air duct > 2,000 CFM)
+- Action: Shut down air handler, close fire/smoke dampers
+
+**Fire Dampers**:
+- Required where ducts penetrate fire-rated walls, floors, or ceilings
+- Fusible link (165°F typical) or motorized with smoke detector
+- Must be accessible for inspection (access panel required)
+
+### 20.4 Equipment Safety Controls (Manufacturer-Required)
+**High Limit Switches**:
+- Furnaces: High temperature limit (190-220°F typical)
+- Boilers: High limit aquastat (200-220°F typical)
+- Purpose: Prevent overheating and potential fire
+
+**Low Pressure/Flame Failure**:
+- Gas valve interlocked with flame sensor
+- Shuts off gas if flame not proven (within 4 seconds)
+- Critical for combustion safety
+
+## SECTION 21: MINNESOTA PERMIT & INSPECTION REQUIREMENTS
+
+### 21.1 When Permits Required
+**HVAC Work Requiring Permit** (per MN Building Code):
+- Installation of new HVAC equipment
+- Replacement of furnace, boiler, or air conditioner
+- Duct system installation or modification (if > 10 ft)
+- Fuel gas piping installation or alteration
+- Refrigerant piping for split systems
+
+**Exceptions** (permit not required):
+- Portable heating/cooling equipment
+- Replacement of filters, belts, or other maintenance
+- Self-contained refrigeration systems (< 10 lbs refrigerant)
+
+### 21.2 Required Submittals
+**Permit Application Must Include**:
+- Site plan showing equipment location
+- Manual J load calculation (or approved equivalent)
+- Manual S equipment selection worksheet
+- Manual D duct design (if new ductwork > 10 ft)
+- Equipment specifications (model, capacity, efficiency)
+- Duct insulation R-values noted
+- Combustion air calculation worksheet (fuel-burning equipment)
+- Ventilation calculation per ASHRAE 62.2
+
+### 21.3 Inspection Stages
+**Rough-In Inspection**:
+- Duct routing and sizing
+- Combustion air provisions
+- Gas piping pressure test (if applicable)
+- Refrigerant piping (if accessible)
+- Before insulation and finish
+
+**Final Inspection**:
+- Equipment installed and operational
+- Duct leakage test results submitted
+- Insulation installed (verify R-values)
+- Combustion air openings verified
+- Thermostat and controls operational
+- Owner's manuals provided
+
+### 21.4 Compliance Documentation
+**Required at Final Inspection**:
+- Duct leakage test report (CFM25, pass/fail)
+- Equipment data plates visible and accessible
+- As-built duct layout (if deviations from plans)
+- Commissioning report (commercial systems)
+- Ventilation system verification (continuous operation or controls)
+
+## SECTION 22: MINNESOTA ECONOMIZER REQUIREMENTS (2024 UPDATE)
+
+### 22.1 When Economizer Required
+**Climate Zone 7 (Minnesota)**:
+- Cooling capacity > 54,000 BTU/h (4.5 tons)
+- Applies to: Packaged units, rooftop units, split systems over threshold
+- Commercial buildings (not typically residential)
+
+**Exceptions** (Economizer NOT Required):
+- Systems with energy recovery ventilators (ERV)
+- High humidity spaces (natatoriums, commercial kitchens)
+- Systems serving spaces with high sensible heat ratios
+
+### 22.2 Economizer Control Types
+**Differential Dry-Bulb** (Acceptable for MN):
+- Compares outdoor temperature (OAT) to return air temperature (RAT)
+- Economizer enabled when OAT < RAT
+- Simplest control, lowest cost
+- Works well in Climate Zone 7 (low humidity)
+
+**Differential Enthalpy** (Recommended for Best Efficiency):
+- Compares outdoor enthalpy (temp + humidity) to return enthalpy
+- Accounts for humidity (better than dry-bulb in shoulder seasons)
+- Requires enthalpy sensors (temp + humidity)
+- 5-10% better energy savings than dry-bulb
+
+### 22.3 Economizer Components
+**Motorized Dampers**:
+- Outdoor air damper: Modulates 10-20% minimum to 100% open
+- Return air damper: Modulates opposite to OA (closed when OA 100%)
+- Minimum 100% outdoor air capability for economizer mode
+
+**Control Sequence**:
+1. Stage 1: Modulate economizer dampers for free cooling
+2. Stage 2: If economizer insufficient, enable mechanical cooling (first stage)
+3. Stage 3: Full mechanical cooling if outdoor conditions unfavorable
+
+**Lockouts**:
+- High outdoor temperature: Disable economizer if OAT > 75°F (adjustable)
+- High outdoor humidity: Disable if enthalpy control and outdoor too humid
+
+### 22.4 Commissioning Requirements
+**Functional Testing** (Required per MN Energy Code):
+- Verify dampers modulate correctly (0-100%)
+- Test economizer control sequence (all stages)
+- Verify mixed air temperature sensor accuracy
+- Check high/low limit lockouts
+- Confirm mechanical cooling stages properly
+
+**Documentation**:
+- Economizer control sequence description
+- Set points documented (high/low limits, changeover temperature)
+- Test results in commissioning report
+
