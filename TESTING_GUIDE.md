@@ -169,16 +169,16 @@ Edit `.env`:
 
 ```bash
 # Model Configuration
-HVAC_MODEL_NAME=qwen2.5vl
-HVAC_OLLAMA_BASE_URL=http://localhost:11434/v1
+MODEL_NAME=qwen2.5vl
+OLLAMA_BASE_URL=http://localhost:11434/v1
 
 # Processing Limits
-HVAC_MAX_PAGES_DEFAULT=20
-HVAC_CONTEXT_WINDOW_MAX_TOKENS=28000
+MAX_PAGES_DEFAULT=20
+CONTEXT_WINDOW_MAX_TOKENS=28000
 
 # Retry Configuration
-HVAC_MAX_RETRIES=2
-HVAC_RETRY_INITIAL_DELAY=2.0
+MAX_RETRIES=2
+RETRY_INITIAL_DELAY=2.0
 ```
 
 ## Known Limitations (Development Phase)

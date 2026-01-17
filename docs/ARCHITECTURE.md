@@ -289,14 +289,14 @@ Every request gets a unique ID: `req-abc123456789`
 
 **File**: `.env` (copy from `.env.example`)
 
-**Prefix**: All vars start with `HVAC_`
+**Prefix**: None (variables use direct names without prefix)
 
 **Key Settings**:
 ```bash
-HVAC_MODEL_NAME=qwen2.5vl
-HVAC_MAX_PAGES_DEFAULT=20
-HVAC_PDF_ZOOM_FACTOR=2.0
-HVAC_CONTEXT_WINDOW_MAX_TOKENS=28000
+MODEL_NAME=qwen2.5vl
+MAX_PAGES_DEFAULT=20
+PDF_ZOOM_FACTOR=2.0
+CONTEXT_WINDOW_MAX_TOKENS=28000
 ```
 
 **Loading**: `backend/config.py` uses `pydantic-settings`

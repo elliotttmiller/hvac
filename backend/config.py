@@ -43,6 +43,12 @@ class Settings(BaseSettings):
         le=200,
         description="Maximum upload file size in MB"
     )
+    api_timeout: int = Field(
+        default=300,
+        ge=30,
+        le=600,
+        description="Global API timeout in seconds"
+    )
     
     # Inference Parameters
     extraction_temperature: float = Field(
@@ -122,7 +128,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
-        env_prefix = "HVAC_"
+        env_prefix = ""
         case_sensitive = False
 
 

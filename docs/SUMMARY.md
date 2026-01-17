@@ -156,11 +156,11 @@ This PR delivers a **production-ready, local-first HVAC analysis pipeline** with
 
 **Key Configurations**:
 ```bash
-HVAC_MODEL_NAME=qwen2.5vl
-HVAC_MAX_PAGES_DEFAULT=20
-HVAC_PDF_ZOOM_FACTOR=2.0
-HVAC_CONTEXT_WINDOW_MAX_TOKENS=28000
-HVAC_MAX_RETRIES=2
+MODEL_NAME=qwen2.5vl
+MAX_PAGES_DEFAULT=20
+PDF_ZOOM_FACTOR=2.0
+CONTEXT_WINDOW_MAX_TOKENS=28000
+MAX_RETRIES=2
 ```
 
 ## Testing Recommendations
