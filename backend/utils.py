@@ -6,9 +6,17 @@ import logging
 import time
 import re
 import random
-from typing import Optional, Any, Callable, TypeVar, Dict
+from typing import Optional, Any, Callable, TypeVar, Dict, List
 from functools import wraps
 import sys
+
+# Import code limits for validation
+try:
+    from backend.constants import MN_HEATING_OVERSIZE_LIMIT, MN_COOLING_OVERSIZE_LIMIT
+except ImportError:
+    # Fallback if constants not available
+    MN_HEATING_OVERSIZE_LIMIT = 0.40
+    MN_COOLING_OVERSIZE_LIMIT = 0.15
 
 # Configure structured logging
 logging.basicConfig(
@@ -221,11 +229,23 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
     Comprehensive validation and enhancement of HVAC analysis output.
     Checks for data consistency, calculates missing fields, and adds warnings.
     
+    This function performs automatic corrections:
+    - Recalculates oversize percentages if reported values are inconsistent (>1% difference)
+    - Updates compliance status to NON_COMPLIANT if equipment exceeds code limits
+    - Sets default confidence score (0.5) if invalid or missing
+    
+    Validation checks:
+    - Required sections present
+    - Heating oversize ≤ 40% (MN Rule 1322.0403) using MN_HEATING_OVERSIZE_LIMIT constant
+    - Cooling oversize ≤ 15% (MN Rule 1322.0404) using MN_COOLING_OVERSIZE_LIMIT constant
+    - Confidence score in range [0.0, 1.0]
+    
     Args:
         data: Parsed JSON output from analysis
         
     Returns:
-        Enhanced data with validation status and warnings
+        Enhanced data with validation status, warnings, and automatic corrections applied.
+        Adds "_validation" metadata field with "passed" boolean and "warnings" list.
     """
     if not isinstance(data, dict):
         return {"error": "Invalid data structure", "validation_passed": False}
@@ -263,9 +283,9 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                     eq_analysis["heating_oversize_percent"] = round(actual_oversize, 1)
                 
                 # Validate compliance status
-                if actual_oversize > 40:
+                if actual_oversize > (MN_HEATING_OVERSIZE_LIMIT * 100):
                     if eq_analysis.get("heating_status") != "NON_COMPLIANT":
-                        warnings.append("Heating equipment exceeds 40% oversize limit (MN Rule 1322.0403)")
+                        warnings.append(f"Heating equipment exceeds {int(MN_HEATING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0403)")
                         eq_analysis["heating_status"] = "NON_COMPLIANT"
         
         # Check for cooling oversize calculation
@@ -285,9 +305,9 @@ def validate_hvac_analysis_output(data: Dict[str, Any]) -> Dict[str, Any]:
                     eq_analysis["cooling_oversize_percent"] = round(actual_oversize, 1)
                 
                 # Validate compliance status
-                if actual_oversize > 15:
+                if actual_oversize > (MN_COOLING_OVERSIZE_LIMIT * 100):
                     if eq_analysis.get("cooling_status") != "NON_COMPLIANT":
-                        warnings.append("Cooling equipment exceeds 15% oversize limit (MN Rule 1322.0404)")
+                        warnings.append(f"Cooling equipment exceeds {int(MN_COOLING_OVERSIZE_LIMIT * 100)}% oversize limit (MN Rule 1322.0404)")
                         eq_analysis["cooling_status"] = "NON_COMPLIANT"
     
     # Check confidence score validity
@@ -339,7 +359,11 @@ def sanitize_filename(filename: str) -> str:
 def estimate_token_count(text: str) -> int:
     """
     More accurate token count estimation for context window management.
-    Uses word-based heuristic combined with character analysis.
+    Uses word-based heuristic suitable for Qwen tokenizer.
+    
+    Algorithm: Counts words and multiplies by 1.3 tokens/word, which is
+    empirically accurate for English technical text with Qwen tokenization.
+    This replaces the older 4-chars-per-token heuristic which was less accurate.
     
     Args:
         text: Input text

@@ -6,7 +6,7 @@ from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from openai import AsyncOpenAI, OpenAIError
-from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT
+from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT, MN_HEATING_OVERSIZE_LIMIT, MN_COOLING_OVERSIZE_LIMIT
 from backend.config import get_settings
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,

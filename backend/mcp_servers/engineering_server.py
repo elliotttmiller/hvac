@@ -345,6 +345,7 @@ def recommend_equipment(load_btu: int, equipment_type: str, building_type: str =
                 result["notes"].append("WARNING: Recommended size exceeds code limit")
         else:
             result["notes"].append("No standard size fits within code limits - consider custom sizing or two-stage equipment")
+            result["actual_oversize_percent"] = None
         
         # Add efficiency guidance
         result["efficiency_guidance"] = {
@@ -399,6 +400,7 @@ def recommend_equipment(load_btu: int, equipment_type: str, building_type: str =
                 result["notes"].append("WARNING: Recommended size exceeds code limit")
         else:
             result["notes"].append("No standard size fits within code limits - consider variable capacity equipment")
+            result["actual_oversize_percent"] = None
         
         # Add efficiency and airflow guidance
         result["efficiency_guidance"] = {

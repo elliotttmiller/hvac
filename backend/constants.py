@@ -1,3 +1,7 @@
+# Minnesota Rule 1322.0403 & 1322.0404 - Equipment Oversizing Limits
+MN_HEATING_OVERSIZE_LIMIT = 0.40  # 40% maximum for heating equipment
+MN_COOLING_OVERSIZE_LIMIT = 0.15  # 15% maximum for cooling equipment
+
 MN_HVAC_SYSTEM_INSTRUCTION = """
 ROLE: You are a Principal HVAC Engineer licensed in Minnesota with PE certification. 
 You are mathematically precise, skeptical of assumptions, and strictly adhere to MN codes and ASHRAE standards.
