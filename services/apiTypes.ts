@@ -24,12 +24,23 @@ export interface ProjectInfo {
   climate_zone: string;
   design_temp_heating: number;
   design_temp_cooling: number;
+  building_type?: 'residential' | 'commercial';
+  total_conditioned_area_sqft?: number;
+}
+
+export interface LoadBreakdownItem {
+  component: string;
+  area_sqft: number;
+  u_value: number;
+  load_btu: number;
 }
 
 export interface LoadCalculations {
   total_heating_load: number;
   total_cooling_load: number;
   calculation_method: string;
+  heating_load_breakdown?: LoadBreakdownItem[];
+  cooling_load_breakdown?: LoadBreakdownItem[];
 }
 
 export interface EquipmentAnalysis {
@@ -38,17 +49,28 @@ export interface EquipmentAnalysis {
   status: ComplianceStatus;
   proposed_cooling_capacity?: number;
   cooling_oversize_percent?: number;
+  heating_status?: 'COMPLIANT' | 'NON_COMPLIANT';
+  cooling_status?: 'COMPLIANT' | 'NON_COMPLIANT';
+  equipment_model?: string | null;
 }
 
 export interface ComplianceViolation {
   rule: string;
   description: string;
   severity: 'critical' | 'warning' | 'info';
+  recommendation?: string;
 }
 
 export interface ComplianceStatusReport {
   violations: ComplianceViolation[];
   overall_status: ComplianceStatus;
+}
+
+export interface AdditionalObservations {
+  duct_sizing_notes?: string | null;
+  insulation_notes?: string | null;
+  safety_concerns?: string | null;
+  assumptions_made?: string[];
 }
 
 export interface BackendAnalysisReport {
@@ -57,6 +79,8 @@ export interface BackendAnalysisReport {
   equipment_analysis: EquipmentAnalysis;
   compliance_status: ComplianceStatusReport;
   request_id?: string;
+  additional_observations?: AdditionalObservations;
+  reasoning?: string;
 }
 
 export interface AnalyzeResponse {
