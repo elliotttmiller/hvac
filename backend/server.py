@@ -79,7 +79,46 @@ async def extract_page_text(image_data_url: str, page_num: int, request_id: str)
             model=MODEL_NAME,
             messages=[
                 {"role": "user", "content": [
-                    {"type": "text", "text": "Read this blueprint page. List ALL text, room names, dimensions, window sizes, and equipment model numbers you see. Be literal."},
+                    {"type": "text", "text": """Extract ALL information from this HVAC blueprint page. Be systematic and thorough:
+
+DIMENSIONS & AREAS:
+- Room names and dimensions (length × width × height)
+- Wall lengths and orientations (N/S/E/W)
+- Window sizes (width × height) and quantities
+- Door sizes and locations
+- Total floor area
+
+EQUIPMENT SPECIFICATIONS:
+- Equipment model numbers and capacities (BTU/h, tons)
+- Efficiency ratings (AFUE, SEER, HSPF)
+- Airflow ratings (CFM)
+- Equipment locations
+
+DUCT & PIPING:
+- Duct sizes (diameter or W×H)
+- Duct materials noted
+- Airflow quantities at registers (CFM)
+- Supply and return duct routing
+
+INSULATION & CONSTRUCTION:
+- Wall construction types and R-values
+- Ceiling/roof insulation R-values
+- Window types (single/double pane, low-e)
+- Basement or crawlspace details
+
+CONTROL SYSTEMS:
+- Thermostat locations and types
+- Sensor tags (TT, TE, DPT, etc.)
+- Control valve symbols and tags
+- BAS/DDC controller notations
+
+ANNOTATIONS & NOTES:
+- Any written notes or specifications
+- Compliance stamps or engineer seals
+- Revision dates or drawing numbers
+- Code references or standards noted
+
+Be LITERAL - copy exactly what you see. Include units (ft, in, BTU, CFM). If unsure, describe what you observe."""},
                     {"type": "image_url", "image_url": {"url": image_data_url}}
                 ]}
             ],

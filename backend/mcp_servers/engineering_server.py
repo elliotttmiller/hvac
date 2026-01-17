@@ -133,5 +133,170 @@ def calculate_load_zone_7(area: float, u_value: float) -> int:
     
     return result
 
+@mcp.tool()
+def validate_insulation_rvalue(component_type: str, r_value: float) -> str:
+    """Validates insulation R-value against Minnesota Energy Code minimums.
+    
+    Args:
+        component_type: Type of component (wall, ceiling, basement_wall, slab_edge)
+        r_value: Proposed R-value
+        
+    Returns:
+        Compliance status with code minimum reference
+    """
+    # MN Energy Code minimums for Climate Zone 7
+    minimums = {
+        "wall": 20.0,
+        "ceiling": 49.0,
+        "basement_wall": 15.0,
+        "slab_edge": 10.0,
+        "floor": 30.0
+    }
+    
+    component_lower = component_type.lower().replace(" ", "_")
+    if component_lower not in minimums:
+        logger.warning(f"Unknown component type: {component_type}")
+        return json.dumps({
+            "status": "UNKNOWN",
+            "message": f"Component type '{component_type}' not recognized. Valid: {list(minimums.keys())}"
+        })
+    
+    required = minimums[component_lower]
+    compliant = r_value >= required
+    
+    result = {
+        "component_type": component_type,
+        "proposed_r_value": r_value,
+        "required_r_value": required,
+        "status": "COMPLIANT" if compliant else "NON_COMPLIANT",
+        "u_value_equivalent": round(1.0 / r_value, 4) if r_value > 0 else None,
+        "code_reference": "MN Energy Code 1322.0700 (Climate Zone 7)"
+    }
+    
+    if not compliant:
+        result["deficiency"] = round(required - r_value, 1)
+        result["recommendation"] = f"Increase insulation to R-{required} minimum"
+    
+    logger.info(f"R-value validation: {component_type} R-{r_value} = {result['status']}")
+    return json.dumps(result)
+
+@mcp.tool()
+def calculate_required_cfm(system_type: str, capacity_btu: int, temp_rise: float = None) -> str:
+    """Calculates required airflow (CFM) for HVAC equipment.
+    
+    Args:
+        system_type: heating or cooling
+        capacity_btu: Equipment capacity in BTU/h
+        temp_rise: Temperature rise/drop across equipment (optional, uses defaults)
+        
+    Returns:
+        JSON with CFM calculation and duct sizing guidance
+    """
+    if capacity_btu <= 0:
+        logger.error(f"Invalid capacity: {capacity_btu}")
+        return json.dumps({"error": "Capacity must be positive"})
+    
+    system_lower = system_type.lower()
+    
+    if system_lower == "heating":
+        # Heating: CFM = BTU / (1.08 × ΔT)
+        # Standard assumption: 70°F rise for furnace
+        delta_t = temp_rise if temp_rise else 70.0
+        cfm = capacity_btu / (1.08 * delta_t)
+        typical_range = "400-450 CFM per ton"
+        
+    elif system_lower == "cooling":
+        # Cooling: CFM = BTU / (1.08 × ΔT)  
+        # Standard assumption: 20°F drop for AC
+        delta_t = temp_rise if temp_rise else 20.0
+        cfm = capacity_btu / (1.08 * delta_t)
+        typical_range = "350-450 CFM per ton (400 CFM standard)"
+        
+    else:
+        logger.error(f"Unknown system type: {system_type}")
+        return json.dumps({"error": f"System type must be 'heating' or 'cooling', got '{system_type}'"})
+    
+    # Duct sizing recommendations
+    tons = capacity_btu / 12000.0
+    # Assume 700 FPM for main trunk
+    duct_area_sqin = (cfm / 700) * 144  # Convert from sq ft to sq in
+    round_diameter = 2 * (duct_area_sqin / 3.14159) ** 0.5
+    
+    result = {
+        "system_type": system_type,
+        "capacity_btu": capacity_btu,
+        "capacity_tons": round(tons, 1),
+        "temperature_delta": delta_t,
+        "required_cfm": int(round(cfm)),
+        "typical_range": typical_range,
+        "duct_sizing": {
+            "recommended_velocity": "700 FPM (main trunk), 600 FPM (branches)",
+            "residential_max_velocity": "900 FPM",
+            "round_duct_diameter_inches": round(round_diameter, 1),
+            "note": "Use Manual D for detailed duct sizing"
+        }
+    }
+    
+    logger.info(f"CFM calculation: {capacity_btu} BTU/h {system_type} = {int(cfm)} CFM")
+    return json.dumps(result)
+
+@mcp.tool()
+def check_equipment_efficiency(equipment_type: str, efficiency_rating: float) -> str:
+    """Validates equipment efficiency against Minnesota minimums.
+    
+    Args:
+        equipment_type: furnace, air_conditioner, heat_pump, boiler
+        efficiency_rating: AFUE, SEER, HSPF, or thermal efficiency
+        
+    Returns:
+        JSON with compliance status and recommendations
+    """
+    # MN minimums (Climate Zone 7)
+    standards = {
+        "furnace": {"metric": "AFUE", "minimum": 95.0, "recommended": 96.0, "unit": "%"},
+        "air_conditioner": {"metric": "SEER", "minimum": 14.0, "recommended": 16.0, "unit": ""},
+        "heat_pump": {"metric": "HSPF", "minimum": 8.2, "recommended": 10.0, "unit": ""},
+        "boiler": {"metric": "AFUE", "minimum": 90.0, "recommended": 95.0, "unit": "%"}
+    }
+    
+    equipment_lower = equipment_type.lower().replace(" ", "_")
+    if equipment_lower not in standards:
+        return json.dumps({
+            "error": f"Unknown equipment type: {equipment_type}",
+            "valid_types": list(standards.keys())
+        })
+    
+    standard = standards[equipment_lower]
+    minimum = standard["minimum"]
+    recommended = standard["recommended"]
+    
+    if efficiency_rating < minimum:
+        status = "NON_COMPLIANT"
+    elif efficiency_rating < recommended:
+        status = "COMPLIANT_BASIC"
+    else:
+        status = "COMPLIANT_RECOMMENDED"
+    
+    result = {
+        "equipment_type": equipment_type,
+        "efficiency_rating": efficiency_rating,
+        "efficiency_metric": standard["metric"],
+        "minimum_required": minimum,
+        "recommended": recommended,
+        "status": status,
+        "code_reference": "MN Energy Code & Federal Minimums"
+    }
+    
+    if status == "NON_COMPLIANT":
+        result["violation"] = f"Below minimum {standard['metric']} of {minimum}{standard['unit']}"
+    elif status == "COMPLIANT_BASIC":
+        result["note"] = f"Meets minimum but below recommended {recommended}{standard['unit']}"
+    else:
+        result["note"] = "Exceeds recommended efficiency"
+    
+    logger.info(f"Efficiency check: {equipment_type} {standard['metric']}={efficiency_rating} = {status}")
+    return json.dumps(result)
+
+
 if __name__ == "__main__":
     mcp.run()

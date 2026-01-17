@@ -1,4 +1,33 @@
-# ENGINEERING REFERENCE: ANSI/ISA-5.1 & HVAC AUTOMATION
+# HVAC ENGINEERING REFERENCE: COMPREHENSIVE GUIDE
+# ANSI/ISA-5.1, ASHRAE Standards, Minnesota Energy Code
+
+## SECTION 0: QUICK REFERENCE - COMMON CALCULATIONS
+
+### 0.1 Manual J Load Calculations (Climate Zone 7)
+- Heating Load Formula: BTU/h = Area (ft²) × U-Value × ΔT (87°F)
+- Cooling Load Formula: BTU/h = Area (ft²) × U-Value × ΔT (19°F) + Internal Gains
+- Basement Correction: Multiply wall load by 0.85 (below-grade thermal mass)
+
+### 0.2 Minnesota Code U-Value Maximums (Worst Case Assumptions)
+- Windows: U=0.32 (double-pane low-e), U=0.48 (single-pane)
+- Walls: U=0.060 (R-20 minimum for Zone 7)
+- Roof/Ceiling: U=0.026 (R-49 minimum)
+- Basement Walls: U=0.050 (R-15 minimum)
+- Slab Edge: F=0.54 (R-10 for 2 ft depth)
+
+### 0.3 Equipment Sizing Rules (MN Rule 1322.0403)
+- Heating Oversizing Limit: 40% (Capacity ≤ 1.40 × Load)
+- Cooling Oversizing Limit: 15% (Capacity ≤ 1.15 × Load)
+- Undersizing Acceptable: Equipment may be smaller than load if justified
+
+### 0.4 Airflow Design Rules (ASHRAE)
+- Heating: 400-450 CFM per ton (typical)
+- Cooling: 350-450 CFM per ton (400 CFM standard)
+- Duct Velocity Limits: 
+  * Residential Supply: ≤ 900 FPM
+  * Residential Return: ≤ 700 FPM
+  * Commercial: ≤ 1200 FPM
+- Static Pressure: ≤ 0.5" WC external (residential)
 
 ## SECTION 1: THE ISA-5.1 DECODING MATRIX (STRICT)
 
@@ -92,3 +121,168 @@ Z | Position | - | - | Actuator / Driver | -
 - OAT: Outside Air Temperature.
 - SAT: Supply Air Temperature.
 - RAT: Return Air Temperature.
+
+## SECTION 6: TROUBLESHOOTING DECISION TREES
+
+### 6.1 Oversizing Diagnosis (Equipment Selection Issues)
+SYMPTOM: Heating capacity exceeds load by > 40%
+ROOT CAUSES:
+1. Conservative multipliers applied without justification
+2. Load calculation used high-side assumptions for all components
+3. Added "safety factor" on top of design load
+4. Equipment selected from next size up without interpolation
+REMEDIATION: Recalculate using actual blueprint dimensions, use MN Code default U-values
+
+SYMPTOM: Short cycling (equipment runs < 10 minutes per cycle)
+ROOT CAUSES:
+1. Oversized heating equipment (> 40% oversize)
+2. Oversized cooling equipment (> 15% oversize)
+3. Thermostat differential too narrow (< 1°F)
+REMEDIATION: Right-size equipment to MN Rule 1322.0403 limits
+
+### 6.2 Duct System Issues
+SYMPTOM: High static pressure (> 0.5" WC external)
+ROOT CAUSES:
+1. Undersized return air duct (< 300 CFM per ton)
+2. Too many elbows (> 4 per run without transitions)
+3. Incorrect duct sizing (velocity > 900 FPM residential)
+REMEDIATION: Verify return air = 1.2× supply area, limit velocity to 700-900 FPM
+
+SYMPTOM: Uneven heating/cooling between rooms
+ROOT CAUSES:
+1. Supply duct imbalance (no balancing dampers)
+2. Return air inadequate (door undercuts < 1")
+3. Excessive duct leakage (> 10% of airflow)
+REMEDIATION: Install balancing dampers, add transfer grilles, seal duct joints
+
+### 6.3 Control System Diagnostics
+OPEN LOOP FAULT: Valve without sensor/controller
+- Search for orphaned TV, CV without matching TT/TE upstream
+- Verify control signal path: TE → TC → TV complete
+
+ORPHANED SENSOR: Sensor without output destination
+- Check for TT, TE with no signal line to controller
+- Common on abandoned analog points converted to BAS
+
+FAIL-SAFE VALIDATION:
+- Heating coil valve: Should be Fail-OPEN (FO) for freeze protection
+- Cooling coil valve: Should be Fail-CLOSED (FC) to prevent flooding
+- OA damper: Should be Fail-CLOSED (FC) for fire safety
+- Exhaust damper: Should be Fail-OPEN (FO) for smoke evacuation
+
+## SECTION 7: MINNESOTA-SPECIFIC CODE REQUIREMENTS
+
+### 7.1 MN Rule 1322.0403 - Equipment Sizing (Heating)
+TEXT: "Heating equipment capacity shall not exceed the design heating load by more than 40%"
+APPLICATION: 
+- Furnaces, boilers, heat pumps (heating mode)
+- Calculated at AHRI design conditions (-17°F outdoor)
+- Exception: Two-stage or modulating equipment (no limit)
+ENFORCEMENT: Plan review rejection if > 40% oversize without justification
+
+### 7.2 MN Rule 1322.0404 - Equipment Sizing (Cooling)
+TEXT: "Cooling equipment capacity shall not exceed the design cooling load by more than 15%"
+APPLICATION:
+- Air conditioners, heat pumps (cooling mode)
+- Calculated at AHRI design conditions (89°F outdoor, 75°F indoor)
+ENFORCEMENT: Common violation, often missed by contractors
+
+### 7.3 MN Energy Code 1322.0700 - Duct Insulation
+REQUIREMENT:
+- Supply ducts in unconditioned spaces: R-8 minimum
+- Return ducts in unconditioned spaces: R-6 minimum
+- Exception: Ducts within conditioned space (no insulation required)
+COMMON VIOLATIONS:
+- Attic ductwork with inadequate insulation (R-4.2 flex duct common but non-compliant)
+- Basement return ducts uninsulated (required if basement unconditioned)
+
+### 7.4 Combustion Air Requirements (MN Mechanical Code)
+RULE: 50 CFM per 1000 BTU/h input for natural draft appliances
+CALCULATION:
+- 100,000 BTU/h furnace needs 5,000 CFM combustion air volume
+- Two permanent openings: 1 sq in per 1000 BTU/h (each opening)
+COMMON ERROR: Single opening or inadequate sizing (starved combustion = CO risk)
+
+### 7.5 Freeze Protection (MN Climate Zone 7)
+MANDATORY for all hydronic coils:
+- Freeze stat (TSL) set at 35°F on leaving air
+- Hardwired to shut down supply fan (not BAS-only)
+- Proof of flow interlock on pumped coils
+WHY CRITICAL: -17°F design temp means unprotected coils freeze in hours during fan failure
+
+## SECTION 8: ASHRAE STANDARD 62.1 - VENTILATION
+
+### 8.1 Outdoor Air Requirements
+RESIDENTIAL (ASHRAE 62.2):
+- Formula: CFM = 0.01 × Floor Area + 7.5 × (Bedrooms + 1)
+- Example: 2000 ft², 3 BR = 0.01(2000) + 7.5(4) = 50 CFM minimum
+
+COMMERCIAL (ASHRAE 62.1):
+- Office: 5 CFM/person + 0.06 CFM/ft²
+- Classroom: 10 CFM/person + 0.12 CFM/ft²
+- Retail: 7.5 CFM/person + 0.06 CFM/ft²
+
+### 8.2 Economizer Requirements (MN Energy Code)
+WHEN REQUIRED: Cooling systems > 54,000 BTU/h (4.5 tons)
+TYPE: Differential dry-bulb economizer (compare OAT vs. RAT)
+CONTROL: Dampers modulate to provide free cooling when OAT < 55°F
+EXCEPTION: High humidity spaces (natatoriums, kitchens)
+
+## SECTION 9: EQUIPMENT SELECTION GUIDELINES
+
+### 9.1 Furnace Efficiency (Minnesota)
+MINIMUM AFUE: 95% (Zone 7)
+RECOMMENDED: 96-98% condensing furnace
+VENTING: PVC for condensing, Type B for standard
+COMMON MODELS:
+- 40,000 BTU/h: Typical for 1200-1500 ft² home
+- 60,000 BTU/h: Typical for 1800-2200 ft² home
+- 80,000 BTU/h: Typical for 2500-3000 ft² home
+
+### 9.2 Air Conditioning Sizing
+SEER MINIMUM: 14.0 (Federal), 14.5 recommended (MN)
+RULE OF THUMB: 1 ton per 500-600 ft² (actual load calc required)
+OVERSIZING CONSEQUENCE: 
+- Poor dehumidification (< 10 min runtime)
+- Higher energy cost (inefficient cycling)
+- Reduced equipment life (mechanical stress)
+
+### 9.3 Heat Pump Selection (Cold Climate)
+MINIMUM HSPF: 8.2 (Zone 7)
+COLD CLIMATE MODELS: Rated to -15°F or colder
+BACKUP HEAT: Required below balance point (typically -5°F to +15°F)
+DEFROST STRATEGY: Demand defrost preferred over timed
+
+### 9.4 Duct Materials
+SHEET METAL: Preferred for longevity, low leakage, fire rating
+FLEX DUCT: Acceptable for branch runs, limit to 10 ft per run
+DUCT BOARD: Acceptable for commercial, NOT recommended for residential (MN humidity)
+SEALING: Mastic required on all joints (tape not code-compliant for pressure class)
+
+## SECTION 10: COMMON BLUEPRINT SYMBOLS LEGEND
+
+### 10.1 Equipment Symbols (Architectural)
+- ⊠ or FU: Furnace
+- ⊞ or AC: Air Conditioning Condenser
+- ⊡ or AHU: Air Handler
+- ○ with circle: Thermostat
+- ⬡: VAV Box
+- ═══: Supply Duct (double line)
+- ─ ─ ─: Return Duct (dashed line)
+
+### 10.2 Annotation Conventions
+- CFM: Cubic Feet per Minute (airflow)
+- ø or DIA: Diameter (for round duct)
+- W × H: Width × Height (for rectangular duct)
+- SP: Static Pressure (in water column)
+- RA: Return Air
+- SA: Supply Air
+- OA: Outdoor Air
+- EA: Exhaust Air
+
+### 10.3 Dimension Extraction Rules
+- Always extract ALL numerical dimensions from rooms
+- Sum wall lengths for perimeter load calculations
+- Note ceiling heights (affects volume and load)
+- Identify window dimensions (W × H) for glazing load
+- Document orientation (N/S/E/W) for solar gain
