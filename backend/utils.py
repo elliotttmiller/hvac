@@ -360,7 +360,7 @@ def estimate_token_count(text: str) -> int:
     return int(words * 1.3)
 
 
-def prioritize_extracted_content(pages_data: list[str], max_tokens: int = 28000) -> str:
+def prioritize_extracted_content(pages_data: List[str], max_tokens: int = 28000) -> str:
     """
     Intelligently prioritize and merge extracted page content.
     Ensures critical information is retained when truncation is needed.
@@ -456,7 +456,7 @@ def truncate_to_token_limit(text: str, max_tokens: int = 32000) -> str:
     # Add 10% safety margin
     safe_limit = int(max_tokens * 0.9)
     
-    # Calculate character limit based on word-based truncation
+    # Calculate word limit based on token estimation (1.3 tokens per word)
     words = text.split()
     target_words = int(safe_limit / 1.3)
     truncated_words = words[:target_words]

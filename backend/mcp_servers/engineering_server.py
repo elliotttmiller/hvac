@@ -323,12 +323,9 @@ def recommend_equipment(load_btu: int, equipment_type: str, building_type: str =
         # Common furnace sizes
         standard_sizes = [40000, 60000, 80000, 100000, 120000]
         
-        # Find best fit
-        best_fit = None
-        for size in standard_sizes:
-            if min_capacity <= size <= max_capacity:
-                if best_fit is None or abs(size - load_btu) < abs(best_fit - load_btu):
-                    best_fit = size
+        # Find best fit (closest to load within code limits)
+        valid_sizes = [s for s in standard_sizes if min_capacity <= s <= max_capacity]
+        best_fit = min(valid_sizes, key=lambda s: abs(s - load_btu), default=None)
         
         result = {
             "load_btu": load_btu,
@@ -371,14 +368,14 @@ def recommend_equipment(load_btu: int, equipment_type: str, building_type: str =
         standard_sizes_tons = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0]
         standard_sizes_btu = [int(t * 12000) for t in standard_sizes_tons]
         
-        # Find best fit
-        best_fit = None
-        best_fit_tons = None
-        for size_btu, size_tons in zip(standard_sizes_btu, standard_sizes_tons):
-            if min_capacity <= size_btu <= max_capacity:
-                if best_fit is None or abs(size_btu - load_btu) < abs(best_fit - load_btu):
-                    best_fit = size_btu
-                    best_fit_tons = size_tons
+        # Find best fit (closest to load within code limits)
+        valid_pairs = [(btu, ton) for btu, ton in zip(standard_sizes_btu, standard_sizes_tons) 
+                       if min_capacity <= btu <= max_capacity]
+        if valid_pairs:
+            best_fit, best_fit_tons = min(valid_pairs, key=lambda p: abs(p[0] - load_btu))
+        else:
+            best_fit = None
+            best_fit_tons = None
         
         result = {
             "load_btu": load_btu,

@@ -6,6 +6,8 @@
 ### 0.1 Manual J Load Calculations (Climate Zone 7)
 - Heating Load Formula: BTU/h = Area (ft²) × U-Value × ΔT (87°F)
 - Cooling Load Formula: BTU/h = Area (ft²) × U-Value × ΔT (19°F) + Internal Gains
+  * Internal Gains = People (250 BTU/person) + Lights (3.4 BTU/W) + Appliances (varies)
+  * Typical Residential: 1,200-2,400 BTU/h total internal gains
 - Basement Correction: Multiply wall load by 0.85 (below-grade thermal mass)
 
 ### 0.2 Minnesota Code U-Value Maximums (Worst Case Assumptions)
