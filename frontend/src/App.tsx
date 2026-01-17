@@ -67,7 +67,9 @@ export const App = () => {
   const [requestedExpandId, setRequestedExpandId] = useState<string | null>(null);
 
   const addToast = (title: string, message: string, type: ToastType = 'info') => {
-      const id = Date.now().toString();
+      // Use a time-based id plus a short random suffix to avoid collisions when
+      // multiple toasts are generated within the same millisecond.
+      const id = `${Date.now().toString()}-${Math.random().toString(36).slice(2,6)}`;
       setToasts(prev => [...prev, { id, title, message, type }]);
   };
 
@@ -601,7 +603,8 @@ export const App = () => {
   };
 
   const handleAddComponent = () => {
-      const newId = `MAN-${Date.now().toString().slice(-4)}`;
+      // Use a full timestamp + short random suffix to avoid collisions
+      const newId = `MAN-${Date.now().toString()}-${Math.random().toString(36).slice(2,5)}`;
       const newComp: DetectedComponent = {
           id: newId,
           name: 'New Asset',
@@ -664,7 +667,7 @@ export const App = () => {
 
   const addQuoteItem = () => {
       setQuoteItems(prev => [...prev, {
-          id: `manual-${Date.now()}`,
+          id: `manual-${Date.now().toString()}-${Math.random().toString(36).slice(2,5)}`,
           description: 'Custom Asset Specification',
           sku: 'SPEC-MOD',
           quantity: 1,
@@ -682,7 +685,7 @@ export const App = () => {
 
   const handleAddComment = (targetId: string, text: string) => {
       const newComment: Comment = {
-          id: `c-${Date.now()}`,
+          id: `c-${Date.now().toString()}-${Math.random().toString(36).slice(2,5)}`,
           text,
           author: 'Me',
           initials: 'ME',

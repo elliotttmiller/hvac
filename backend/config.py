@@ -3,13 +3,25 @@ Configuration management for HVAC Analysis Backend.
 Centralizes all environment variables and settings.
 """
 import os
+from pathlib import Path
 from typing import Optional
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
+    # Pydantic v2 configuration: allow extra env vars (e.g., VITE_*) and
+    # configure env file selection at the class level to avoid using the
+    # legacy inner Config class which conflicts with model_config.
+    model_config = {
+        # Do not raise on unknown env vars (e.g., VITE_*). We choose 'ignore'
+        # so unknown keys are dropped silently (safer than 'allow').
+        "extra": "ignore",
+        "env_file": ".env.local" if Path(".env.local").exists() else ".env",
+        "env_prefix": "",
+        "case_sensitive": False,
+    }
     
     # Server Configuration
     host: str = Field(default="0.0.0.0", description="Server host")
@@ -114,11 +126,37 @@ class Settings(BaseSettings):
         description="Data directory path"
     )
     
-    # CORS
-    cors_origins: list[str] = Field(
-        default=["*"],
-        description="Allowed CORS origins"
+    # CORS - store raw string from env then expose a parsed property
+    cors_origins_raw: str = Field(
+        default="*",
+        description="Raw CORS origins (comma-separated or JSON array)."
     )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """Return a list[str] for CORS from the raw env value.
+
+        Accepts:
+        - '*' -> ['*']
+        - JSON array string -> parsed list
+        - comma-separated string -> split list
+        - a JSON-encoded list is also handled
+        """
+        v = self.cors_origins_raw
+        if isinstance(v, list):
+            return [str(x) for x in v]
+        s = (v or "").strip()
+        if s == "*":
+            return ["*"]
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                import json
+                parsed = json.loads(s)
+                return [str(x) for x in parsed]
+            except Exception:
+                pass
+        # comma-separated fallback
+        return [x.strip() for x in s.split(",") if x.strip()]
     
     # Logging
     log_level: str = Field(
@@ -126,10 +164,8 @@ class Settings(BaseSettings):
         description="Logging level (DEBUG, INFO, WARNING, ERROR)"
     )
     
-    class Config:
-        env_file = ".env"
-        env_prefix = ""
-        case_sensitive = False
+    # Note: model_config is used above to configure env loading and extra
+    # behavior for pydantic v2. No inner Config class is needed.
 
 
 # Global settings instance

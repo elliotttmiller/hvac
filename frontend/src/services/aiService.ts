@@ -8,7 +8,11 @@ import {
 } from './apiTypes';
 
 const BACKEND_URL = "http://localhost:8000/api/analyze";
-const REQUEST_TIMEOUT = 120000; // 120 seconds for local inference
+// Default timeout for local inference (ms). Increase because local model
+// loading / inference for large documents may exceed 120s. Make configurable
+// via Vite: VITE_REQUEST_TIMEOUT (value in milliseconds).
+// Use any-cast on import.meta to avoid TS type issues in some setups
+const REQUEST_TIMEOUT = parseInt(((import.meta as any)?.env?.VITE_REQUEST_TIMEOUT as string) || '300000', 10); // default 300000ms (5 minutes)
 
 // Model registry used in the UI
 export const AI_MODELS = {
