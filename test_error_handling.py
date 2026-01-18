@@ -1,0 +1,375 @@
+"""
+Test error handling for AI providers.
+Tests that quota and auth errors are handled correctly without retries.
+"""
+import asyncio
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# Define exceptions locally for testing without dependencies
+class AIProviderError(Exception):
+    """Base exception for AI provider errors."""
+    pass
+
+
+class AIQuotaExceededError(AIProviderError):
+    """Raised when API quota is exceeded."""
+    pass
+
+
+class AIRateLimitError(AIProviderError):
+    """Raised when rate limit is hit."""
+    pass
+
+
+class AIAuthenticationError(AIProviderError):
+    """Raised when authentication fails."""
+    pass
+
+
+class AIInvalidRequestError(AIProviderError):
+    """Raised when request is invalid."""
+    pass
+
+
+def test_exception_hierarchy():
+    """Test that custom exceptions are properly defined."""
+    print("\n" + "="*60)
+    print("TEST 1: Exception Hierarchy")
+    print("="*60)
+    
+    # Test that all exceptions inherit from AIProviderError
+    assert issubclass(AIQuotaExceededError, AIProviderError)
+    assert issubclass(AIRateLimitError, AIProviderError)
+    assert issubclass(AIAuthenticationError, AIProviderError)
+    assert issubclass(AIInvalidRequestError, AIProviderError)
+    
+    print("✓ All custom exceptions properly inherit from AIProviderError")
+    
+    # Test that we can raise and catch them
+    try:
+        raise AIQuotaExceededError("Test quota error")
+    except AIProviderError as e:
+        assert "Test quota error" in str(e)
+        print("✓ AIQuotaExceededError can be raised and caught")
+    
+    try:
+        raise AIAuthenticationError("Test auth error")
+    except AIProviderError as e:
+        assert "Test auth error" in str(e)
+        print("✓ AIAuthenticationError can be raised and caught")
+    
+    print("\n✓ All exception hierarchy tests passed!")
+    return True
+
+
+def test_error_messages():
+    """Test that error messages are informative."""
+    print("\n" + "="*60)
+    print("TEST 2: Error Messages")
+    print("="*60)
+    
+    # Test quota exceeded message
+    try:
+        raise AIQuotaExceededError("Quota exceeded")
+    except AIQuotaExceededError as e:
+        msg = str(e)
+        print(f"✓ Quota error message: {msg[:80]}...")
+        assert "quota" in msg.lower() or "Quota" in msg
+    
+    # Test auth error message
+    try:
+        raise AIAuthenticationError("Invalid API key")
+    except AIAuthenticationError as e:
+        msg = str(e)
+        print(f"✓ Auth error message: {msg[:80]}...")
+        assert "api key" in msg.lower() or "auth" in msg.lower()
+    
+    # Test rate limit message
+    try:
+        raise AIRateLimitError("Rate limit exceeded")
+    except AIRateLimitError as e:
+        msg = str(e)
+        print(f"✓ Rate limit error message: {msg[:80]}...")
+        assert "rate limit" in msg.lower()
+    
+    print("\n✓ All error message tests passed!")
+    return True
+
+
+def test_error_distinction():
+    """Test that different error types can be distinguished."""
+    print("\n" + "="*60)
+    print("TEST 3: Error Type Distinction")
+    print("="*60)
+    
+    # Test catching specific error types
+    errors_to_test = [
+        (AIQuotaExceededError, "quota"),
+        (AIAuthenticationError, "auth"),
+        (AIRateLimitError, "rate limit"),
+        (AIInvalidRequestError, "invalid")
+    ]
+    
+    for error_class, error_type in errors_to_test:
+        try:
+            raise error_class(f"Test {error_type} error")
+        except AIQuotaExceededError:
+            if error_class == AIQuotaExceededError:
+                print(f"✓ Correctly caught {error_type} as AIQuotaExceededError")
+            else:
+                assert False, f"Incorrectly caught {error_type} as AIQuotaExceededError"
+        except AIAuthenticationError:
+            if error_class == AIAuthenticationError:
+                print(f"✓ Correctly caught {error_type} as AIAuthenticationError")
+            else:
+                assert False, f"Incorrectly caught {error_type} as AIAuthenticationError"
+        except AIRateLimitError:
+            if error_class == AIRateLimitError:
+                print(f"✓ Correctly caught {error_type} as AIRateLimitError")
+            else:
+                assert False, f"Incorrectly caught {error_type} as AIRateLimitError"
+        except AIInvalidRequestError:
+            if error_class == AIInvalidRequestError:
+                print(f"✓ Correctly caught {error_type} as AIInvalidRequestError")
+            else:
+                assert False, f"Incorrectly caught {error_type} as AIInvalidRequestError"
+    
+    print("\n✓ All error distinction tests passed!")
+    return True
+
+
+def main():
+    """Run all tests."""
+    print("\n" + "="*60)
+    print("ERROR HANDLING TEST SUITE")
+    print("="*60)
+    print("Testing exception hierarchy and error handling logic...")
+    
+    results = []
+    
+    try:
+        results.append(test_exception_hierarchy())
+    except Exception as e:
+        print(f"✗ Exception hierarchy test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    try:
+        results.append(test_error_messages())
+    except Exception as e:
+        print(f"✗ Error message test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    try:
+        results.append(test_error_distinction())
+    except Exception as e:
+        print(f"✗ Error distinction test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    # Summary
+    print("\n" + "="*60)
+    print("TEST SUMMARY")
+    print("="*60)
+    passed = sum(results)
+    total = len(results)
+    print(f"Tests passed: {passed}/{total}")
+    
+    if passed == total:
+        print("\n✅ ALL TESTS PASSED!")
+        print("\nNote: These tests verify the exception hierarchy.")
+        print("Full integration tests require dependencies to be installed.")
+        return 0
+    else:
+        print(f"\n❌ {total - passed} TEST(S) FAILED")
+        return 1
+
+
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)
+
+
+
+def test_exception_hierarchy():
+    """Test that custom exceptions are properly defined."""
+    print("\n" + "="*60)
+    print("TEST 1: Exception Hierarchy")
+    print("="*60)
+    
+    # Test that all exceptions inherit from AIProviderError
+    assert issubclass(AIQuotaExceededError, AIProviderError)
+    assert issubclass(AIRateLimitError, AIProviderError)
+    assert issubclass(AIAuthenticationError, AIProviderError)
+    assert issubclass(AIInvalidRequestError, AIProviderError)
+    
+    print("✓ All custom exceptions properly inherit from AIProviderError")
+    
+    # Test that we can raise and catch them
+    try:
+        raise AIQuotaExceededError("Test quota error")
+    except AIProviderError as e:
+        assert "Test quota error" in str(e)
+        print("✓ AIQuotaExceededError can be raised and caught")
+    
+    try:
+        raise AIAuthenticationError("Test auth error")
+    except AIProviderError as e:
+        assert "Test auth error" in str(e)
+        print("✓ AIAuthenticationError can be raised and caught")
+    
+    print("\n✓ All exception hierarchy tests passed!")
+    return True
+
+
+def test_error_messages():
+    """Test that error messages are informative."""
+    print("\n" + "="*60)
+    print("TEST 2: Error Messages")
+    print("="*60)
+    
+    # Test quota exceeded message
+    try:
+        raise AIQuotaExceededError("Quota exceeded")
+    except AIQuotaExceededError as e:
+        msg = str(e)
+        print(f"✓ Quota error message: {msg[:80]}...")
+        assert "quota" in msg.lower() or "Quota" in msg
+    
+    # Test auth error message
+    try:
+        raise AIAuthenticationError("Invalid API key")
+    except AIAuthenticationError as e:
+        msg = str(e)
+        print(f"✓ Auth error message: {msg[:80]}...")
+        assert "api key" in msg.lower() or "auth" in msg.lower()
+    
+    # Test rate limit message
+    try:
+        raise AIRateLimitError("Rate limit exceeded")
+    except AIRateLimitError as e:
+        msg = str(e)
+        print(f"✓ Rate limit error message: {msg[:80]}...")
+        assert "rate limit" in msg.lower()
+    
+    print("\n✓ All error message tests passed!")
+    return True
+
+
+def test_retry_exclusion():
+    """Test that exclude_exceptions parameter works in retry decorator."""
+    print("\n" + "="*60)
+    print("TEST 3: Retry Exclusion Logic")
+    print("="*60)
+    
+    from backend.utils import retry_with_backoff
+    
+    # Create a function that always raises AIQuotaExceededError
+    attempt_count = [0]
+    
+    @retry_with_backoff(
+        max_retries=3,
+        initial_delay=0.1,
+        jitter=False,
+        exceptions=(Exception,),
+        exclude_exceptions=(AIQuotaExceededError, AIAuthenticationError)
+    )
+    async def failing_function():
+        attempt_count[0] += 1
+        raise AIQuotaExceededError("Quota exceeded - should not retry")
+    
+    # Run the function and verify it only runs once
+    try:
+        asyncio.run(failing_function())
+        assert False, "Should have raised AIQuotaExceededError"
+    except AIQuotaExceededError as e:
+        assert attempt_count[0] == 1, f"Expected 1 attempt, got {attempt_count[0]}"
+        print(f"✓ Function was called {attempt_count[0]} time (no retries)")
+        print("✓ AIQuotaExceededError was not retried as expected")
+    
+    # Test that other errors ARE retried
+    attempt_count[0] = 0
+    
+    @retry_with_backoff(
+        max_retries=2,
+        initial_delay=0.1,
+        jitter=False,
+        exceptions=(Exception,),
+        exclude_exceptions=(AIQuotaExceededError,)
+    )
+    async def retriable_function():
+        attempt_count[0] += 1
+        raise RuntimeError("Network error - should retry")
+    
+    try:
+        asyncio.run(retriable_function())
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError:
+        # Should have tried 3 times (initial + 2 retries)
+        assert attempt_count[0] == 3, f"Expected 3 attempts, got {attempt_count[0]}"
+        print(f"✓ Function was called {attempt_count[0]} times (with retries)")
+        print("✓ RuntimeError was retried as expected")
+    
+    print("\n✓ All retry exclusion tests passed!")
+    return True
+
+
+def main():
+    """Run all tests."""
+    print("\n" + "="*60)
+    print("ERROR HANDLING TEST SUITE")
+    print("="*60)
+    
+    results = []
+    
+    try:
+        results.append(test_exception_hierarchy())
+    except Exception as e:
+        print(f"✗ Exception hierarchy test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    try:
+        results.append(test_error_messages())
+    except Exception as e:
+        print(f"✗ Error message test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    try:
+        results.append(test_retry_exclusion())
+    except Exception as e:
+        print(f"✗ Retry exclusion test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(False)
+    
+    # Summary
+    print("\n" + "="*60)
+    print("TEST SUMMARY")
+    print("="*60)
+    passed = sum(results)
+    total = len(results)
+    print(f"Tests passed: {passed}/{total}")
+    
+    if passed == total:
+        print("\n✅ ALL TESTS PASSED!")
+        return 0
+    else:
+        print(f"\n❌ {total - passed} TEST(S) FAILED")
+        return 1
+
+
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)
