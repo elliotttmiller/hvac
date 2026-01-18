@@ -8,7 +8,14 @@ from mcp.client.stdio import stdio_client
 from openai import OpenAIError
 from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT, MN_HEATING_OVERSIZE_LIMIT, MN_COOLING_OVERSIZE_LIMIT
 from backend.config import get_settings
-from backend.ai_client import get_ai_client
+from backend.ai_client import (
+    get_ai_client,
+    AIProviderError,
+    AIQuotaExceededError,
+    AIRateLimitError,
+    AIAuthenticationError,
+    AIInvalidRequestError
+)
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,
     ModelStatus, ErrorResponse, PDFMetadata, PageImageData, AnalysisReport,
@@ -67,21 +74,38 @@ async def get_catalog():
     max_retries=settings.max_retries, 
     initial_delay=settings.retry_initial_delay,
     jitter=True,
-    exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException, Exception)
+    # Only retry on transient errors, NOT on quota/auth/invalid request errors
+    exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException, AIProviderError),
+    # Exclude these errors from retry
+    exclude_exceptions=(AIQuotaExceededError, AIAuthenticationError, AIInvalidRequestError)
 )
 async def extract_page_text(image_data_url: str, page_num: int, request_id: str) -> str:
     """Extract text from a single page with retry logic.
     
     Only retries on transient errors (network, timeout, model failures).
-    Validation errors and logic errors are not retried as they won't resolve with retry.
+    Does NOT retry on quota exceeded, authentication, or invalid request errors.
+    Rate limit errors will be retried with exponential backoff.
     """
     with RequestTracer(request_id, f"extract_page_{page_num}"):
-        return await ai_client.generate_with_image(
-            prompt=BLUEPRINT_EXTRACTION_PROMPT,
-            image_data_url=image_data_url,
-            max_tokens=settings.extraction_max_tokens,
-            temperature=settings.extraction_temperature
-        )
+        try:
+            return await ai_client.generate_with_image(
+                prompt=BLUEPRINT_EXTRACTION_PROMPT,
+                image_data_url=image_data_url,
+                max_tokens=settings.extraction_max_tokens,
+                temperature=settings.extraction_temperature
+            )
+        except (AIQuotaExceededError, AIAuthenticationError, AIInvalidRequestError) as e:
+            # These errors should not be retried - fail fast with clear message
+            logger.error(f"[{request_id}] Non-retryable AI error on page {page_num}: {e}")
+            raise
+        except AIRateLimitError as e:
+            # Rate limit errors are retryable with backoff
+            logger.warning(f"[{request_id}] Rate limit hit on page {page_num}, will retry: {e}")
+            raise
+        except Exception as e:
+            # Other errors are also retryable
+            logger.warning(f"[{request_id}] Error extracting page {page_num}, will retry: {e}")
+            raise
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
@@ -173,6 +197,28 @@ async def analyze_document(request: AnalyzeRequest):
                             extracted_data.append(f"--- PAGE {p} ---\n{extracted}")
                             pages_processed += 1
                             
+                        except AIQuotaExceededError as e:
+                            # Quota exceeded - fail immediately with clear message
+                            logger.error(f"[{request_id}] Gemini quota exceeded on page {p}: {e}")
+                            raise HTTPException(
+                                status_code=429,
+                                detail=f"Gemini API quota exceeded. Processed {p-1}/{max_pages} pages successfully. "
+                                       f"Please wait before retrying or check your quota at https://aistudio.google.com/app/apikey"
+                            )
+                        except AIAuthenticationError as e:
+                            # Authentication error - fail immediately
+                            logger.error(f"[{request_id}] Gemini authentication failed on page {p}: {e}")
+                            raise HTTPException(
+                                status_code=401,
+                                detail=f"Gemini API authentication failed. Please check your API key."
+                            )
+                        except AIInvalidRequestError as e:
+                            # Invalid request - fail immediately
+                            logger.error(f"[{request_id}] Invalid request on page {p}: {e}")
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Invalid request to AI provider: {str(e)}"
+                            )
                         except Exception as e:
                             logger.error(f"[{request_id}] Page {p} extraction failed: {e}")
                             failed_pages.append(p)
@@ -195,6 +241,24 @@ async def analyze_document(request: AnalyzeRequest):
                     extracted_data.append(f"--- IMAGE ---\n{extracted}")
                     pages_processed = 1
                     
+                except AIQuotaExceededError as e:
+                    logger.error(f"[{request_id}] Gemini quota exceeded: {e}")
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Gemini API quota exceeded. Please wait before retrying or check your quota at https://aistudio.google.com/app/apikey"
+                    )
+                except AIAuthenticationError as e:
+                    logger.error(f"[{request_id}] Gemini authentication failed: {e}")
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Gemini API authentication failed. Please check your API key."
+                    )
+                except AIInvalidRequestError as e:
+                    logger.error(f"[{request_id}] Invalid request: {e}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid request to AI provider: {str(e)}"
+                    )
                 except Exception as e:
                     logger.error(f"[{request_id}] Image extraction failed: {e}")
                     raise HTTPException(status_code=500, detail=f"Image processing failed: {str(e)}")
@@ -298,6 +362,25 @@ Remember: Narrative first, JSON second. If any value is uncertain, mark it clear
                         )
                     else:
                         logger.warning(f"[{request_id}] LLM structured JSON invalid or missing required keys - falling back to deterministic path")
+                except AIQuotaExceededError as e:
+                    logger.error(f"[{request_id}] Gemini quota exceeded during reasoning: {e}")
+                    raise HTTPException(
+                        status_code=429,
+                        detail=f"Gemini API quota exceeded during analysis. Extracted {pages_processed} pages successfully. "
+                               f"Please wait before retrying or check your quota at https://aistudio.google.com/app/apikey"
+                    )
+                except AIAuthenticationError as e:
+                    logger.error(f"[{request_id}] Gemini authentication failed during reasoning: {e}")
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Gemini API authentication failed. Please check your API key."
+                    )
+                except AIInvalidRequestError as e:
+                    logger.error(f"[{request_id}] Invalid request during reasoning: {e}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid request to AI provider: {str(e)}"
+                    )
                 except Exception as e:
                     logger.error(f"[{request_id}] LLM structured generation failed: {e} - falling back to deterministic path")
 
@@ -331,6 +414,10 @@ Remember: Narrative first, JSON second. If any value is uncertain, mark it clear
                 pages_processed=pages_processed,
                 processing_time_seconds=round(processing_time, 2)
             )
+        except (AIQuotaExceededError, AIAuthenticationError, AIInvalidRequestError):
+            # These have already been handled above and converted to HTTPException
+            # Re-raise to propagate to client
+            raise
         except Exception as e:
             logger.error(f"[{request_id}] Inference/report generation failed: {e}")
             raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")

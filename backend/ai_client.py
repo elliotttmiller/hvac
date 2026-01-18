@@ -12,6 +12,32 @@ from backend.config import get_settings
 from backend.utils import logger
 
 
+# Define custom exceptions for AI provider errors
+class AIProviderError(Exception):
+    """Base exception for AI provider errors."""
+    pass
+
+
+class AIQuotaExceededError(AIProviderError):
+    """Raised when API quota is exceeded."""
+    pass
+
+
+class AIRateLimitError(AIProviderError):
+    """Raised when rate limit is hit."""
+    pass
+
+
+class AIAuthenticationError(AIProviderError):
+    """Raised when authentication fails."""
+    pass
+
+
+class AIInvalidRequestError(AIProviderError):
+    """Raised when request is invalid."""
+    pass
+
+
 class AIClient:
     """Unified AI client that works with both Ollama and Gemini."""
     
@@ -38,6 +64,53 @@ class AIClient:
             
         else:
             raise ValueError(f"Unsupported AI provider: {self.provider}. Use 'ollama' or 'gemini'")
+    
+    def _handle_gemini_error(self, error: Exception) -> None:
+        """
+        Convert Gemini API errors to custom exceptions for better handling.
+        
+        Args:
+            error: The original exception from Gemini API
+            
+        Raises:
+            AIQuotaExceededError: When quota is exceeded
+            AIRateLimitError: When rate limit is hit
+            AIAuthenticationError: When authentication fails
+            AIInvalidRequestError: When request is invalid
+            AIProviderError: For other API errors
+        """
+        error_str = str(error).lower()
+        error_type = type(error).__name__
+        
+        # Check for quota exceeded (429 or ResourceExhausted)
+        if "quota" in error_str or "resource" in error_str or "429" in error_str:
+            raise AIQuotaExceededError(
+                f"Gemini API quota exceeded. Please wait before retrying or check your quota at "
+                f"https://aistudio.google.com/app/apikey. Original error: {error}"
+            )
+        
+        # Check for rate limiting
+        if "rate limit" in error_str or "too many requests" in error_str:
+            raise AIRateLimitError(
+                f"Gemini API rate limit exceeded. Please wait a moment before retrying. "
+                f"Original error: {error}"
+            )
+        
+        # Check for authentication errors
+        if "auth" in error_str or "permission" in error_str or "401" in error_str or "403" in error_str:
+            raise AIAuthenticationError(
+                f"Gemini API authentication failed. Please check your API key at "
+                f"https://aistudio.google.com/app/apikey. Original error: {error}"
+            )
+        
+        # Check for invalid request
+        if "invalid" in error_str or "400" in error_str or "bad request" in error_str:
+            raise AIInvalidRequestError(
+                f"Invalid request to Gemini API. Original error: {error}"
+            )
+        
+        # Generic API error
+        raise AIProviderError(f"Gemini API error: {error}")
     
     async def generate_with_image(
         self,
@@ -154,51 +227,55 @@ class AIClient:
         temperature: float,
         system_instruction: Optional[str]
     ) -> str:
-        """Generate using Google Gemini API."""
-        # Extract base64 image data and determine MIME type
-        mime_type = "image/png"  # default
-        if "data:" in image_data_url:
-            # Extract MIME type from data URL
-            header_part = image_data_url.split(",")[0]
-            if ";" in header_part:
-                mime_type = header_part.split(":")[1].split(";")[0]
-            _, base64_data = image_data_url.split("base64,", 1)
-        else:
-            base64_data = image_data_url
-        
-        # Decode base64 to bytes
-        image_bytes = base64.b64decode(base64_data)
-        
-        # Build content with system instruction if provided
-        full_prompt = prompt
-        if system_instruction:
-            full_prompt = f"{system_instruction}\n\n{prompt}"
-        
-        # Configure generation
-        generation_config = types.GenerateContentConfig(
-            max_output_tokens=max_tokens,
-            temperature=temperature
-        )
-        
-        # Create content parts: text + image
-        contents = [
-            types.Part.from_text(text=full_prompt),
-            types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
-        ]
-        
-        # Generate content using async executor
-        loop = asyncio.get_event_loop()
-        
-        def _sync_generate():
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=contents,
-                config=generation_config
+        """Generate using Google Gemini API with proper error handling."""
+        try:
+            # Extract base64 image data and determine MIME type
+            mime_type = "image/png"  # default
+            if "data:" in image_data_url:
+                # Extract MIME type from data URL
+                header_part = image_data_url.split(",")[0]
+                if ";" in header_part:
+                    mime_type = header_part.split(":")[1].split(";")[0]
+                _, base64_data = image_data_url.split("base64,", 1)
+            else:
+                base64_data = image_data_url
+            
+            # Decode base64 to bytes
+            image_bytes = base64.b64decode(base64_data)
+            
+            # Build content with system instruction if provided
+            full_prompt = prompt
+            if system_instruction:
+                full_prompt = f"{system_instruction}\n\n{prompt}"
+            
+            # Configure generation
+            generation_config = types.GenerateContentConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature
             )
-            return response.text
-        
-        result = await loop.run_in_executor(None, _sync_generate)
-        return result
+            
+            # Create content parts: text + image
+            contents = [
+                types.Part.from_text(text=full_prompt),
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+            ]
+            
+            # Generate content using async executor
+            loop = asyncio.get_event_loop()
+            
+            def _sync_generate():
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=contents,
+                    config=generation_config
+                )
+                return response.text
+            
+            result = await loop.run_in_executor(None, _sync_generate)
+            return result
+        except Exception as e:
+            # Convert to custom exception for better handling
+            self._handle_gemini_error(e)
     
     async def _generate_gemini_text(
         self,
@@ -207,31 +284,35 @@ class AIClient:
         temperature: float,
         system_instruction: Optional[str]
     ) -> str:
-        """Generate text using Google Gemini API."""
-        # Build content with system instruction if provided
-        full_prompt = prompt
-        if system_instruction:
-            full_prompt = f"{system_instruction}\n\n{prompt}"
-        
-        # Configure generation
-        generation_config = types.GenerateContentConfig(
-            max_output_tokens=max_tokens,
-            temperature=temperature
-        )
-        
-        # Generate content using async executor
-        loop = asyncio.get_event_loop()
-        
-        def _sync_generate():
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=full_prompt,
-                config=generation_config
+        """Generate text using Google Gemini API with proper error handling."""
+        try:
+            # Build content with system instruction if provided
+            full_prompt = prompt
+            if system_instruction:
+                full_prompt = f"{system_instruction}\n\n{prompt}"
+            
+            # Configure generation
+            generation_config = types.GenerateContentConfig(
+                max_output_tokens=max_tokens,
+                temperature=temperature
             )
-            return response.text
-        
-        result = await loop.run_in_executor(None, _sync_generate)
-        return result
+            
+            # Generate content using async executor
+            loop = asyncio.get_event_loop()
+            
+            def _sync_generate():
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=full_prompt,
+                    config=generation_config
+                )
+                return response.text
+            
+            result = await loop.run_in_executor(None, _sync_generate)
+            return result
+        except Exception as e:
+            # Convert to custom exception for better handling
+            self._handle_gemini_error(e)
     
     def get_model_name(self) -> str:
         """Get the current model name."""

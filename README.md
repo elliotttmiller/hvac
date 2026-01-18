@@ -1721,6 +1721,7 @@ Comprehensive documentation is available in the `/docs` directory:
 
 - **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[PERFORMANCE.md](./docs/PERFORMANCE.md)** - Benchmarks, optimization strategies, and scaling
+- **[ERROR_HANDLING.md](./docs/ERROR_HANDLING.md)** - Comprehensive error handling and quota management
 - **[ENHANCEMENTS.md](./docs/ENHANCEMENTS.md)** - Feature enhancements and implementation details
 - **[GEMINI_INTEGRATION.md](./docs/GEMINI_INTEGRATION.md)** - Guide to using Google Gemini AI provider
 
