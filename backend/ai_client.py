@@ -3,6 +3,7 @@ AI Client abstraction layer for HVAC Analysis Backend.
 Supports both Ollama (via OpenAI-compatible API) and Google Gemini.
 """
 import base64
+import asyncio
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI, OpenAIError
 from google import genai
@@ -67,6 +68,8 @@ class AIClient:
             return await self._generate_gemini_with_image(
                 prompt, image_data_url, max_tokens, temperature, system_instruction
             )
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
     
     async def generate_text(
         self,
@@ -95,6 +98,8 @@ class AIClient:
             return await self._generate_gemini_text(
                 prompt, max_tokens, temperature, system_instruction
             )
+        else:
+            raise ValueError(f"Unsupported provider: {self.provider}")
     
     # Ollama implementation
     async def _generate_ollama_with_image(
@@ -150,8 +155,13 @@ class AIClient:
         system_instruction: Optional[str]
     ) -> str:
         """Generate using Google Gemini API."""
-        # Extract base64 image data
-        if "base64," in image_data_url:
+        # Extract base64 image data and determine MIME type
+        mime_type = "image/png"  # default
+        if "data:" in image_data_url:
+            # Extract MIME type from data URL
+            header_part = image_data_url.split(",")[0]
+            if ";" in header_part:
+                mime_type = header_part.split(":")[1].split(";")[0]
             _, base64_data = image_data_url.split("base64,", 1)
         else:
             base64_data = image_data_url
@@ -173,11 +183,10 @@ class AIClient:
         # Create content parts: text + image
         contents = [
             types.Part.from_text(full_prompt),
-            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
         ]
         
-        # Generate content using async
-        import asyncio
+        # Generate content using async executor
         loop = asyncio.get_event_loop()
         
         def _sync_generate():
@@ -210,8 +219,7 @@ class AIClient:
             temperature=temperature
         )
         
-        # Generate content using async
-        import asyncio
+        # Generate content using async executor
         loop = asyncio.get_event_loop()
         
         def _sync_generate():
