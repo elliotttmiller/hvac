@@ -16,8 +16,11 @@ const REQUEST_TIMEOUT = parseInt(((import.meta as any)?.env?.VITE_REQUEST_TIMEOU
 
 // Model registry used in the UI
 export const AI_MODELS = {
-  FLASH: { id: 'flash', label: 'Flash (Local Speed)', description: 'Low-latency local vision', type: 'speed' },
-  PRO: { id: 'pro', label: 'Pro (Remote)', description: 'Hosted reasoning engine', type: 'reasoning' },
+  // Map the "FLASH" and "PRO" slots to the Gemini Flash models so the UI
+  // keeps using the same keys (e.g., AI_MODELS.FLASH) while actually
+  // targeting Gemini when configured.
+  FLASH: { id: 'gemini-2.0-flash-exp', label: 'Gemini Flash 2.5', description: 'Google Gemini Flash 2.5 (low-latency cloud model)', type: 'remote' },
+  PRO: { id: 'gemini-2.0-flash-thinking-exp-01-21', label: 'Gemini Flash 3 (Preview)', description: 'Gemini Flash 3 preview (enhanced reasoning)', type: 'remote' },
   LOCAL_OLLAMA: { id: 'llama3.1', label: 'Local Ollama (Llama 3.1)', description: 'Local Ollama engine', type: 'local' },
   QWEN_VL: { id: 'qwen2.5-vl', label: 'Qwen 2.5 VL (Local)', description: 'Local vision+language (Qwen)', type: 'local' }
 };
@@ -228,15 +231,18 @@ export const stage2Analysis = async (
   modelId: string = AI_MODELS.FLASH.id
 ): Promise<AnalysisReportResult> => {
   const localIds = ['llama3.1', 'qwen2.5-vl', 'qwen2-vl', 'ollama-llama3.1', AI_MODELS.LOCAL_OLLAMA.id];
-  if (localIds.includes(modelId.toLowerCase())) {
+
+  // If model is local, call the local-fast path (analyzeDocument will still POST to backend
+  // but historically this branch allowed local-only handling). For non-local (remote)
+  // models such as Gemini, delegate to the same backend analyze endpoint so the server
+  // (which is configured with AI_PROVIDER) can route to Gemini.
+  try {
     const report = await analyzeDocument(base64Image, mimeType, (m) => console.debug('[backend]', m));
     return { analysisReport: report.content };
+  } catch (err) {
+    console.error('stage2Analysis: failed to analyze via backend', err);
+    return { analysisReport: `Model ${modelId} not configured for local inference. Please select a local model (Qwen/Llama) in settings.` };
   }
-
-  // Fallback: model not available locally
-  return { 
-    analysisReport: `Model ${modelId} not configured for local inference. Please select a local model (Qwen/Llama) in settings.` 
-  };
 };
 
 // --- STAGE 3: MULTI-PAGE SYNTHESIS

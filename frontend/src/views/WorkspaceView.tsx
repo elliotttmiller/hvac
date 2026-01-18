@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { Blueprint, Project, DetectedComponent } from '../types';

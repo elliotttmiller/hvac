@@ -380,78 +380,83 @@ def shutdown_all():
 def main():
     print("HVAC - start orchestration script")
 
-    # 1) Check Ollama
+    # 1) Check Ollama (only if configured as the AI provider or explicit command set)
+    ai_provider = os.environ.get("AI_PROVIDER", "ollama").lower()
     ollama_url = f"http://{OLLAMA_HOST}:{OLLAMA_PORT}/v1/models"
-    if is_port_open(OLLAMA_HOST, OLLAMA_PORT) and http_get_ok(ollama_url, timeout=1.0):
-        print(f"Found Ollama at {OLLAMA_HOST}:{OLLAMA_PORT}")
-        # Check whether the requested model is listed/loaded by Ollama
-        def ollama_list_models():
-            try:
-                req = urllib.request.Request(ollama_url, headers={"User-Agent": "hvac-start-script/1.0"})
-                with urllib.request.urlopen(req, timeout=2.0) as r:
-                    data = r.read()
-                    try:
-                        parsed = json.loads(data)
-                        # return a list or dict stringified
-                        return parsed
-                    except Exception:
-                        return None
-            except Exception:
-                return None
+    if ai_provider == "ollama" or os.environ.get("OLLAMA_CMD"):
+        if is_port_open(OLLAMA_HOST, OLLAMA_PORT) and http_get_ok(ollama_url, timeout=1.0):
+            print(f"Found Ollama at {OLLAMA_HOST}:{OLLAMA_PORT}")
+            # Check whether the requested model is listed/loaded by Ollama
+            def ollama_list_models():
+                try:
+                    req = urllib.request.Request(ollama_url, headers={"User-Agent": "hvac-start-script/1.0"})
+                    with urllib.request.urlopen(req, timeout=2.0) as r:
+                        data = r.read()
+                        try:
+                            parsed = json.loads(data)
+                            # return a list or dict stringified
+                            return parsed
+                        except Exception:
+                            return None
+                except Exception:
+                    return None
 
-        models = ollama_list_models()
-        model_ready = False
-        if models is not None:
-            try:
-                s = json.dumps(models)
-                if MODEL_NAME in s:
-                    model_ready = True
-            except Exception:
-                pass
-        if model_ready:
-            print(f"Ollama reports model '{MODEL_NAME}' as present.")
-        else:
-            print(f"Model '{MODEL_NAME}' not found in Ollama model list. It may still be loading.")
-            # Wait up to 60s for the model to appear
-            start = time.time()
-            while time.time() - start < 60:
-                models = ollama_list_models()
-                if models is not None:
-                    try:
-                        if MODEL_NAME in json.dumps(models):
-                            model_ready = True
-                            print(f"Model '{MODEL_NAME}' is now present in Ollama.")
-                            break
-                    except Exception:
-                        pass
-                time.sleep(1)
-            if not model_ready:
-                print(f"Timed out waiting for model '{MODEL_NAME}' to appear. You can start it manually or configure Ollama to auto-load the model.")
-    else:
-        print(f"Warning: Ollama not reachable at {OLLAMA_HOST}:{OLLAMA_PORT}. Please ensure Ollama is running.")
-        print("If you want this script to attempt starting Ollama, set OLLAMA_CMD environment variable.")
-        # Try environment variable first
-        ollama_cmd = os.environ.get("OLLAMA_CMD")
-        # If no explicit command, try to find 'ollama' in PATH and use 'ollama serve'
-        if not ollama_cmd:
-            ollama_bin = shutil.which("ollama")
-            if ollama_bin:
-                ollama_cmd = f"{ollama_bin} serve"
-        if ollama_cmd:
-            print(f"Attempting to start Ollama with: {ollama_cmd}")
-            try:
-                start_ollama(ollama_cmd)
-                # wait for Ollama to be reachable (give it some time)
+            models = ollama_list_models()
+            model_ready = False
+            if models is not None:
+                try:
+                    s = json.dumps(models)
+                    if MODEL_NAME in s:
+                        model_ready = True
+                except Exception:
+                    pass
+            if model_ready:
+                print(f"Ollama reports model '{MODEL_NAME}' as present.")
+            else:
+                print(f"Model '{MODEL_NAME}' not found in Ollama model list. It may still be loading.")
+                # Wait up to 60s for the model to appear
                 start = time.time()
                 while time.time() - start < 60:
-                    if is_port_open(OLLAMA_HOST, OLLAMA_PORT) and http_get_ok(ollama_url, timeout=1.0):
-                        print("Ollama is up")
-                        break
+                    models = ollama_list_models()
+                    if models is not None:
+                        try:
+                            if MODEL_NAME in json.dumps(models):
+                                model_ready = True
+                                print(f"Model '{MODEL_NAME}' is now present in Ollama.")
+                                break
+                        except Exception:
+                            pass
                     time.sleep(1)
-                else:
-                    print("Timeout waiting for Ollama to become ready.")
-            except Exception as e:
-                print("Failed to start Ollama:", e)
+                if not model_ready:
+                    print(f"Timed out waiting for model '{MODEL_NAME}' to appear. You can start it manually or configure Ollama to auto-load the model.")
+        else:
+            print(f"Warning: Ollama not reachable at {OLLAMA_HOST}:{OLLAMA_PORT}. Please ensure Ollama is running.")
+            print("If you want this script to attempt starting Ollama, set OLLAMA_CMD environment variable.")
+            # Try environment variable first
+            ollama_cmd = os.environ.get("OLLAMA_CMD")
+            # If no explicit command, try to find 'ollama' in PATH and use 'ollama serve'
+            if not ollama_cmd:
+                ollama_bin = shutil.which("ollama")
+                if ollama_bin:
+                    ollama_cmd = f"{ollama_bin} serve"
+            if ollama_cmd:
+                print(f"Attempting to start Ollama with: {ollama_cmd}")
+                try:
+                    start_ollama(ollama_cmd)
+                    # wait for Ollama to be reachable (give it some time)
+                    start = time.time()
+                    while time.time() - start < 60:
+                        if is_port_open(OLLAMA_HOST, OLLAMA_PORT) and http_get_ok(ollama_url, timeout=1.0):
+                            print("Ollama is up")
+                            break
+                        time.sleep(1)
+                    else:
+                        print("Timeout waiting for Ollama to become ready.")
+                except Exception as e:
+                    print("Failed to start Ollama:", e)
+    else:
+        # Skip Ollama orchestration when using another provider (e.g., Gemini)
+        print(f"[INFO] AI_PROVIDER set to '{ai_provider}'; skipping Ollama startup.")
 
     # 2) Free ports we control
     ensure_port_free(BACKEND_PORT)
@@ -533,6 +538,25 @@ def main():
     except KeyboardInterrupt:
         handle_sigint(None, None)
 
+
+# Validate AI provider configuration
+ai_provider = os.getenv("AI_PROVIDER", "ollama").lower()
+if ai_provider == "gemini":
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    gemini_model = os.getenv("GEMINI_MODEL")
+
+    if not gemini_api_key or not gemini_model:
+        print("[ERROR] Missing GEMINI_API_KEY or GEMINI_MODEL in environment variables.")
+        sys.exit(1)
+
+    print(f"[INFO] Using Gemini AI provider with model: {gemini_model}")
+    # Placeholder: Add any Gemini-specific startup logic here if needed
+
+elif ai_provider == "ollama":
+    print("[INFO] Using Ollama AI provider.")
+else:
+    print(f"[ERROR] Unsupported AI_PROVIDER: {ai_provider}")
+    sys.exit(1)
 
 if __name__ == '__main__':
     main()

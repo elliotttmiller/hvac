@@ -182,7 +182,7 @@ class AIClient:
         
         # Create content parts: text + image
         contents = [
-            types.Part.from_text(full_prompt),
+            types.Part.from_text(text=full_prompt),
             types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
         ]
         
