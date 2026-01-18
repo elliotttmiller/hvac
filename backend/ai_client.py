@@ -5,17 +5,18 @@ Supports both Ollama (via OpenAI-compatible API) and Google Gemini.
 import base64
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI, OpenAIError
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from backend.config import get_settings
 from backend.utils import logger
-
-settings = get_settings()
 
 
 class AIClient:
     """Unified AI client that works with both Ollama and Gemini."""
     
     def __init__(self):
+        # Get fresh settings on each initialization
+        settings = get_settings()
         self.provider = settings.ai_provider.lower()
         
         if self.provider == "ollama":
@@ -27,12 +28,11 @@ class AIClient:
             logger.info(f"Initialized Ollama client with model: {self.model_name}")
             
         elif self.provider == "gemini":
-            if not settings.gemini_api_key or settings.gemini_api_key == "your-gemini-api-key-here":
+            if not settings.gemini_api_key or settings.gemini_api_key == "your-gemini-api-key-here" or settings.gemini_api_key == "":
                 raise ValueError("GEMINI_API_KEY must be set when using gemini provider")
             
-            genai.configure(api_key=settings.gemini_api_key)
+            self.client = genai.Client(api_key=settings.gemini_api_key)
             self.model_name = settings.gemini_model
-            self.client = genai.GenerativeModel(self.model_name)
             logger.info(f"Initialized Gemini client with model: {self.model_name}")
             
         else:
@@ -159,34 +159,32 @@ class AIClient:
         # Decode base64 to bytes
         image_bytes = base64.b64decode(base64_data)
         
-        # Create image part for Gemini
-        image_part = {
-            "mime_type": "image/png",
-            "data": image_bytes
-        }
-        
         # Build content with system instruction if provided
         full_prompt = prompt
         if system_instruction:
             full_prompt = f"{system_instruction}\n\n{prompt}"
         
         # Configure generation
-        generation_config = genai.types.GenerationConfig(
+        generation_config = types.GenerateContentConfig(
             max_output_tokens=max_tokens,
             temperature=temperature
         )
         
-        # Generate content
-        # Gemini SDK doesn't have native async support for generate_content yet
-        # So we'll use the sync version (it's fast enough for our use case)
+        # Create content parts: text + image
+        contents = [
+            types.Part.from_text(full_prompt),
+            types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+        ]
+        
+        # Generate content using async
         import asyncio
         loop = asyncio.get_event_loop()
         
         def _sync_generate():
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(
-                [full_prompt, image_part],
-                generation_config=generation_config
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+                config=generation_config
             )
             return response.text
         
@@ -207,20 +205,20 @@ class AIClient:
             full_prompt = f"{system_instruction}\n\n{prompt}"
         
         # Configure generation
-        generation_config = genai.types.GenerationConfig(
+        generation_config = types.GenerateContentConfig(
             max_output_tokens=max_tokens,
             temperature=temperature
         )
         
-        # Generate content
+        # Generate content using async
         import asyncio
         loop = asyncio.get_event_loop()
         
         def _sync_generate():
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(
-                full_prompt,
-                generation_config=generation_config
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=generation_config
             )
             return response.text
         
