@@ -99,7 +99,8 @@ def retry_with_backoff(
     initial_delay: float = 1.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    exceptions: tuple = (Exception,)
+    exceptions: tuple = (Exception,),
+    exclude_exceptions: tuple = ()
 ):
     """
     Decorator for retry logic with exponential backoff and optional jitter.
@@ -109,7 +110,8 @@ def retry_with_backoff(
         initial_delay: Initial delay in seconds
         backoff_factor: Multiplier for delay after each retry
         jitter: Add random jitter to prevent thundering herd (default: True)
-        exceptions: Tuple of exception types to catch
+        exceptions: Tuple of exception types to catch and retry
+        exclude_exceptions: Tuple of exception types to NOT retry (fail immediately)
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
@@ -120,20 +122,26 @@ def retry_with_backoff(
             for attempt in range(max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
+                except exclude_exceptions as e:
+                    # These exceptions should not be retried - fail fast
+                    logger.error(
+                        f"Non-retryable error in {func.__name__}: {e}. Failing immediately."
+                    )
+                    raise
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
                         # Add jitter: random value between 0 and delay
                         actual_delay = delay * (1 + random.random()) if jitter else delay
                         logger.warning(
-                            f"Attempt {attempt + 1}/{max_retries} failed for {func.__name__}: {e}. "
+                            f"Attempt {attempt + 1}/{max_retries + 1} failed for {func.__name__}: {e}. "
                             f"Retrying in {actual_delay:.1f}s..."
                         )
                         time.sleep(actual_delay)
                         delay *= backoff_factor
                     else:
                         logger.error(
-                            f"All {max_retries} retries exhausted for {func.__name__}: {e}"
+                            f"All {max_retries + 1} attempts exhausted for {func.__name__}: {e}"
                         )
             
             raise last_exception
@@ -146,20 +154,26 @@ def retry_with_backoff(
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
+                except exclude_exceptions as e:
+                    # These exceptions should not be retried - fail fast
+                    logger.error(
+                        f"Non-retryable error in {func.__name__}: {e}. Failing immediately."
+                    )
+                    raise
                 except exceptions as e:
                     last_exception = e
                     if attempt < max_retries:
                         # Add jitter: random value between 0 and delay
                         actual_delay = delay * (1 + random.random()) if jitter else delay
                         logger.warning(
-                            f"Attempt {attempt + 1}/{max_retries} failed for {func.__name__}: {e}. "
+                            f"Attempt {attempt + 1}/{max_retries + 1} failed for {func.__name__}: {e}. "
                             f"Retrying in {actual_delay:.1f}s..."
                         )
                         time.sleep(actual_delay)
                         delay *= backoff_factor
                     else:
                         logger.error(
-                            f"All {max_retries} retries exhausted for {func.__name__}: {e}"
+                            f"All {max_retries + 1} attempts exhausted for {func.__name__}: {e}"
                         )
             
             raise last_exception

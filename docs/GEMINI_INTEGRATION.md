@@ -147,6 +147,25 @@ GEMINI_MODEL=gemini-2.0-flash-thinking-exp-01-21
 
 ## Troubleshooting
 
+### Understanding Error Types
+
+The application distinguishes between different types of errors and handles them appropriately:
+
+**Non-Retryable Errors (Fail Fast):**
+- **Quota Exceeded (429)**: Your API quota is exhausted. The system will stop immediately and report progress.
+- **Authentication Failed (401)**: Invalid or missing API key. Check your configuration.
+- **Invalid Request (400)**: Malformed request. Usually indicates a bug or incompatible model.
+
+**Retryable Errors (Automatic Retry):**
+- **Rate Limit (429)**: Temporary rate limiting. The system automatically retries with exponential backoff.
+- **Network Errors**: Connection issues. The system retries up to 2 times.
+- **Timeout**: Request took too long. The system retries with backoff.
+
+**Graceful Degradation:**
+- If individual pages fail during extraction, the system continues processing remaining pages
+- Final report indicates which pages were successfully processed
+- Partial results are better than total failure
+
 ### Error: "GEMINI_API_KEY must be set when using gemini provider"
 
 **Solution:** Ensure you've set a valid API key in your `.env` or `.env.local` file.
@@ -166,10 +185,22 @@ cat .env | grep GEMINI_API_KEY
 
 ### Error: "Rate limit exceeded"
 
-**Solution:** You've hit the Gemini API rate limit. Options:
-1. Wait a few minutes and try again
+**Solution:** You've hit the Gemini API rate limit. The application will automatically retry with exponential backoff. Options:
+1. Wait - The system will retry automatically with increasing delays
 2. Request a rate limit increase from Google
 3. Switch to Ollama for unlimited local processing
+
+**Note:** The application now handles rate limiting gracefully with automatic retries.
+
+### Error: "Quota exceeded"
+
+**Solution:** You've exhausted your Gemini API quota. The application will stop processing and report how many pages were successfully completed. Options:
+1. Wait until your quota resets (usually monthly)
+2. Upgrade your Gemini API plan for higher quotas
+3. Switch to Ollama for unlimited local processing
+4. Resume processing later - the system reports which pages were completed
+
+**Note:** The application will NOT retry quota exceeded errors to avoid burning through your quota faster.
 
 ### Mixed Results Quality
 
