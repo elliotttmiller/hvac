@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="Server port")
     debug: bool = Field(default=False, description="Debug mode")
     
+    # AI Provider Configuration
+    ai_provider: str = Field(
+        default="ollama",
+        description="AI provider to use: 'ollama' or 'gemini'"
+    )
+    
     # Ollama Configuration
     ollama_base_url: str = Field(
         default="http://localhost:11434/v1",
@@ -39,7 +45,17 @@ class Settings(BaseSettings):
     )
     model_name: str = Field(
         default="qwen2.5vl",
-        description="Vision-language model name"
+        description="Vision-language model name for Ollama"
+    )
+    
+    # Google Gemini Configuration
+    gemini_api_key: str = Field(
+        default="",
+        description="Google Gemini API key"
+    )
+    gemini_model: str = Field(
+        default="gemini-2.0-flash-exp",
+        description="Gemini model name (gemini-2.0-flash-exp or gemini-2.0-flash-thinking-exp-01-21)"
     )
     
     # Processing Limits
