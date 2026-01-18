@@ -6,6 +6,7 @@ mcp
 pypdf
 pymupdf
 openai
+google-genai
 python-multipart
 httpx
 fuzzywuzzy

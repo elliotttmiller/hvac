@@ -43,19 +43,29 @@
 
 ## 🎯 Overview
 
-HVAC Analysis AI is a **local-first, privacy-focused** application that provides AI-powered HVAC engineering analysis without sending your data to cloud services. It uses cutting-edge vision-language models running locally via **Ollama** to analyze blueprints, calculate heating/cooling loads, verify equipment sizing, and ensure Minnesota HVAC code compliance.
+HVAC Analysis AI is a **flexible AI-powered** application that provides HVAC engineering analysis using your choice of AI providers. It supports both **local inference via Ollama** (privacy-focused) and **cloud inference via Google Gemini** (fast and scalable) to analyze blueprints, calculate heating/cooling loads, verify equipment sizing, and ensure Minnesota HVAC code compliance.
 
-### Why Local-First?
+### AI Provider Options
 
+**Ollama (Local-First)**
 - **🔒 Privacy**: Your blueprints never leave your machine
 - **⚡ No API Costs**: Run unlimited analyses without per-request charges
 - **🔌 Offline Capable**: Works without internet after initial setup
-- **🎯 Specialized**: Custom-trained on HVAC engineering codes and standards
+- **Model**: Qwen 2.5 VL vision-language model
+
+**Google Gemini (Cloud)**
+- **⚡ Fast Inference**: Quick processing without local GPU requirements
+- **🌐 Always Available**: No local setup or maintenance needed
+- **🎯 Latest Models**: Gemini 2.5 Flash and Gemini 3 Flash Preview
+- **💰 Pay-as-you-go**: Cost-effective for occasional use
+
+See [GEMINI_INTEGRATION.md](docs/GEMINI_INTEGRATION.md) for setup instructions.
 
 ## ✨ Key Features
 
 ### 🔍 Intelligent Analysis
-- **Vision-Language Model**: Qwen 2.5 VL for accurate blueprint interpretation
+- **Flexible AI Providers**: Choose between Ollama (local) or Google Gemini (cloud)
+- **Vision-Language Models**: Qwen 2.5 VL (Ollama) or Gemini 2.5/3 Flash (cloud)
 - **Multi-Page Support**: Process PDFs up to 50 pages with intelligent prioritization
 - **Extract-Then-Reason Pipeline**: Two-phase analysis for accuracy
 - **Component-Level Breakdown**: Detailed heating/cooling load calculations
@@ -370,10 +380,24 @@ Create a `.env` file in the project root (copy from `.env.example`):
 
 ```bash
 # ============================================
-# Model Configuration
+# AI Provider Configuration
+# ============================================
+# Choose: "ollama" (local) or "gemini" (cloud)
+AI_PROVIDER=ollama
+
+# ============================================
+# Ollama Configuration (when AI_PROVIDER=ollama)
 # ============================================
 MODEL_NAME=qwen2.5vl
 OLLAMA_BASE_URL=http://localhost:11434/v1
+
+# ============================================
+# Google Gemini Configuration (when AI_PROVIDER=gemini)
+# ============================================
+# Get your key at: https://aistudio.google.com/app/apikey
+GEMINI_API_KEY=your-gemini-api-key-here
+# Models: gemini-2.0-flash-exp or gemini-2.0-flash-thinking-exp-01-21
+GEMINI_MODEL=gemini-2.0-flash-exp
 
 # ============================================
 # Processing Limits
@@ -1698,6 +1722,7 @@ Comprehensive documentation is available in the `/docs` directory:
 - **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[PERFORMANCE.md](./docs/PERFORMANCE.md)** - Benchmarks, optimization strategies, and scaling
 - **[ENHANCEMENTS.md](./docs/ENHANCEMENTS.md)** - Feature enhancements and implementation details
+- **[GEMINI_INTEGRATION.md](./docs/GEMINI_INTEGRATION.md)** - Guide to using Google Gemini AI provider
 
 ### Frontend Documentation
 

@@ -5,9 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from openai import AsyncOpenAI, OpenAIError
+from openai import OpenAIError
 from backend.constants import MN_HVAC_SYSTEM_INSTRUCTION, BLUEPRINT_EXTRACTION_PROMPT, MN_HEATING_OVERSIZE_LIMIT, MN_COOLING_OVERSIZE_LIMIT
 from backend.config import get_settings
+from backend.ai_client import get_ai_client
 from backend.models import (
     AnalyzeRequest, AnalyzeResponse, UploadRequest, UploadResponse,
     ModelStatus, ErrorResponse, PDFMetadata, PageImageData, AnalysisReport,
@@ -31,7 +32,7 @@ settings = get_settings()
 app = FastAPI(
     title="HVAC Analysis API", 
     version="2.0.0",
-    description="Local-first HVAC engineering analysis with Ollama + MCP"
+    description="Local-first HVAC engineering analysis with Ollama/Gemini + MCP"
 )
 
 app.add_middleware(
@@ -41,11 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = AsyncOpenAI(
-    base_url=settings.ollama_base_url, 
-    api_key=settings.ollama_api_key
-)
-MODEL_NAME = settings.model_name
+# Initialize AI client (works with both Ollama and Gemini)
+ai_client = get_ai_client()
+MODEL_NAME = ai_client.get_model_name()
 
 # Map quality enum to zoom factor for PDF rendering
 QUALITY_ZOOM_MAP = {
@@ -68,7 +67,7 @@ async def get_catalog():
     max_retries=settings.max_retries, 
     initial_delay=settings.retry_initial_delay,
     jitter=True,
-    exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException)
+    exceptions=(OpenAIError, httpx.RequestError, httpx.TimeoutException, Exception)
 )
 async def extract_page_text(image_data_url: str, page_num: int, request_id: str) -> str:
     """Extract text from a single page with retry logic.
@@ -77,18 +76,12 @@ async def extract_page_text(image_data_url: str, page_num: int, request_id: str)
     Validation errors and logic errors are not retried as they won't resolve with retry.
     """
     with RequestTracer(request_id, f"extract_page_{page_num}"):
-        resp = await client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "user", "content": [
-                    {"type": "text", "text": BLUEPRINT_EXTRACTION_PROMPT},
-                    {"type": "image_url", "image_url": {"url": image_data_url}}
-                ]}
-            ],
+        return await ai_client.generate_with_image(
+            prompt=BLUEPRINT_EXTRACTION_PROMPT,
+            image_data_url=image_data_url,
             max_tokens=settings.extraction_max_tokens,
             temperature=settings.extraction_temperature
         )
-        return resp.choices[0].message.content
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)
@@ -275,17 +268,12 @@ REQUIRED JSON STRUCTURE EXAMPLE (fill with inferred or calculated numbers where 
 Remember: Narrative first, JSON second. If any value is uncertain, mark it clearly in the narrative and populate JSON with best-estimate and include assumptions in the JSON or narrative.
 """
 
-                    resp = await client.chat.completions.create(
-                        model=MODEL_NAME,
-                        messages=[
-                            {"role": "system", "content": MN_HVAC_SYSTEM_INSTRUCTION},
-                            {"role": "user", "content": reasoning_prompt}
-                        ],
+                    raw_output = await ai_client.generate_text(
+                        prompt=reasoning_prompt,
+                        max_tokens=settings.llm_structured_max_tokens,
                         temperature=settings.llm_structured_temperature,
-                        max_tokens=settings.llm_structured_max_tokens
+                        system_instruction=MN_HVAC_SYSTEM_INSTRUCTION
                     )
-
-                    raw_output = resp.choices[0].message.content
 
                     # Try to repair and parse JSON emitted by model
                     parsed = repair_json(raw_output)
